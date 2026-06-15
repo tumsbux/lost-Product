@@ -20,6 +20,25 @@
 | [Roadmap.md](./Roadmap.md) | Phase 3c/3d, B/C/D (OOS / Dead Stock / Visual Adj) | วางแผนต่อ |
 | [Changelog.md](./Changelog.md) | งานที่ทำเสร็จ (Phase 3b, Lost Product, etc.) | review |
 | [Skill.md](./Skill.md) | บทเรียนส่วนตัว (Edit tool, probe-first, etc.) | ทบทวนเอง |
+| [How_To_Modify_Dashboards.md](./How_To_Modify_Dashboards.md) | คู่มือ user สำหรับแก้ UI/ETL/deploy | คนใหม่เริ่มงาน |
+| [Column_Reference.xlsx](./Column_Reference.xlsx) | **Quick reference card** — ยอดขาย/ส่วนลด/GP/cost columns + DAX measures + SQL patterns | งาน Power BI / สร้าง measure ใหม่ |
+
+---
+
+## 🤝 Multi-Agent Collaboration (สำคัญ! เพิ่ม 2026-06-10)
+
+User ทำงาน Dashboard ด้วย **2 agents** ขนานกัน:
+1. **Claude (Cowork mode)** — Opus 4.7 / Sonnet 4.6 — ตัวที่กำลังอ่านอันนี้
+2. **Antigravity (Gemini 3 Flash)** — Google Antigravity IDE — แก้ dashboard ตัวเดียวกัน
+
+**กฎ collab:**
+- **อ่าน `.md` ทุกไฟล์ก่อนเริ่มงาน** — ทั้ง 2 agents — ห้าม assume context จาก training
+- **เขียน ADR ใน `Decisions.md` ทุก architectural change** — ก่อน touch code
+- **Cache file (Phase IR) ต้องมี `_meta.built_by`** — track ว่า agent ไหน build (`claude-opus-4-7` vs `antigravity-gemini-3-flash`)
+- **Schema/rule hash header** ป้องกัน agent หนึ่ง schema เปลี่ยน อีก agent อ่าน cache เดิมแล้วงง
+- **Roadmap.md "Now" section** = source of truth สำหรับ in-flight work — ห้าม start งานที่ agent อื่น claim ไว้
+- **CLAUDE.md** (ไฟล์นี้) = primary doc, ทั้ง 2 agents อ่าน
+- **ถ้าเจอ commit ไม่รู้จัก:** อ่าน Decisions.md + Changelog.md ก่อนเสมอ
 
 ---
 
@@ -37,12 +56,14 @@
 
 ระบบ Dashboard อัปเดตอัตโนมัติทุกวัน **08:30 Bangkok** ผ่าน **GitHub Actions** (ไม่ต้องเปิด laptop)
 
-**Daily pipeline (07:30–09:30 BKK multi-cron):**
-1. `rebuild_fraud_analysis.py --no-push` → builds fraud_data.json *(continue-on-error)*
-2. `build_product_data_mysql.py --no-push` → builds product_data.json *(continue-on-error)*
-3. `build_lost_product_data.py` → builds lost_product_data.json *(continue-on-error)*
-4. push_lost_data → push JSON ไป tumsbux/lost-Product repo
-5. `update_dashboard.py` → updates sales + injects fraud/product → pushes daily-report
+**Daily pipeline (single cron 08:30 BKK — `30 1 * * *` UTC):**
+1. Restore cache from orphan branch `cache`
+2. `rebuild_fraud_analysis.py --no-push` → builds fraud_data.json *(continue-on-error)*
+3. `build_product_data_mysql.py --no-push` → builds product_data.json *(continue-on-error)*
+4. `build_lost_product_data.py` → builds lost_product_data.json *(continue-on-error)*
+5. push_lost_data → push JSON ไป tumsbux/lost-Product repo
+6. `update_dashboard.py` → updates sales + injects fraud/product → pushes daily-report
+7. Push cache → orphan branch `cache` (force, single commit)
 
 **Manual run (Windows):**
 ```powershell
@@ -66,7 +87,7 @@
 
 ## 🚀 Daily Workflow
 
-1. **เริ่มงานใหม่** → อ่าน `Roadmap.md` ก่อน (Phase 3c/3d, B/C/D queued)
+1. **เริ่มงานใหม่** → อ่าน `Roadmap.md` ก่อน
 2. **ตัดสินใจอะไรสำคัญ** → บันทึกใน `Decisions.md`
 3. **เจอ bug แปลก** แก้ได้แล้ว → เพิ่มใน `Gotchas.md`
 4. **ทำงานเสร็จ** → update `Changelog.md` + ลบจาก `Roadmap.md`
@@ -74,4 +95,30 @@
 
 ---
 
-_Last updated: 2026-06-08_
+## 📦 Deployed (ล่าสุด — 2026-06-15)
+
+| งาน | วันที่ | หมายเหตุ |
+|---|---|---|
+| IR-A Lost Product Parquet cache | 2026-06-10 | cache/lost_qty/store_2021_2025.parquet |
+| IR-B/C/D Product/Sales/Fraud cache | 2026-06-12 | orphan branch `cache`, 3 conditions cleared ✅ |
+| Compact JSON v2 (77.9→51.9 MB, −33%) | 2026-06-12 | schema v2, daily-report `858db387`, lost-Product `fdeacd1` |
+| MySQL MCP (`agent-102`, READ-only) | 2026-06-12 | tools: execute_sql / get_schema_info / get_table_sample — ดู Gotchas §Claude-Desktop-Store |
+| VM mirror recovered + SSH creds ย้าย | 2026-06-12–13 | sync 10 นาที, creds ← db_config.json, ops: §4b |
+| PAT rotate (`dashboard-bot-4`) | 2026-06-14 | classic, repo+workflow scope — local + VM + GHA updated |
+| Phase 3c/3d refactor | 2026-06-14 | update_dashboard −21%, rebuild_fraud −51% lines |
+| Phase B Days-until-OOS column | 2026-06-14 | product_dashboard, JS-only, color-coded |
+| Thongfah dashboard + GHA (08:35 BKK) | 2026-06-14 | tumsbux/thongfah-dashboard, 168K+ rows — ดู `คู่มือ_Dashboard_ธงฟ้า.docx` |
+| **Phase C Dead Stock** | **2026-06-15** | 6,474 products, 90d threshold, group_name dropdown |
+| **Phase D Visual Adjustment** | **2026-06-15** | all SKUs, ibl+itd_acc, store-level fraud signal |
+| **GHA weekly-rebuild.yml** (lost-Product) | **2026-06-15** | Sundays 09:00 BKK, test run 7m 36s ✅ |
+
+## 🟡 Pending
+
+- 🖥️ **ขอ IT ตั้ง restart policy VM** (`agent-ab-sandbox.tjinternal.com`) — container ตายแล้วไม่มี auto-restart — ops: `How_To_Modify_Dashboards.md §4b`
+- [ ] **ย้าย SSH creds ออกจาก scripts** ใน `F:\lost-Product\` (run_vm_command.py ฯลฯ ฝัง password ใน working copy ของ repo) → ย้ายเป็น config แยก หรือ move ไป `F:\co work dashboard\`
+- ⚠️ **Push reminders:** daily-report → `push_files_api.py` เท่านั้น (**ห้าม** `push_py_to_github.py`) / lost-Product → `push_lost_product_files.py` / ไฟล์ > 30MB → `push_data_json.ps1` (git clone) / PAT: `dashboard-bot-4`
+- ⚠️ **`F:\lost-Product-git\` stale `index.lock`** — ลบก่อนใช้: `Remove-Item F:\lost-Product-git\.git\index.lock`
+
+---
+
+_Last updated: 2026-06-15_
