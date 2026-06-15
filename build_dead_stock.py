@@ -13,6 +13,7 @@ import os
 import json
 import argparse
 import traceback
+import gc
 from datetime import date, datetime, timedelta, timezone
 
 # ── deps ──────────────────────────────────────────────────────────────────────
@@ -25,6 +26,10 @@ except ImportError:
 SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(SCRIPT_DIR, 'dead_stock_data.json')
 BUILT_BY    = 'claude-sonnet-4-6'
+
+# กลุ่มสินค้าที่ไม่ใช่ retail — ไม่นับใน dead stock
+EXCLUDED_ITY    = {'03', '12', '15', '20', '26'}   # Supply Use, สินทรัพย์, ค่าใช้จ่าย, สินค้าสมนาคุณ, อุปกรณ์ไฟฟ้า
+EXCLUDED_IGRCODE = {'10006'}                         # อุปกรณ์ตกปลา (sub-group ใน itycode 10)
 
 DB_PATHS = [
     os.path.join(SCRIPT_DIR, 'db_config.json'),
@@ -87,6 +92,9 @@ def query_onhand(cfg):
     onhand = {}  # {iprod: {whsno_str: {qty, value}}}
     skipped = 0
     for iprod, whsno, qty, value in cur:
+        # skip null/empty parcode
+        if not iprod or str(iprod).strip().lower() in ('null', 'none', ''):
+            continue
         # valid_store filter
         try:
             n = int(str(whsno).strip())
@@ -122,16 +130,35 @@ def query_product_names(cfg, iprods):
     cur = conn.cursor()
     cur.execute("SELECT iprod, idesc, igrcode FROM `data-lake`.dim_product")
     names = {}
+    excluded = set()
     for iprod, idesc, igrcode in cur:
-        if str(iprod) in iprods:
-            names[str(iprod)] = {
-                'name':  idesc  or '',
-                'group': igrcode or '',
-            }
+        ip = str(iprod)
+        if ip not in iprods:
+            continue
+        gr = str(igrcode or '')
+        ity = gr[:2]
+        if ity in EXCLUDED_ITY or gr in EXCLUDED_IGRCODE:
+            excluded.add(ip)
+            continue
+        names[ip] = {'name': idesc or '', 'group': gr}
     cur.close()
     conn.close()
-    print(f'  {len(names):,} names resolved')
-    return names
+    print(f'  {len(names):,} names resolved  ({len(excluded):,} excluded non-retail)')
+    return names, excluded
+
+# ── step 3b: group names ─────────────────────────────────────────────────────
+def query_group_names(cfg):
+    """Returns {igrcode: igrdesc} from MYPOS item_group."""
+    conn = mysql.connector.connect(
+        host=cfg['host'], port=int(cfg.get('port', 13306)),
+        user=cfg['user'], password=cfg['password'],
+        database='MYPOS2018_CENTER', charset='utf8mb3', connection_timeout=30,
+    )
+    cur = conn.cursor()
+    cur.execute("SELECT igrcode, igrdesc FROM MYPOS2018_CENTER.item_group")
+    groups = {str(code): (desc or '') for code, desc in cur}
+    cur.close(); conn.close()
+    return groups
 
 # ── step 4: store names ───────────────────────────────────────────────────────
 def query_store_names(cfg):
@@ -158,12 +185,15 @@ def query_store_names(cfg):
     return stores
 
 # ── step 5: build JSON ────────────────────────────────────────────────────────
-def build_json(last_sale, onhand, names, stores, threshold_days, as_of_date):
+def build_json(last_sale, onhand, names, excluded, groups, stores, threshold_days, as_of_date):
     print('[5/5] Building dead_stock_data.json ...')
     cutoff = as_of_date - timedelta(days=threshold_days)
 
     products = []
     for iprod, store_map in onhand.items():
+        # skip non-retail groups
+        if iprod in excluded:
+            continue
         # chain-level last sale check
         ls = last_sale.get(iprod)
         if ls is not None and ls >= cutoff:
@@ -176,7 +206,11 @@ def build_json(last_sale, onhand, names, stores, threshold_days, as_of_date):
             continue
 
         days_since = (as_of_date - ls).days if ls else None
-        name_info  = names.get(iprod, {'name': '', 'group': ''})
+        name_info  = names.get(iprod)
+        if name_info is None:
+            continue  # not in dim_product (no name) — skip
+        gr_code    = name_info['group']
+        gr_name    = groups.get(gr_code, '')
 
         store_list = []
         for whs, sv in sorted(store_map.items()):
@@ -193,7 +227,8 @@ def build_json(last_sale, onhand, names, stores, threshold_days, as_of_date):
         products.append({
             'iprod':      iprod,
             'name':       name_info['name'],
-            'group':      name_info['group'],
+            'group':      gr_code,
+            'group_name': gr_name,
             'last_sale':  ls.isoformat() if ls else None,
             'days_since': days_since,
             'onhand_qty':   round(total_qty,   2),
@@ -232,13 +267,10 @@ def build_json(last_sale, onhand, names, stores, threshold_days, as_of_date):
 
 # ── push ──────────────────────────────────────────────────────────────────────
 def push_to_github(cfg):
-    import importlib.util, subprocess
-    push_script = os.path.join(SCRIPT_DIR, 'push_files_api.py')
+    import subprocess
+    push_script = os.path.join(SCRIPT_DIR, 'push_lost_product_files.py')
     if not os.path.exists(push_script):
-        # fallback: look in co work dashboard
-        push_script = r'F:\co work dashboard\push_files_api.py'
-    if not os.path.exists(push_script):
-        print('WARNING: push_files_api.py not found — skipping push')
+        print('WARNING: push_lost_product_files.py not found — skipping push')
         return
     result = subprocess.run(
         [sys.executable, push_script, OUTPUT_FILE, '-m', 'data(dead-stock): rebuild dead_stock_data.json'],
@@ -259,12 +291,18 @@ def main():
 
     print(f'=== Dead Stock Builder === threshold={args.days}d  as_of={as_of}')
     try:
-        last_sale = query_last_sale(cfg)
-        onhand    = query_onhand(cfg)
-        iprods    = set(onhand.keys())
-        names     = query_product_names(cfg, iprods)
-        stores    = query_store_names(cfg)
-        payload   = build_json(last_sale, onhand, names, stores, args.days, as_of)
+        last_sale        = query_last_sale(cfg)
+        gc.collect()
+        onhand           = query_onhand(cfg)
+        gc.collect()
+        iprods           = set(onhand.keys())
+        names, excluded  = query_product_names(cfg, iprods)
+        del iprods
+        gc.collect()
+        groups           = query_group_names(cfg)
+        stores           = query_store_names(cfg)
+        gc.collect()
+        payload          = build_json(last_sale, onhand, names, excluded, groups, stores, args.days, as_of)
 
         print(f'\nSummary:')
         print(f"  Dead-stock products : {payload['summary']['total_products']:,}")
