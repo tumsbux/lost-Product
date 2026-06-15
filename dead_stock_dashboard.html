@@ -145,7 +145,7 @@ function render(){
       <td><span class="expand-btn" onclick="toggleDetail(${i})" id="exp-${i}">▶</span></td>
       <td>${p.iprod}</td>
       <td>${p.name || '—'}</td>
-      <td>${p.group || '—'}</td>
+      <td title="${p.group||''}">${p.group_name || p.group || '—'}</td>
       <td>${p.last_sale || '—'}</td>
       <td class="r">${daysBadge(p.days_since)}</td>
       <td class="r">${fmtD(p.onhand_qty)}</td>
@@ -249,10 +249,16 @@ fetch('./dead_stock_data.json')
     document.getElementById('k-value').textContent    = '฿' + fmt(s.total_onhand_value);
     document.getElementById('k-qty').textContent      = fmtD(s.total_onhand_qty);
 
-    // populate group filter
-    const groups = [...new Set(ALL.map(p=>p.group).filter(Boolean))].sort();
+    // populate group filter — show group_name (igrcode), filter by igrcode
+    const grpMap = {};
+    ALL.forEach(p => { if(p.group) grpMap[p.group] = p.group_name || p.group; });
     const sel = document.getElementById('f-group');
-    groups.forEach(g => { const o=document.createElement('option'); o.value=o.textContent=g; sel.appendChild(o); });
+    Object.keys(grpMap).sort().forEach(code => {
+      const o = document.createElement('option');
+      o.value = code;
+      o.textContent = grpMap[code] ? `${grpMap[code]} (${code})` : code;
+      sel.appendChild(o);
+    });
 
     FILTERED = [...ALL];
     render();
