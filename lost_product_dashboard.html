@@ -197,13 +197,27 @@ async function init(){
   // Hydrate compact schema v2: convert product arrays → objects
   if(D.products_header && D.products.length && Array.isArray(D.products[0])){
     const hdr=D.products_header;
+    const codes=D.codes||[];
     const sc=(D._meta&&D._meta.status_codes)||['ACTIVE','STALE','LOST'];
     D.products=D.products.map(arr=>{
       const o={};
       hdr.forEach((k,i)=>o[k]=arr[i]);
+      o.parcode=codes[o.parcode];
+      o.iprod=codes[o.iprod];
       if(typeof o.status==='number') o.status=sc[o.status];
       return o;
     });
+    // Resolve store_breakdown keys from code indices
+    if(D.store_breakdown){
+      const sb={};
+      for(const whs in D.store_breakdown){
+        const srcP=D.store_breakdown[whs], o={};
+        for(const ci in srcP) o[codes[+ci]]=srcP[ci];
+        sb[whs]=o;
+      }
+      D.store_breakdown=sb;
+    }
+    delete D.codes; delete D.products_header;
   }
 
   // Nav
