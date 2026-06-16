@@ -5,6 +5,25 @@
 
 ---
 
+## [2026-06-16] MemoryError fixes + cron 10:30 + push fix (Claude)
+
+### Fixed
+- **`fraud_agg.py` OverflowError** (line 116 `to_json()`): เพิ่ม `import gc` + `gc.collect()` 2 จุดใน `build_month()` — June data build สำเร็จ `1,640 bills | ฿262,230` ✅ — commit `0146bf84`
+- **`build_lost_product_data.py` MemoryError** (`fetchall()` 1M+ rows): เพิ่ม `gc.collect()` + `del df/df2` รอบ `pd.read_sql()` ทั้ง 2 query ใน `query_year()` — commit `4611c9c8`
+- **Dashboard stuck วัน 14**: `update_dashboard.py` git clone exit 128 (false "OK") → push manual ผ่าน `push_files_api.py` 8 ไฟล์ — commit `85756424` — dashboard แสดงวัน 15 ✅
+
+### Added
+- **cron-job.org 10:30 BKK** (`Trigger daily-report GHA 10.30`, job 7833703): เปิด job ที่มีอยู่แต่ inactive → enabled — trigger รอบ 2 หลัง ETL sync เสร็จ (fact_sales มักพร้อม ~10:27+)
+- **cron-job.org 10:35 BKK** (`Trigger thongfah GHA 10.35`): ยืนยัน active อยู่แล้ว
+
+### Root cause (ETL timing)
+`fact_sales` ข้อมูลร้านค่าปลีก (sotowhs ≤ 500) sync เสร็จหลัง 10:27 BKK — GHA 8:30 ได้แค่วันก่อนหน้า, cron 10:30 catch หลัง ETL พร้อม
+
+### Gotchas updated
+- เพิ่ม 3 entries: `fraud_agg.py OverflowError`, `build_lost_product_data.py MemoryError`, `git clone exit 128 false positive`
+
+---
+
 ## [2026-06-15] cron-job.org — GHA trigger ตรงเวลา (Claude)
 
 ### Added
