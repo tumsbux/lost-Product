@@ -5,9 +5,13 @@
 
 ---
 
-## [2026-06-16] MemoryError fixes + cron 10:30 + push fix (Claude)
+## [2026-06-16] lost_product_dashboard hydration fix + MemoryError fixes + cron 10:30 (Claude)
 
 ### Fixed
+- **`lost_product_dashboard.html` undefined ทุกค่า**: compact schema v2 เก็บ products เป็น array-of-arrays แต่ JS อ่านเป็น object properties → เพิ่ม hydration block แปลง array→object — commit `e2542204`
+- **Fetch URL typo**: `lost-Product-/` → `lost-Product/` (hyphen เกิน) — commit `15495d29`
+- **parcode แสดงเป็น index แทน barcode จริง**: `parcode`/`iprod` เก็บเป็น index ของ `codes[]` — เพิ่ม `codes[p.parcode]` resolve + `store_breakdown` key resolve ตาม `index.html` — commit `f435c889`
+- **Push ผิด repo**: ใช้ `push_files_api.py` (→ daily-report) แทน `push_lost_product_files.py` (→ lost-Product) ทำให้ push เวอร์ชันเก่า
 - **`fraud_agg.py` OverflowError** (line 116 `to_json()`): เพิ่ม `import gc` + `gc.collect()` 2 จุดใน `build_month()` — June data build สำเร็จ `1,640 bills | ฿262,230` ✅ — commit `0146bf84`
 - **`build_lost_product_data.py` MemoryError** (`fetchall()` 1M+ rows): เพิ่ม `gc.collect()` + `del df/df2` รอบ `pd.read_sql()` ทั้ง 2 query ใน `query_year()` — commit `4611c9c8`
 - **Dashboard stuck วัน 14**: `update_dashboard.py` git clone exit 128 (false "OK") → push manual ผ่าน `push_files_api.py` 8 ไฟล์ — commit `85756424` — dashboard แสดงวัน 15 ✅
