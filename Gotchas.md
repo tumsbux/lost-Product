@@ -4,6 +4,34 @@
 
 ---
 
+### ⚠️ Compact JSON v2 — dashboard ต้อง hydrate ก่อนใช้ (พบ 2026-06-16)
+
+**Symptom:** Dashboard แสดง "undefined" ทุกคอลัมน์ หรือ parcode แสดงเป็นตัวเลข index (1, 2, 3) แทน barcode จริง
+
+**Root cause:** Schema v2 เก็บ products เป็น array-of-arrays + `parcode`/`iprod` เป็น index ของ `codes[]` — JS อ่าน `p.name` ได้ undefined, `p.parcode` ได้ index
+
+**Fix — hydration block ต้องทำ 3 อย่าง:**
+1. แปลง array → object ตาม `products_header`
+2. Resolve `p.parcode = codes[p.parcode]` และ `p.iprod = codes[p.iprod]`
+3. แปลง `p.status` จาก number → string ตาม `_meta.status_codes`
+4. Resolve `store_breakdown` keys จาก code index → barcode
+
+**Reference:** ดู `index.html` line 235-255 สำหรับ hydration ที่ถูกต้อง
+
+**Rule:** Dashboard ใหม่ที่อ่าน compact JSON v2 **ต้อง** copy hydration pattern จาก `index.html` — ห้าม assume ว่า field เป็น string/object โดยตรง
+
+---
+
+### ⚠️ push_files_api.py vs push_lost_product_files.py — ห้ามใช้สลับ (พบ 2026-06-16)
+
+**Symptom:** Push สำเร็จ (commit สร้างได้) แต่ไฟล์บน GitHub ไม่เปลี่ยน — เพราะ push ไปผิด repo
+
+**Root cause:** `push_files_api.py` → daily-report repo, `push_lost_product_files.py` → lost-Product repo — ใช้ผิดตัวทำให้ push เวอร์ชันเก่าจาก repo อื่น
+
+**Rule:** daily-report → `push_files_api.py` เท่านั้น / lost-Product → `push_lost_product_files.py` เท่านั้น
+
+---
+
 ### ⚠️ GitHub Contents API ปฏิเสธไฟล์ใหญ่ > ~50MB (พบ 2026-06-14)
 
 **Symptom:** `push_to_github.py` อัปโหลดไฟล์ผ่าน GitHub Contents API → error 422 `"Sorry, the file is too large to be processed."`
