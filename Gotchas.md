@@ -714,4 +714,75 @@ rttime.astype(str).str[:2]   # ผิด
 
 ---
 
-_Last updated: 2026-06-15_
+### ⚠️ `fraud_agg.py` OverflowError บน June data — `to_json()` เกิน RAM (พบ + แก้ 2026-06-16, Claude)
+
+**Symptom:** `rebuild_fraud_analysis.py` crash ที่ `fraud_agg.py` line 116 ด้วย `OverflowError: Could not reserve memory block` ตอน process เดือน June — เดือนก่อนหน้า (Mar/Apr/May) ผ่านปกติ
+
+**Root cause:** `build_month()` process แต่ละเดือนต่อเนื่อง — memory จาก March/April/May ยัง linger ใน Python heap (GC ยังไม่ reclaim) → พอถึง June: `so` DataFrame (all bills) → `to_json()` ขนาดใหญ่ขอ memory block ก้อนใหม่ไม่ได้
+
+**Fix (✅ 2026-06-16, commit `0146bf84`):** เพิ่ม 2 จุดใน `build_month()`:
+```python
+import gc
+
+def build_month(sub, barmap=None, prodmap=None):
+    gc.collect()   # ← ต้น function: free memory จากเดือนก่อน
+    sub = sub.copy()
+    ...
+    gc.collect()   # ← ก่อน to_json(): free ก่อน allocate block ใหญ่
+    so_list = json.loads(so.fillna('?').to_json(...))
+```
+
+**Rule:** script ETL ที่ loop หลายเดือน → ใส่ `gc.collect()` ต้น loop iteration เสมอ
+
+**Tags:** `#memory` `#gc` `#fraud` `#overflow`
+
+---
+
+### ⚠️ `build_lost_product_data.py` MemoryError ใน `query_year()` — `fetchall()` บน 1M+ rows (พบ + แก้ 2026-06-16, Claude)
+
+**Symptom:** `build_lost_product_data.py` crash ที่ `query_year()` line 83: `df2 = pd.read_sql(sql_store, conn)` → `MemoryError` ใน `cursor.fetchall()` — เกิดเป็นบางรอบ ไม่ใช่ทุกครั้ง (intermittent, ขึ้นอยู่กับ memory state จาก steps ก่อนหน้า)
+
+**Root cause:** `sql_store` query ดึง 1M+ rows (whs × iprod คู่) ทีเดียว — GC ไม่ทัน reclaim memory จาก query ก่อนหน้า → `fetchall()` ขอ block ใหญ่ไม่ได้
+
+**Fix (✅ 2026-06-16, commit `4611c9c8`):**
+```python
+import gc
+
+def query_year(...):
+    gc.collect()
+    df = pd.read_sql(sql_tot, conn)
+    tot = dict(zip(...))
+    del df          # ← free DataFrame ทันทีหลังแปลงเป็น dict
+    gc.collect()    # ← ก่อน query ใหญ่ sql_store
+    df2 = pd.read_sql(sql_store, conn)
+    ...
+    del df2
+    gc.collect()
+    return tot, store
+```
+
+**Rule:** `pd.read_sql` query ที่คาดว่า return > 500K rows → `gc.collect()` ก่อนเสมอ + `del df` ทันทีหลังแปลงเป็น dict/list
+
+**Tags:** `#memory` `#gc` `#lost-product` `#mysql`
+
+---
+
+### ⚠️ `update_dashboard.py` git clone exit 128 → false "OK" message (พบ 2026-06-16)
+
+**Symptom:** `run_manual_update.ps1` แสดง `WARNING: GitHub push failed: ... git clone ... returned non-zero exit status 128` แต่บรรทัดถัดมาแสดง `OK Dashboard pushed to GitHub Pages` — dashboard ไม่อัปเดตจริง (ยังเป็นวันเก่า)
+
+**Root cause:** `update_dashboard.py` step [7/7] try git clone daily-report ล้มเหลว (exit 128) แต่ script print "OK" ต่อเนื่องโดยไม่มี fallback จริง — "OK" เป็น false positive
+
+**Fix (manual workaround):** push ไฟล์ผ่าน `push_files_api.py` ตรงๆ:
+```powershell
+cd "F:\co work dashboard"
+py push_files_api.py index.html sales_dashboard_v8.html fraud_dashboard.html fraud_analysis.html fraud_data.json product_dashboard.html product_data.json analytics.js
+```
+
+**TODO:** แก้ `update_dashboard.py` ให้ใช้ `push_files_api.py` เป็น primary push แทน git clone (git clone daily-report fail เป็นประจำ)
+
+**Tags:** `#push` `#git` `#false-positive` `#daily-report`
+
+---
+
+_Last updated: 2026-06-16_
