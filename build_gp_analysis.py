@@ -192,8 +192,6 @@ def build_json(rows, stores, prods, groups, types, months, current_month, days_e
         gr_code = pi.get('group', '')
         ty_code = gr_code[:2]
         gp = p['sales'] - p['cost']
-        if p['sales'] < 100:
-            continue  # skip tiny sales
         prod_list.append({
             'iprod':      iprod,
             'name':       pi.get('name', ''),
