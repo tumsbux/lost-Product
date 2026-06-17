@@ -217,6 +217,41 @@ document.querySelectorAll('.tab').forEach(function(t){
   });
 });
 
+function updateKPI(){
+  var isFiltered=(document.getElementById('fs-rm').value||document.getElementById('fs-dm').value||document.getElementById('fs-search').value.trim());
+  if(!isFiltered){
+    /* no filter — restore original summary */
+    var s=DATA.summary||{};
+    document.getElementById('k-sales').textContent='\u0e3f'+fmt(s.sales);
+    document.getElementById('k-disc').textContent='\u0e3f'+fmt(s.disc||0);
+    document.getElementById('k-cost').textContent='\u0e3f'+fmt(s.cost);
+    document.getElementById('k-gp').textContent='\u0e3f'+fmt(s.gp);
+    document.getElementById('k-gp-pct').textContent=fmtP(s.gp_pct);
+    ['k-sales-cmp','k-disc-cmp','k-cost-cmp','k-gp-cmp','k-gp-pct-cmp'].forEach(function(id){
+      var el=document.getElementById(id);if(el&&el.dataset.orig)el.innerHTML=el.dataset.orig;
+    });
+    return;
+  }
+  var totS=STORE_FILTERED.reduce(function(a,s){return a+s.sales},0);
+  var totD=STORE_FILTERED.reduce(function(a,s){return a+(s.disc||0)},0);
+  var totC=STORE_FILTERED.reduce(function(a,s){return a+s.cost},0);
+  var totG=totS-totC;
+  var gpp=totS?totG/totS*100:0;
+  document.getElementById('k-sales').textContent='\u0e3f'+fmt(totS);
+  document.getElementById('k-disc').textContent='\u0e3f'+fmt(totD);
+  document.getElementById('k-cost').textContent='\u0e3f'+fmt(totC);
+  document.getElementById('k-gp').textContent='\u0e3f'+fmt(totG);
+  document.getElementById('k-gp-pct').textContent=fmtP(gpp);
+  /* hide MoM when filtered — data is aggregate only */
+  ['k-sales-cmp','k-disc-cmp','k-cost-cmp','k-gp-cmp','k-gp-pct-cmp'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){
+      if(!el.dataset.orig)el.dataset.orig=el.innerHTML;
+      el.innerHTML='<span style="color:var(--muted);font-size:10px">'+STORE_FILTERED.length+' ร้าน (filtered)</span>';
+    }
+  });
+}
+
 function renderStores(){
   var S=STORE_SORT;
   STORE_FILTERED.sort(function(a,b){
@@ -267,6 +302,7 @@ function applyStoreFilters(){
   });
   renderStores();
   refreshDropdowns();
+  updateKPI();
 }
 function clearStoreFilters(){
   document.getElementById('fs-rm').value='';
