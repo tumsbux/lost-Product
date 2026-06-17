@@ -8,36 +8,36 @@
 <style>
 :root{--bg:#f4f6f9;--card:#fff;--border:#e0e4ea;--text:#2c3e50;--muted:#7f8c9a;--red:#e74c3c;--orange:#e67e22;--blue:#2e86ab;--green:#27ae60;--purple:#8e44ad;--teal:#16a085}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px}
 .hdr{background:#1a252f;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:16px}
-.hdr h1{font-size:16px;font-weight:600}
-.hdr .sub{font-size:12px;color:#aab;margin-left:auto}
+.hdr h1{font-size:20px;font-weight:600}
+.hdr .sub{font-size:14px;color:#aab;margin-left:auto}
 /* kpi */
 .kpi-row{display:flex;gap:12px;padding:14px 20px;flex-wrap:wrap}
 .kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 18px;min-width:150px;flex:1}
-.kpi .label{font-size:11px;color:var(--muted);margin-bottom:4px}
-.kpi .value{font-size:22px;font-weight:700}
+.kpi .label{font-size:13px;color:var(--muted);margin-bottom:4px}
+.kpi .value{font-size:26px;font-weight:700}
 .kpi.green .value{color:var(--green)}
 .kpi.blue .value{color:var(--blue)}
 .kpi.orange .value{color:var(--orange)}
 .kpi.teal .value{color:var(--teal)}
 /* tabs */
 .tabs{display:flex;gap:0;padding:0 20px;border-bottom:2px solid var(--border)}
-.tab{padding:10px 20px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;transition:.2s}
+.tab{padding:10px 20px;cursor:pointer;font-size:15px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;transition:.2s}
 .tab:hover{color:var(--text)}
 .tab.active{color:var(--blue);border-bottom-color:var(--blue)}
 .tab-panel{display:none;padding:14px 20px 40px}
 .tab-panel.active{display:block}
 /* filters */
 .filters{display:flex;gap:10px;padding:0 0 12px;flex-wrap:wrap;align-items:center}
-.filters select,.filters input{border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;background:#fff;color:var(--text)}
-.filters label{font-size:12px;color:var(--muted)}
-.btn{border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:500}
+.filters select,.filters input{border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:14px;background:#fff;color:var(--text)}
+.filters label{font-size:14px;color:var(--muted)}
+.btn{border:none;border-radius:6px;padding:8px 16px;font-size:14px;cursor:pointer;font-weight:500}
 .btn-clear{background:#ecf0f1;color:var(--text)}
 .btn-xlsx{background:#27ae60;color:#fff}
 /* table */
 table{width:100%;border-collapse:collapse;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-thead th{background:#2c3e50;color:#fff;padding:9px 10px;text-align:left;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;user-select:none}
+thead th{background:#2c3e50;color:#fff;padding:10px 12px;text-align:left;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;user-select:none}
 thead th:hover{background:#34495e}
 thead th.r,tbody td.r,tfoot td.r{text-align:right}
 thead th.sort-asc::after{content:' ▲'}
@@ -47,13 +47,13 @@ tbody tr:hover{background:#f8f9fa}
 tbody td{padding:7px 10px;vertical-align:top}
 tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px solid var(--border)}
 /* gp badge */
-.gp-badge{display:inline-block;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:600;color:#fff}
+.gp-badge{display:inline-block;border-radius:10px;padding:2px 9px;font-size:13px;font-weight:600;color:#fff}
 .gp-low{background:var(--red)}
 .gp-mid{background:var(--orange)}
 .gp-ok{background:var(--green)}
 .gp-high{background:var(--teal)}
 /* chart */
-.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;max-width:900px}
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;max-width:700px}
 /* loading */
 #loading{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--muted);z-index:999}
 .no-data{text-align:center;padding:40px;color:var(--muted)}
@@ -139,7 +139,7 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
 <!-- ═══ TREND TAB ═══ -->
 <div class="tab-panel" id="panel-trend">
   <div class="chart-wrap">
-    <canvas id="trend-chart" height="300"></canvas>
+    <canvas id="trend-chart" height="220"></canvas>
   </div>
   <table id="trend-tbl">
     <thead><tr>
@@ -298,10 +298,11 @@ function renderTrend(monthly){
       responsive:true,
       interaction:{mode:'index',intersect:false},
       scales:{
-        y:{type:'linear',position:'left',ticks:{callback:v=>'฿'+Number(v/1e6).toFixed(0)+'M'},title:{display:true,text:'Amount (฿)'}},
-        y1:{type:'linear',position:'right',min:0,max:50,ticks:{callback:v=>v+'%'},grid:{drawOnChartArea:false},title:{display:true,text:'GP %'}},
+        x:{ticks:{font:{size:14}}},
+        y:{type:'linear',position:'left',ticks:{callback:v=>'฿'+Number(v/1e6).toFixed(0)+'M',font:{size:13}},title:{display:true,text:'Amount (฿)',font:{size:14}}},
+        y1:{type:'linear',position:'right',min:0,max:50,ticks:{callback:v=>v+'%',font:{size:13}},grid:{drawOnChartArea:false},title:{display:true,text:'GP %',font:{size:14}}},
       },
-      plugins:{legend:{position:'top'}}
+      plugins:{legend:{position:'top',labels:{font:{size:14}}}}
     }
   });
 
