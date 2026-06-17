@@ -425,7 +425,7 @@ fetch('./gp_analysis_data.json')
       cmpPct(cur.gp_pct,prev.gp_pct,'k-gp-pct-cmp');
     }
 
-    /* dropdowns populated by refreshDropdowns() via applyStoreFilters */
+    refreshDropdowns();
 
     var typMap={},grpMap={};
     PRODS_ALL.forEach(function(p){
