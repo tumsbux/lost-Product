@@ -240,6 +240,27 @@ function renderStores(){
   </tr>`;
 }
 
+function refreshStoreDropdowns(){
+  var dm=document.getElementById('sf-dm').value;
+  var rm=document.getElementById('sf-rm').value;
+  var allStores=DATA.stores||[];
+  var dms=new Set();
+  allStores.forEach(function(s){if(s.dm&&(!rm||s.rm===rm))dms.add(s.dm)});
+  var dmSel=document.getElementById('sf-dm');
+  var opts=dmSel.querySelectorAll('option:not(:first-child)');
+  for(var i=0;i<opts.length;i++)opts[i].remove();
+  Array.from(dms).sort().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;dmSel.appendChild(o)});
+  dmSel.value=dms.has(dm)?dm:'';
+  var rms=new Set();
+  var curDm=dmSel.value;
+  allStores.forEach(function(s){if(s.rm&&(!curDm||s.dm===curDm))rms.add(s.rm)});
+  var rmSel=document.getElementById('sf-rm');
+  opts=rmSel.querySelectorAll('option:not(:first-child)');
+  for(var i=0;i<opts.length;i++)opts[i].remove();
+  Array.from(rms).sort().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;rmSel.appendChild(o)});
+  rmSel.value=rms.has(rm)?rm:'';
+}
+
 function applyStoreFilters(){
   const dm  = document.getElementById('sf-dm').value;
   const rm  = document.getElementById('sf-rm').value;
@@ -254,6 +275,7 @@ function applyStoreFilters(){
     return true;
   });
   renderStores();
+  refreshStoreDropdowns();
 }
 function clearStoreFilters(){
   ['sf-dm','sf-rm','sf-dir'].forEach(id=>document.getElementById(id).value='');
@@ -393,11 +415,8 @@ fetch('./visual_adj_data.json').then(r=>r.json()).then(data=>{
     <div class="kpi purple"><div class="label">Sessions ล่าสุด</div><div class="value">${(s.total_sessions||0).toLocaleString()}</div></div>
   `;
 
-  // populate selects
-  const dms=[...new Set((data.stores||[]).map(r=>r.dm).filter(Boolean))].sort();
-  const rms=[...new Set((data.stores||[]).map(r=>r.rm).filter(Boolean))].sort();
-  dms.forEach(d=>{const o=document.createElement('option');o.value=o.textContent=d;document.getElementById('sf-dm').appendChild(o);});
-  rms.forEach(r=>{const o=document.createElement('option');o.value=o.textContent=r;document.getElementById('sf-rm').appendChild(o);});
+  // populate selects (cascading)
+  refreshStoreDropdowns();
 
   const grps=[...new Set((data.products||[]).map(r=>r.group).filter(Boolean))].sort();
   grps.forEach(g=>{const o=document.createElement('option');o.value=o.textContent=g;document.getElementById('pf-group').appendChild(o);});
