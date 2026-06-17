@@ -81,6 +81,8 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
     <option value="365">≥ 365 วัน</option>
     <option value="-1">ไม่เคยขาย</option>
   </select>
+  <label>ประเภท:</label>
+  <select id="f-type"><option value="">ทั้งหมด</option></select>
   <label>กลุ่มสินค้า:</label>
   <select id="f-group"><option value="">ทั้งหมด</option></select>
   <label>ค้นหา:</label>
@@ -97,6 +99,7 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
       <th data-col="iprod">Parcode</th>
       <th data-col="name">ชื่อสินค้า</th>
       <th data-col="group">กลุ่ม</th>
+      <th data-col="type_name">ประเภท</th>
       <th data-col="last_sale">วันขายล่าสุด</th>
       <th data-col="days_since" class="r sort-desc">วันค้าง</th>
       <th data-col="onhand_qty" class="r">Onhand (ชิ้น)</th>
@@ -105,7 +108,7 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
     </tr>
   </thead>
   <tbody id="tbody"></tbody>
-  <tfoot id="tfoot"><tr><td colspan="9" class="no-data">โหลด...</td></tr></tfoot>
+  <tfoot id="tfoot"><tr><td colspan="10" class="no-data">โหลด...</td></tr></tfoot>
 </table>
 </div>
 
@@ -126,7 +129,7 @@ function render(){
   const tfoot = document.getElementById('tfoot');
   if(!FILTERED.length){
     tbody.innerHTML = '';
-    tfoot.innerHTML = '<tr><td colspan="9" class="no-data">ไม่พบข้อมูล</td></tr>';
+    tfoot.innerHTML = '<tr><td colspan="10" class="no-data">ไม่พบข้อมูล</td></tr>';
     document.getElementById('k-filtered').textContent = '0';
     return;
   }
@@ -146,13 +149,14 @@ function render(){
       <td>${p.iprod}</td>
       <td>${p.name || '—'}</td>
       <td title="${p.group||''}">${p.group_name || p.group || '—'}</td>
+      <td>${p.type_name || '—'}</td>
       <td>${p.last_sale || '—'}</td>
       <td class="r">${daysBadge(p.days_since)}</td>
       <td class="r">${fmtD(p.onhand_qty)}</td>
       <td class="r">${fmt(p.onhand_value)}</td>
       <td class="r">${p.stores ? p.stores.length : 0}</td>
     </tr>
-    <tr id="detail-${i}" style="display:none"><td colspan="9" style="padding:0 10px 8px 32px">
+    <tr id="detail-${i}" style="display:none"><td colspan="10" style="padding:0 10px 8px 32px">
       <table class="sub-tbl">
         <thead><tr><th>รหัส</th><th>ร้าน</th><th>DM</th><th>RM</th><th class="r">Onhand</th><th class="r">มูลค่า (฿)</th></tr></thead>
         <tbody>${(p.stores||[]).map(s=>`<tr>
@@ -168,7 +172,7 @@ function render(){
   const totQty = FILTERED.reduce((s,p)=>s+p.onhand_qty,0);
   const totVal = FILTERED.reduce((s,p)=>s+p.onhand_value,0);
   tfoot.innerHTML = `<tr>
-    <td colspan="4"></td>
+    <td colspan="5"></td>
     <td colspan="1" style="color:var(--muted);font-size:11px">${FILTERED.length.toLocaleString()} รายการ${FILTERED.length>2000?' (แสดง 2,000 แรก)':''}</td>
     <td></td>
     <td class="r">${fmtD(totQty)}</td>
@@ -187,11 +191,13 @@ function toggleDetail(i){
 
 function applyFilters(){
   const days   = parseInt(document.getElementById('f-days').value);
+  const type   = document.getElementById('f-type').value;
   const group  = document.getElementById('f-group').value;
   const search = document.getElementById('f-search').value.trim().toLowerCase();
   FILTERED = ALL.filter(p => {
     if(days === -1 && p.last_sale !== null) return false;
     if(days > 0 && (p.days_since == null || p.days_since < days)) return false;
+    if(type && p.type_code !== type) return false;
     if(group && p.group !== group) return false;
     if(search && !p.iprod.includes(search) && !(p.name||'').toLowerCase().includes(search)) return false;
     return true;
@@ -201,6 +207,7 @@ function applyFilters(){
 
 function clearFilters(){
   document.getElementById('f-days').value = '0';
+  document.getElementById('f-type').value = '';
   document.getElementById('f-group').value = '';
   document.getElementById('f-search').value = '';
   applyFilters();
@@ -219,13 +226,13 @@ document.querySelectorAll('thead th[data-col]').forEach(th => {
 });
 
 // filter events
-['f-days','f-group'].forEach(id => document.getElementById(id).addEventListener('change', applyFilters));
+['f-days','f-type','f-group'].forEach(id => document.getElementById(id).addEventListener('change', applyFilters));
 document.getElementById('f-search').addEventListener('input', applyFilters);
 
 // XLSX export
 function exportXLSX(){
-  const rows = [['Parcode','ชื่อสินค้า','กลุ่ม','วันขายล่าสุด','วันค้าง','Onhand (ชิ้น)','มูลค่า (฿)','จำนวนร้าน']];
-  FILTERED.forEach(p => rows.push([p.iprod, p.name||'', p.group||'', p.last_sale||'ไม่เคยขาย', p.days_since??'', p.onhand_qty, p.onhand_value, p.stores?p.stores.length:0]));
+  const rows = [['Parcode','ชื่อสินค้า','กลุ่ม','ประเภท','วันขายล่าสุด','วันค้าง','Onhand (ชิ้น)','มูลค่า (฿)','จำนวนร้าน']];
+  FILTERED.forEach(p => rows.push([p.iprod, p.name||'', p.group_name||p.group||'', p.type_name||'', p.last_sale||'ไม่เคยขาย', p.days_since??'', p.onhand_qty, p.onhand_value, p.stores?p.stores.length:0]));
   // CSV fallback (no SheetJS in standalone HTML)
   const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const bom = '﻿';
@@ -248,6 +255,17 @@ fetch('./dead_stock_data.json')
     document.getElementById('k-products').textContent = (s.total_products||0).toLocaleString();
     document.getElementById('k-value').textContent    = '฿' + fmt(s.total_onhand_value);
     document.getElementById('k-qty').textContent      = fmtD(s.total_onhand_qty);
+
+    // populate type filter — show type_name (itycode), filter by itycode
+    const typMap = {};
+    ALL.forEach(p => { if(p.type_code) typMap[p.type_code] = p.type_name || p.type_code; });
+    const tsel = document.getElementById('f-type');
+    Object.keys(typMap).sort().forEach(code => {
+      const o = document.createElement('option');
+      o.value = code;
+      o.textContent = typMap[code] ? `${typMap[code]} (${code})` : code;
+      tsel.appendChild(o);
+    });
 
     // populate group filter — show group_name (igrcode), filter by igrcode
     const grpMap = {};
