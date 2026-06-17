@@ -87,6 +87,21 @@ tbody tr:hover{background:#f8f9ff}
   .sum-row .sc:last-child{grid-column:span 2}
   .filter-bar select{min-width:0;flex:1}
 }
+
+/* AI Analysis bar */
+.ai-bar{background:linear-gradient(135deg,#f3e8ff,#fce7f3);padding:8px 18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #e9d5ff}
+.ai-label{font-size:11px;font-weight:800;color:#6b21a8;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px}
+.ai-btn{border:none;border-radius:18px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:#fff;background:linear-gradient(135deg,#a855f7,#6366f1);box-shadow:0 1px 3px rgba(99,102,241,.2);font-family:inherit;display:inline-flex;gap:4px;align-items:center;transition:transform .12s,box-shadow .12s}
+.ai-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.4)}
+.ai-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;justify-content:center;align-items:flex-start;padding:60px 16px}
+.ai-modal.open{display:flex}
+.ai-modal-body{background:#fff;border-radius:12px;max-width:700px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:aiSlide .25s ease-out}
+@keyframes aiSlide{from{transform:translateY(-20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.ai-modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #e5e7eb;background:#f8fafc;border-radius:12px 12px 0 0}
+.ai-modal-head h3{font-size:15px;margin:0;color:#1e293b}
+.ai-close{border:none;background:none;font-size:20px;cursor:pointer;color:#94a3b8;padding:0 4px}
+.ai-close:hover{color:#1e293b}
+#ai-modal-content{padding:16px 18px;font-size:13px;line-height:1.7;color:#334155}
 </style>
 </head>
 <body>
@@ -136,6 +151,11 @@ tbody tr:hover{background:#f8f9ff}
   <input class="search-box" id="f-search" placeholder="🔍 ค้นหา parcode / ชื่อ / กลุ่ม / แบรนด์" oninput="applyAll()">
   <button class="xlsx-btn" onclick="exportXLSX()">📥 Export XLSX</button>
   <span class="filter-info" id="filter-info"></span>
+</div>
+
+<div class="ai-bar">
+  <span class="ai-label">✨ AI Analysis:</span>
+  <button class="ai-btn" onclick="aiAnalyze('cause')">🔍 สาเหตุสินค้าหาย</button><button class="ai-btn" onclick="aiAnalyze('replace')">🔄 แนะนำสินค้าทดแทน</button><button class="ai-btn" onclick="aiAnalyze('recovery')">📈 ระบุโอกาส Recovery</button><button class="ai-btn" onclick="aiAnalyze('trend')">📊 Trend ปีต่อปี</button>
 </div>
 
 <div class="page">
@@ -564,6 +584,28 @@ function exportXLSX(){
 }
 
 init();
+
+function openAi(title,html){
+  document.getElementById('ai-modal-title').textContent=title;
+  document.getElementById('ai-modal-content').innerHTML=html;
+  document.getElementById('ai-modal').classList.add('open');
+}
+function closeAi(){document.getElementById('ai-modal').classList.remove('open');}
+
+function aiAnalyze(type){
+  openAi('🔧 กำลังพัฒนา','<p>ดูฟีเจอร์นี้ที่หน้าหลัก <a href="index.html">Lost Product Dashboard</a></p>');
+}
+
 </script>
+
+<div class="ai-modal" id="ai-modal" onclick="if(event.target.id==='ai-modal')closeAi()">
+  <div class="ai-modal-body">
+    <div class="ai-modal-head">
+      <h3 id="ai-modal-title">AI Analysis</h3>
+      <button class="ai-close" onclick="closeAi()">✕</button>
+    </div>
+    <div id="ai-modal-content"></div>
+  </div>
+</div>
 </body>
 </html>
