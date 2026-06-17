@@ -258,17 +258,34 @@ async function init(){
   });
 
   // RM / DM / Store from store_info
-  const si=D.store_info||{};
-  const rms=new Set(), dms=new Set();
-  Object.values(si).forEach(v=>{if(v.rm)rms.add(v.rm);if(v.dm)dms.add(v.dm);});
-  const rmSel=document.getElementById('f-rm');
-  [...rms].sort().forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;rmSel.appendChild(o);});
-  const dmSel=document.getElementById('f-dm');
-  [...dms].sort().forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;dmSel.appendChild(o);});
+  refreshRmDmDropdowns();
   rebuildStoreOptions();
 
   renderKPI();
   applyAll();
+}
+
+function refreshRmDmDropdowns(){
+  const si=D.store_info||{};
+  const rm=document.getElementById('f-rm').value;
+  const dm=document.getElementById('f-dm').value;
+  // rebuild DM based on RM
+  const dms=new Set();
+  Object.values(si).forEach(v=>{if(v.dm&&(!rm||v.rm===rm))dms.add(v.dm)});
+  const dmSel=document.getElementById('f-dm');
+  const dmOpts=dmSel.querySelectorAll('option:not(:first-child)');
+  for(let i=0;i<dmOpts.length;i++)dmOpts[i].remove();
+  [...dms].sort().forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;dmSel.appendChild(o)});
+  dmSel.value=dms.has(dm)?dm:'';
+  // rebuild RM based on DM
+  const curDm=dmSel.value;
+  const rms=new Set();
+  Object.values(si).forEach(v=>{if(v.rm&&(!curDm||v.dm===curDm))rms.add(v.rm)});
+  const rmSel=document.getElementById('f-rm');
+  const rmOpts=rmSel.querySelectorAll('option:not(:first-child)');
+  for(let i=0;i<rmOpts.length;i++)rmOpts[i].remove();
+  [...rms].sort().forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;rmSel.appendChild(o)});
+  rmSel.value=rms.has(rm)?rm:'';
 }
 
 function rebuildStoreOptions(){
@@ -291,8 +308,8 @@ function rebuildStoreOptions(){
 
 function onScopeChange(which){
   if(which==='rm' || which==='dm'){
-    if(which==='rm') document.getElementById('f-dm').value='';
     document.getElementById('f-store').value='';
+    refreshRmDmDropdowns();
     rebuildStoreOptions();
   }
   applyAll();
