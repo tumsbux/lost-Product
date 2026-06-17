@@ -21,6 +21,7 @@ except ImportError:
 SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(SCRIPT_DIR, 'gp_analysis_data.json')
 BUILT_BY    = 'claude-opus-4-6'
+EXCLUDED_ITY = {'03', '12', '15', '20', '26'}  # Supply Use, อุปกรณ์ไฟฟ้า, สินทรัพย์, ค่าใช้จ่าย, สินค้าสมนาคุณ
 
 DB_PATHS = [
     os.path.join(SCRIPT_DIR, 'db_config.json'),
@@ -43,7 +44,7 @@ def get_conn(cfg, database='data-lake'):
 
 # ── step 1: raw GP data from fact_sales ──────────────────────────────────────
 def query_gp_data(cfg, start_date):
-    """Returns list of (sotowhs, iprod, month_str, sales, cost) tuples."""
+    """Returns list of (sotowhs, iprod, month_str, sales, cost, sku_disc, bill_disc) tuples."""
     print(f'[1/4] Querying GP data from fact_sales (since {start_date}) ...')
     conn = get_conn(cfg)
     cur = conn.cursor()
@@ -51,15 +52,18 @@ def query_gp_data(cfg, start_date):
         SELECT sotowhs, iprod,
                CONCAT(YEAR(sodate), '-', LPAD(MONTH(sodate),2,'0')) as mo,
                SUM(net_sales_amt) as sales,
-               SUM(total_cost) as cost
+               SUM(total_cost) as cost,
+               SUM(soqty * sopricdisc) as sku_disc,
+               SUM(solineamt - net_sales_amt) as bill_disc
         FROM `data-lake`.fact_sales
         WHERE sodate >= %s
           AND solinetype NOT IN ('C','R')
+          AND soretflag = 'N'
           AND CAST(sotowhs AS UNSIGNED) BETWEEN 1 AND 500
         GROUP BY sotowhs, iprod, mo
     """, (start_date.isoformat(),))
     rows = []
-    for sotowhs, iprod, mo, sales, cost in cur:
+    for sotowhs, iprod, mo, sales, cost, sku_disc, bill_disc in cur:
         mo_str = mo.decode() if isinstance(mo, (bytes, bytearray)) else str(mo)
         rows.append((
             str(sotowhs).zfill(3),
@@ -67,6 +71,8 @@ def query_gp_data(cfg, start_date):
             mo_str,
             float(sales) if sales else 0.0,
             float(cost)  if cost  else 0.0,
+            float(sku_disc) if sku_disc else 0.0,
+            float(bill_disc) if bill_disc else 0.0,
         ))
     cur.close(); conn.close()
     print(f'  {len(rows):,} aggregated rows loaded')
@@ -110,20 +116,45 @@ def query_products(cfg):
     groups = {str(c): (d or '') for c, d in cur2}
     cur2.execute("SELECT itycode, itydesc FROM MYPOS2018_CENTER.item_type")
     types = {str(c): (d or '') for c, d in cur2}
+
+    # barcode → master iprod mapping
+    cur2.execute("SELECT barcode, parcode FROM MYPOS2018_CENTER.item_barcode WHERE baractive = 'Y'")
+    barcodes = {str(b): str(p) for b, p in cur2}
     cur2.close(); conn2.close()
 
-    print(f'  {len(prods):,} products, {len(groups):,} groups, {len(types):,} types')
-    return prods, groups, types
+    print(f'  {len(prods):,} products, {len(groups):,} groups, {len(types):,} types, {len(barcodes):,} barcodes')
+    return prods, groups, types, barcodes
 
 # ── step 3: aggregate ────────────────────────────────────────────────────────
-def build_json(rows, stores, prods, groups, types, months, current_month, days_elapsed):
+def build_json(rows, stores, prods, groups, types, barcodes, months, current_month, days_elapsed):
     print('[4/4] Building gp_analysis_data.json ...')
 
+    # ── resolve barcodes → master iprod & filter excluded types ──────────────
+    resolved_rows = []
+    barcode_resolved = 0
+    excluded_type = 0
+    for whs, iprod, mo, sales, cost, sd, bd in rows:
+        # resolve barcode to master product code
+        master = iprod
+        if iprod not in prods and iprod in barcodes:
+            master = barcodes[iprod]
+            barcode_resolved += 1
+        # filter excluded item types
+        pi = prods.get(master, {})
+        ty = pi.get('group', '')[:2]
+        if ty in EXCLUDED_ITY:
+            excluded_type += 1
+            continue
+        resolved_rows.append((whs, master, mo, sales, cost, sd, bd))
+    print(f'  barcode→master resolved: {barcode_resolved:,}, excluded types: {excluded_type:,}, kept: {len(resolved_rows):,}')
+    rows = resolved_rows
+
     # ── monthly totals ────────────────────────────────────────────────────────
-    monthly = defaultdict(lambda: {'sales': 0, 'cost': 0})
-    for whs, iprod, mo, sales, cost in rows:
+    monthly = defaultdict(lambda: {'sales': 0, 'cost': 0, 'disc': 0})
+    for whs, iprod, mo, sales, cost, sd, bd in rows:
         monthly[mo]['sales'] += sales
         monthly[mo]['cost']  += cost
+        monthly[mo]['disc']  += sd + bd
 
     monthly_list = []
     for mo in sorted(monthly.keys()):
@@ -133,20 +164,22 @@ def build_json(rows, stores, prods, groups, types, months, current_month, days_e
             'month':  mo,
             'sales':  round(m['sales'], 2),
             'cost':   round(m['cost'],  2),
+            'disc':   round(m['disc'],  2),
             'gp':     round(gp, 2),
             'gp_pct': round(gp / m['sales'] * 100, 1) if m['sales'] else 0,
             'is_mtd': mo == current_month,
         })
 
     # ── store aggregation (current month only for MTD view) ───────────────────
-    store_agg = defaultdict(lambda: {'sales': 0, 'cost': 0})
+    store_agg = defaultdict(lambda: {'sales': 0, 'cost': 0, 'disc': 0})
     store_all = defaultdict(lambda: defaultdict(lambda: {'sales': 0, 'cost': 0}))
-    for whs, iprod, mo, sales, cost in rows:
+    for whs, iprod, mo, sales, cost, sd, bd in rows:
         store_all[whs][mo]['sales'] += sales
         store_all[whs][mo]['cost']  += cost
         if mo == current_month:
             store_agg[whs]['sales'] += sales
             store_agg[whs]['cost']  += cost
+            store_agg[whs]['disc']  += sd + bd
 
     store_list = []
     for whs in sorted(store_agg.keys()):
@@ -172,6 +205,7 @@ def build_json(rows, stores, prods, groups, types, months, current_month, days_e
             'rm':       si.get('rm', ''),
             'sales':    round(s['sales'], 2),
             'cost':     round(s['cost'],  2),
+            'disc':     round(s['disc'],  2),
             'gp':       round(gp, 2),
             'gp_pct':   round(gp / s['sales'] * 100, 1) if s['sales'] else 0,
             'trend':    trend,
@@ -179,11 +213,13 @@ def build_json(rows, stores, prods, groups, types, months, current_month, days_e
     store_list.sort(key=lambda x: x['gp_pct'])  # worst GP% first
 
     # ── product aggregation (current month MTD) ──────────────────────────────
-    prod_agg = defaultdict(lambda: {'sales': 0, 'cost': 0})
-    for whs, iprod, mo, sales, cost in rows:
+    prod_agg = defaultdict(lambda: {'sales': 0, 'cost': 0, 'sku_disc': 0, 'bill_disc': 0})
+    for whs, iprod, mo, sales, cost, sd, bd in rows:
         if mo == current_month:
-            prod_agg[iprod]['sales'] += sales
-            prod_agg[iprod]['cost']  += cost
+            prod_agg[iprod]['sales']     += sales
+            prod_agg[iprod]['cost']      += cost
+            prod_agg[iprod]['sku_disc']  += sd
+            prod_agg[iprod]['bill_disc'] += bd
 
     prod_list = []
     for iprod in sorted(prod_agg.keys(), key=lambda k: prod_agg[k]['sales'] - prod_agg[k]['cost']):
@@ -192,6 +228,7 @@ def build_json(rows, stores, prods, groups, types, months, current_month, days_e
         gr_code = pi.get('group', '')
         ty_code = gr_code[:2]
         gp = p['sales'] - p['cost']
+        disc = p['sku_disc'] + p['bill_disc']
         prod_list.append({
             'iprod':      iprod,
             'name':       pi.get('name', ''),
@@ -201,19 +238,46 @@ def build_json(rows, stores, prods, groups, types, months, current_month, days_e
             'type_name':  types.get(ty_code, ''),
             'sales':      round(p['sales'], 2),
             'cost':       round(p['cost'],  2),
+            'disc':       round(disc, 2),
+            'sku_disc':   round(p['sku_disc'], 2),
+            'bill_disc':  round(p['bill_disc'], 2),
             'gp':         round(gp, 2),
             'gp_pct':     round(gp / p['sales'] * 100, 1) if p['sales'] else 0,
         })
     # sort by GP% ascending (worst first)
     prod_list.sort(key=lambda x: x['gp_pct'])
 
+    # ── product × store breakdown (current month MTD) ────────────────────────
+    ps_agg = defaultdict(lambda: defaultdict(lambda: {'sales': 0, 'cost': 0}))
+    for whs, iprod, mo, sales, cost, sd, bd in rows:
+        if mo == current_month:
+            ps_agg[iprod][whs]['sales'] += sales
+            ps_agg[iprod][whs]['cost']  += cost
+
+    prod_stores = {}
+    for iprod, stores_data in ps_agg.items():
+        detail = []
+        for whs, v in stores_data.items():
+            si = store_info.get(whs, {})
+            gp = v['sales'] - v['cost']
+            detail.append({
+                'c': whs,
+                'n': si.get('name', ''),
+                's': round(v['sales'], 2),
+                'k': round(v['cost'], 2),
+                'g': round(gp, 2),
+                'p': round(gp / v['sales'] * 100, 1) if v['sales'] else 0,
+            })
+        detail.sort(key=lambda x: x['s'], reverse=True)
+        prod_stores[iprod] = detail
+
     # ── summary ──────────────────────────────────────────────────────────────
-    mtd = monthly.get(current_month, {'sales': 0, 'cost': 0})
+    mtd = monthly.get(current_month, {'sales': 0, 'cost': 0, 'disc': 0})
     mtd_gp = mtd['sales'] - mtd['cost']
 
     payload = {
         '_meta': {
-            'schema':     1,
+            'schema':     3,
             'built_by':   BUILT_BY,
             'built_at':   datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
             'current_month': current_month,
@@ -222,6 +286,7 @@ def build_json(rows, stores, prods, groups, types, months, current_month, days_e
         },
         'summary': {
             'sales':  round(mtd['sales'], 2),
+            'disc':   round(mtd['disc'],  2),
             'cost':   round(mtd['cost'],  2),
             'gp':     round(mtd_gp, 2),
             'gp_pct': round(mtd_gp / mtd['sales'] * 100, 1) if mtd['sales'] else 0,
@@ -231,6 +296,7 @@ def build_json(rows, stores, prods, groups, types, months, current_month, days_e
         'monthly':  monthly_list,
         'stores':   store_list,
         'products': prod_list,
+        'prod_stores': prod_stores,
     }
 
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
@@ -287,6 +353,7 @@ def main():
         cur.execute("""
             SELECT MAX(DAY(sodate)) FROM `data-lake`.fact_sales
             WHERE YEAR(sodate) = %s AND MONTH(sodate) = %s
+              AND soretflag = 'N'
               AND CAST(sotowhs AS UNSIGNED) BETWEEN 1 AND 500
         """, (today.year, today.month))
         row = cur.fetchone()
@@ -296,9 +363,9 @@ def main():
 
         stores = query_stores(cfg)
         gc.collect()
-        prods, groups, types = query_products(cfg)
+        prods, groups, types, barcodes = query_products(cfg)
         gc.collect()
-        payload = build_json(raw, stores, prods, groups, types, months_list, current_month, days_elapsed)
+        payload = build_json(raw, stores, prods, groups, types, barcodes, months_list, current_month, days_elapsed)
         del raw
         gc.collect()
 
@@ -318,7 +385,4 @@ def main():
     except Exception as e:
         print(f'ERROR: {type(e).__name__}: {e!r}')
         traceback.print_exc()
-        sys.exit(1)
-
-if __name__ == '__main__':
-    main()
+  
