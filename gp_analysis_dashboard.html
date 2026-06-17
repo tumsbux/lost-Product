@@ -73,6 +73,15 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
 .ai-close{border:none;background:none;font-size:20px;cursor:pointer;color:#94a3b8;padding:0 4px}
 .ai-close:hover{color:#1e293b}
 #ai-modal-content{padding:16px 18px;font-size:13px;line-height:1.7;color:#334155}
+
+.prod-detail{background:var(--card-bg);border-left:3px solid var(--blue)}
+.prod-detail td{padding:4px 10px;font-size:12px}
+.prod-detail-tbl{width:100%;border-collapse:collapse;margin:4px 0}
+.prod-detail-tbl th{background:var(--bg);font-size:11px;padding:3px 8px;text-align:left;color:var(--muted)}
+.prod-detail-tbl td{padding:3px 8px;font-size:12px;border-bottom:1px solid var(--border)}
+.prod-detail-tbl .r{text-align:right}
+tr.prod-row{cursor:pointer}
+tr.prod-row:hover{background:rgba(59,130,246,0.08)}
 </style>
 </head>
 <body>
@@ -311,6 +320,22 @@ function clearStoreFilters(){
   applyStoreFilters();
 }
 
+function toggleProdDetail(tr,iprod){
+  var next=tr.nextElementSibling;
+  if(next&&next.classList.contains('prod-detail')){next.remove();return;}
+  /* close any other open detail */
+  document.querySelectorAll('.prod-detail').forEach(function(r){r.remove()});
+  var ps=(DATA.prod_stores||{})[iprod]||[];
+  if(!ps.length){return;}
+  var h='<td colspan="9"><table class="prod-detail-tbl"><tr><th>รหัส</th><th>ร้าน</th><th class="r">Sales</th><th class="r">Cost</th><th class="r">GP</th><th class="r">GP%</th></tr>';
+  ps.forEach(function(s){h+='<tr><td>'+s.c+'</td><td>'+s.n+'</td><td class="r">'+fmt(s.s)+'</td><td class="r">'+fmt(s.k)+'</td><td class="r">'+fmt(s.g)+'</td><td class="r">'+gpBadge(s.p,s.k)+'</td></tr>'});
+  h+='</table></td>';
+  var dr=document.createElement('tr');
+  dr.className='prod-detail';
+  dr.innerHTML=h;
+  tr.parentNode.insertBefore(dr,tr.nextSibling);
+}
+
 function renderProds(){
   var S=PROD_SORT;
   PROD_FILTERED.sort(function(a,b){
@@ -321,7 +346,7 @@ function renderProds(){
     return S.dir*(av<bv?-1:av>bv?1:0);
   });
   var shown=PROD_FILTERED.slice(0,3000);
-  document.getElementById('prod-tbody').innerHTML=shown.map(function(p){return '<tr><td>'+p.iprod+'</td><td>'+(p.name||'—')+'</td><td>'+(p.type_name||'—')+'</td><td>'+(p.group_name||p.group||'—')+'</td><td class="r">'+fmt(p.sales)+'</td><td class="r">'+fmt(p.disc||0)+'</td><td class="r">'+fmt(p.cost)+'</td><td class="r">'+fmt(p.gp)+'</td><td class="r">'+gpBadge(p.gp_pct,p.cost)+'</td></tr>'}).join('');
+  document.getElementById('prod-tbody').innerHTML=shown.map(function(p){return '<tr class="prod-row" onclick="toggleProdDetail(this,\''+p.iprod+'\')"><td>'+p.iprod+'</td><td>'+(p.name||'—')+'</td><td>'+(p.type_name||'—')+'</td><td>'+(p.group_name||p.group||'—')+'</td><td class="r">'+fmt(p.sales)+'</td><td class="r">'+fmt(p.disc||0)+'</td><td class="r">'+fmt(p.cost)+'</td><td class="r">'+fmt(p.gp)+'</td><td class="r">'+gpBadge(p.gp_pct,p.cost)+'</td></tr>'}).join('');
   var totS=PROD_FILTERED.reduce(function(a,p){return a+p.sales},0);
   var totC=PROD_FILTERED.reduce(function(a,p){return a+p.cost},0);
   var totG=totS-totC;
