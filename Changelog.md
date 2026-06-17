@@ -5,6 +5,25 @@
 
 ---
 
+## [2026-06-17] AI bar + Cascading RM/DM filters + Visual polish (Claude)
+
+### Added
+- **AI Analysis bar** ทุก 4 dashboards: gp_analysis (4 buttons), dead_stock (4 buttons), visual_adj (4 buttons), lost_product (4 buttons) — CSS `.ai-bar`/`.ai-btn`/`.ai-modal` + `aiAnalyze()` context-specific per dashboard
+- **Cascading RM/DM dropdown filters**: selecting RM filters DM options and vice versa
+  - `gp_analysis_dashboard.html`: `refreshDropdowns()` — called after `renderStores()` in `applyStoreFilters()`
+  - `visual_adj_dashboard.html`: `refreshStoreDropdowns()` — replaces static population
+  - `lost_product_dashboard.html`: `refreshRmDmDropdowns()` — integrated with existing `onScopeChange()` + `rebuildStoreOptions()`
+  - dead_stock has type/group filters only (no RM/DM) — no cascading needed
+- **Discount KPI card** (gp_analysis): purple card showing Discount MTD from `disc` field
+- **MoM comparison cards** (gp_analysis): 5 cards with ▲/▼ vs previous month
+
+### Fixed
+- **gp_analysis_dashboard.html corruption**: AI JS injected inside Chart.js CDN script tag + file truncated at line 454 — complete rebuild from clean GitHub version
+- **Column width wrapping** (gp_analysis): ประเภท/กลุ่ม columns — added `white-space:nowrap` + `max-width` + `text-overflow:ellipsis`
+- **Cascading filter bug** (3 iterations): (1) dropdowns empty on load → add `refreshDropdowns()` call, (2) selected value lost after DOM rebuild → restore value, (3) `refreshDropdowns()` called before reading values → moved to after filter+render
+
+---
+
 ## [2026-06-16] lost_product_dashboard hydration fix + MemoryError fixes + cron 10:30 (Claude)
 
 ### Fixed
