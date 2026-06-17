@@ -48,6 +48,7 @@ tbody td{padding:7px 10px;vertical-align:top}
 tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px solid var(--border)}
 /* gp badge */
 .gp-badge{display:inline-block;border-radius:10px;padding:2px 9px;font-size:13px;font-weight:600;color:#fff}
+.gp-nocost{background:#95a5a6;font-weight:500;font-size:12px}
 .gp-low{background:var(--red)}
 .gp-mid{background:var(--orange)}
 .gp-ok{background:var(--green)}
@@ -99,6 +100,7 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
       <th data-col="dm">DM</th>
       <th data-col="rm">RM</th>
       <th data-col="sales" class="r">Sales MTD</th>
+      <th data-col="disc" class="r">ส่วนลด</th>
       <th data-col="cost" class="r">Cost</th>
       <th data-col="gp" class="r">GP</th>
       <th data-col="gp_pct" class="r sort-asc">GP %</th>
@@ -127,6 +129,7 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
       <th data-col="type_name">&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</th>
       <th data-col="group_name">&#3585;&#3621;&#3640;&#3656;&#3617;</th>
       <th data-col="sales" class="r">Sales MTD</th>
+      <th data-col="disc" class="r">ส่วนลด</th>
       <th data-col="cost" class="r">Cost</th>
       <th data-col="gp" class="r">GP</th>
       <th data-col="gp_pct" class="r sort-asc">GP %</th>
@@ -145,6 +148,7 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
     <thead><tr>
       <th>&#3648;&#3604;&#3639;&#3629;&#3609;</th>
       <th class="r">Net Sales</th>
+      <th class="r">ส่วนลด</th>
       <th class="r">Cost</th>
       <th class="r">GP</th>
       <th class="r">GP %</th>
@@ -162,7 +166,8 @@ let STORE_SORT = {col:'gp_pct', dir:1}, PROD_SORT = {col:'gp_pct', dir:1};
 const fmt  = n => n==null?'—':Number(n).toLocaleString('th-TH',{maximumFractionDigits:0});
 const fmtP = n => n==null?'—':n.toFixed(1)+'%';
 
-function gpBadge(pct){
+function gpBadge(pct, cost){
+  if(cost===0) return `<span class="gp-badge gp-nocost">ไม่มีต้นทุน</span>`;
   if(pct==null) return '—';
   if(pct<20)  return `<span class="gp-badge gp-low">${pct.toFixed(1)}%</span>`;
   if(pct<30)  return `<span class="gp-badge gp-mid">${pct.toFixed(1)}%</span>`;
@@ -192,18 +197,19 @@ function renderStores(){
   const tbody=document.getElementById('store-tbody');
   const html=STORE_FILTERED.map(s=>`<tr>
     <td>${s.code}</td><td>${s.name}</td><td>${s.dm}</td><td>${s.rm}</td>
-    <td class="r">${fmt(s.sales)}</td><td class="r">${fmt(s.cost)}</td>
-    <td class="r">${fmt(s.gp)}</td><td class="r">${gpBadge(s.gp_pct)}</td>
+    <td class="r">${fmt(s.sales)}</td><td class="r">${fmt(s.disc||0)}</td><td class="r">${fmt(s.cost)}</td>
+    <td class="r">${fmt(s.gp)}</td><td class="r">${gpBadge(s.gp_pct, s.cost)}</td>
   </tr>`).join('');
   tbody.innerHTML=html;
 
   const totS=STORE_FILTERED.reduce((a,s)=>a+s.sales,0);
   const totC=STORE_FILTERED.reduce((a,s)=>a+s.cost,0);
   const totG=totS-totC;
+  const totD=STORE_FILTERED.reduce((a,s)=>a+(s.disc||0),0);
   document.getElementById('store-tfoot').innerHTML=`<tr>
     <td colspan="4" style="color:var(--muted);font-size:11px">${STORE_FILTERED.length} ร้าน</td>
-    <td class="r">${fmt(totS)}</td><td class="r">${fmt(totC)}</td>
-    <td class="r">${fmt(totG)}</td><td class="r">${gpBadge(totS?totG/totS*100:0)}</td>
+    <td class="r">${fmt(totS)}</td><td class="r">${fmt(totD)}</td><td class="r">${fmt(totC)}</td>
+    <td class="r">${fmt(totG)}</td><td class="r">${gpBadge(totS?totG/totS*100:0, totC)}</td>
   </tr>`;
 }
 
@@ -241,17 +247,18 @@ function renderProds(){
   tbody.innerHTML=shown.map(p=>`<tr>
     <td>${p.iprod}</td><td>${p.name||'—'}</td>
     <td>${p.type_name||'—'}</td><td>${p.group_name||p.group||'—'}</td>
-    <td class="r">${fmt(p.sales)}</td><td class="r">${fmt(p.cost)}</td>
-    <td class="r">${fmt(p.gp)}</td><td class="r">${gpBadge(p.gp_pct)}</td>
+    <td class="r">${fmt(p.sales)}</td><td class="r">${fmt(p.disc||0)}</td><td class="r">${fmt(p.cost)}</td>
+    <td class="r">${fmt(p.gp)}</td><td class="r">${gpBadge(p.gp_pct, p.cost)}</td>
   </tr>`).join('');
 
   const totS=PROD_FILTERED.reduce((a,p)=>a+p.sales,0);
   const totC=PROD_FILTERED.reduce((a,p)=>a+p.cost,0);
   const totG=totS-totC;
+  const totPD=PROD_FILTERED.reduce((a,p)=>a+(p.disc||0),0);
   document.getElementById('prod-tfoot').innerHTML=`<tr>
     <td colspan="4" style="color:var(--muted);font-size:11px">${PROD_FILTERED.length.toLocaleString()} รายการ${PROD_FILTERED.length>3000?' (แสดง 3,000 แรก)':''}</td>
-    <td class="r">${fmt(totS)}</td><td class="r">${fmt(totC)}</td>
-    <td class="r">${fmt(totG)}</td><td class="r">${gpBadge(totS?totG/totS*100:0)}</td>
+    <td class="r">${fmt(totS)}</td><td class="r">${fmt(totPD)}</td><td class="r">${fmt(totC)}</td>
+    <td class="r">${fmt(totG)}</td><td class="r">${gpBadge(totS?totG/totS*100:0, totC)}</td>
   </tr>`;
 }
 
@@ -309,8 +316,8 @@ function renderTrend(monthly){
   // table
   document.getElementById('trend-tbody').innerHTML=monthly.map(m=>`<tr>
     <td>${labels[monthly.indexOf(m)]}</td>
-    <td class="r">${fmt(m.sales)}</td><td class="r">${fmt(m.cost)}</td>
-    <td class="r">${fmt(m.gp)}</td><td class="r">${gpBadge(m.gp_pct)}</td>
+    <td class="r">${fmt(m.sales)}</td><td class="r">${fmt(m.disc||0)}</td><td class="r">${fmt(m.cost)}</td>
+    <td class="r">${fmt(m.gp)}</td><td class="r">${gpBadge(m.gp_pct, m.cost)}</td>
     <td>${m.is_mtd?'<span style="color:var(--muted);font-size:11px">MTD</span>':''}</td>
   </tr>`).join('');
 }
@@ -339,15 +346,15 @@ function exportCSV(headers, dataRows, filename){
 }
 function exportStoreCSV(){
   exportCSV(
-    ['รหัส','ร้าน','DM','RM','Sales','Cost','GP','GP%'],
-    STORE_FILTERED.map(s=>[s.code,s.name,s.dm,s.rm,s.sales,s.cost,s.gp,s.gp_pct]),
+    ['รหัส','ร้าน','DM','RM','Sales','ส่วนลด','Cost','GP','GP%'],
+    STORE_FILTERED.map(s=>[s.code,s.name,s.dm,s.rm,s.sales,s.disc||0,s.cost,s.gp,s.gp_pct]),
     `gp_store_${new Date().toISOString().slice(0,10)}.csv`
   );
 }
 function exportProdCSV(){
   exportCSV(
-    ['Parcode','ชื่อสินค้า','ประเภท','กลุ่ม','Sales','Cost','GP','GP%'],
-    PROD_FILTERED.map(p=>[p.iprod,p.name||'',p.type_name||'',p.group_name||'',p.sales,p.cost,p.gp,p.gp_pct]),
+    ['Parcode','ชื่อสินค้า','ประเภท','กลุ่ม','Sales','ส่วนลด','Cost','GP','GP%'],
+    PROD_FILTERED.map(p=>[p.iprod,p.name||'',p.type_name||'',p.group_name||'',p.sales,p.disc||0,p.cost,p.gp,p.gp_pct]),
     `gp_product_${new Date().toISOString().slice(0,10)}.csv`
   );
 }
