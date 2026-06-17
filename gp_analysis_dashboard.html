@@ -244,7 +244,7 @@ function refreshDropdowns(){
   var opts=dmSel.querySelectorAll('option:not(:first-child)');
   for(var i=0;i<opts.length;i++)opts[i].remove();
   Array.from(dms).sort().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;dmSel.appendChild(o)});
-  if(!dms.has(dm))dmSel.value='';
+  dmSel.value=dms.has(dm)?dm:'';
   /* rebuild RM options based on selected DM */
   var rms=new Set();
   var curDm=dmSel.value;
@@ -253,7 +253,7 @@ function refreshDropdowns(){
   opts=rmSel.querySelectorAll('option:not(:first-child)');
   for(var i=0;i<opts.length;i++)opts[i].remove();
   Array.from(rms).sort().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;rmSel.appendChild(o)});
-  if(!rms.has(rm))rmSel.value='';
+  rmSel.value=rms.has(rm)?rm:'';
 }
 function applyStoreFilters(){
   refreshDropdowns();
