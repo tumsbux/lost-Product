@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GP Analysis Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--border:#e0e4ea;--text:#2c3e50;--muted:#7f8c9a;--red:#e74c3c;--orange:#e67e22;--blue:#2e86ab;--green:#27ae60;--purple:#8e44ad;--teal:#16a085}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:13px}
+.hdr{background:#1a252f;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:16px}
+.hdr h1{font-size:16px;font-weight:600}
+.hdr .sub{font-size:12px;color:#aab;margin-left:auto}
+/* kpi */
+.kpi-row{display:flex;gap:12px;padding:14px 20px;flex-wrap:wrap}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 18px;min-width:150px;flex:1}
+.kpi .label{font-size:11px;color:var(--muted);margin-bottom:4px}
+.kpi .value{font-size:22px;font-weight:700}
+.kpi.green .value{color:var(--green)}
+.kpi.blue .value{color:var(--blue)}
+.kpi.orange .value{color:var(--orange)}
+.kpi.teal .value{color:var(--teal)}
+/* tabs */
+.tabs{display:flex;gap:0;padding:0 20px;border-bottom:2px solid var(--border)}
+.tab{padding:10px 20px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;transition:.2s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-panel{display:none;padding:14px 20px 40px}
+.tab-panel.active{display:block}
+/* filters */
+.filters{display:flex;gap:10px;padding:0 0 12px;flex-wrap:wrap;align-items:center}
+.filters select,.filters input{border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;background:#fff;color:var(--text)}
+.filters label{font-size:12px;color:var(--muted)}
+.btn{border:none;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:500}
+.btn-clear{background:#ecf0f1;color:var(--text)}
+.btn-xlsx{background:#27ae60;color:#fff}
+/* table */
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+thead th{background:#2c3e50;color:#fff;padding:9px 10px;text-align:left;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;user-select:none}
+thead th:hover{background:#34495e}
+thead th.r,tbody td.r,tfoot td.r{text-align:right}
+thead th.sort-asc::after{content:' ▲'}
+thead th.sort-desc::after{content:' ▼'}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:hover{background:#f8f9fa}
+tbody td{padding:7px 10px;vertical-align:top}
+tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px solid var(--border)}
+/* gp badge */
+.gp-badge{display:inline-block;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:600;color:#fff}
+.gp-low{background:var(--red)}
+.gp-mid{background:var(--orange)}
+.gp-ok{background:var(--green)}
+.gp-high{background:var(--teal)}
+/* chart */
+.chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;max-width:900px}
+/* loading */
+#loading{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--muted);z-index:999}
+.no-data{text-align:center;padding:40px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="loading">&#9203; Loading GP data...</div>
+
+<div class="hdr">
+  <h1>&#128200; GP Analysis Dashboard</h1>
+  <span id="hdr-sub" class="sub"></span>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi blue"><div class="label">Net Sales MTD</div><div class="value" id="k-sales">&#8212;</div></div>
+  <div class="kpi orange"><div class="label">Cost MTD</div><div class="value" id="k-cost">&#8212;</div></div>
+  <div class="kpi green"><div class="label">GP Amount</div><div class="value" id="k-gp">&#8212;</div></div>
+  <div class="kpi teal"><div class="label">GP %</div><div class="value" id="k-gp-pct">&#8212;</div></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="store">&#127978; Store</div>
+  <div class="tab" data-tab="product">&#128230; Product</div>
+  <div class="tab" data-tab="trend">&#128200; Trend</div>
+</div>
+
+<!-- ═══ STORE TAB ═══ -->
+<div class="tab-panel active" id="panel-store">
+  <div class="filters">
+    <label>RM:</label>
+    <select id="fs-rm"><option value="">&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</option></select>
+    <label>DM:</label>
+    <select id="fs-dm"><option value="">&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</option></select>
+    <label>&#3588;&#3657;&#3609;&#3627;&#3634;:</label>
+    <input id="fs-search" type="text" placeholder="&#3594;&#3639;&#3656;&#3629; / &#3619;&#3627;&#3633;&#3626;..." style="width:160px">
+    <button class="btn btn-clear" onclick="clearStoreFilters()">&#3621;&#3657;&#3634;&#3591;</button>
+    <button class="btn btn-xlsx" onclick="exportStoreCSV()">&#11015; XLSX</button>
+  </div>
+  <table id="store-tbl">
+    <thead><tr>
+      <th data-col="code">&#3619;&#3627;&#3633;&#3626;</th>
+      <th data-col="name">&#3619;&#3657;&#3634;&#3609;</th>
+      <th data-col="dm">DM</th>
+      <th data-col="rm">RM</th>
+      <th data-col="sales" class="r">Sales MTD</th>
+      <th data-col="cost" class="r">Cost</th>
+      <th data-col="gp" class="r">GP</th>
+      <th data-col="gp_pct" class="r sort-asc">GP %</th>
+    </tr></thead>
+    <tbody id="store-tbody"></tbody>
+    <tfoot id="store-tfoot"></tfoot>
+  </table>
+</div>
+
+<!-- ═══ PRODUCT TAB ═══ -->
+<div class="tab-panel" id="panel-product">
+  <div class="filters">
+    <label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;:</label>
+    <select id="fp-type"><option value="">&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</option></select>
+    <label>&#3585;&#3621;&#3640;&#3656;&#3617;:</label>
+    <select id="fp-group"><option value="">&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</option></select>
+    <label>&#3588;&#3657;&#3609;&#3627;&#3634;:</label>
+    <input id="fp-search" type="text" placeholder="&#3594;&#3639;&#3656;&#3629; / parcode..." style="width:160px">
+    <button class="btn btn-clear" onclick="clearProdFilters()">&#3621;&#3657;&#3634;&#3591;</button>
+    <button class="btn btn-xlsx" onclick="exportProdCSV()">&#11015; XLSX</button>
+  </div>
+  <table id="prod-tbl">
+    <thead><tr>
+      <th data-col="iprod">Parcode</th>
+      <th data-col="name">&#3594;&#3639;&#3656;&#3629;&#3626;&#3636;&#3609;&#3588;&#3657;&#3634;</th>
+      <th data-col="type_name">&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</th>
+      <th data-col="group_name">&#3585;&#3621;&#3640;&#3656;&#3617;</th>
+      <th data-col="sales" class="r">Sales MTD</th>
+      <th data-col="cost" class="r">Cost</th>
+      <th data-col="gp" class="r">GP</th>
+      <th data-col="gp_pct" class="r sort-asc">GP %</th>
+    </tr></thead>
+    <tbody id="prod-tbody"></tbody>
+    <tfoot id="prod-tfoot"></tfoot>
+  </table>
+</div>
+
+<!-- ═══ TREND TAB ═══ -->
+<div class="tab-panel" id="panel-trend">
+  <div class="chart-wrap">
+    <canvas id="trend-chart" height="300"></canvas>
+  </div>
+  <table id="trend-tbl">
+    <thead><tr>
+      <th>&#3648;&#3604;&#3639;&#3629;&#3609;</th>
+      <th class="r">Net Sales</th>
+      <th class="r">Cost</th>
+      <th class="r">GP</th>
+      <th class="r">GP %</th>
+      <th></th>
+    </tr></thead>
+    <tbody id="trend-tbody"></tbody>
+  </table>
+</div>
+
+<script>
+/* ── globals ── */
+let DATA = {}, STORES_ALL = [], PRODS_ALL = [];
+let STORE_FILTERED = [], PROD_FILTERED = [];
+let STORE_SORT = {col:'gp_pct', dir:1}, PROD_SORT = {col:'gp_pct', dir:1};
+const fmt  = n => n==null?'—':Number(n).toLocaleString('th-TH',{maximumFractionDigits:0});
+const fmtP = n => n==null?'—':n.toFixed(1)+'%';
+
+function gpBadge(pct){
+  if(pct==null) return '—';
+  if(pct<20)  return `<span class="gp-badge gp-low">${pct.toFixed(1)}%</span>`;
+  if(pct<30)  return `<span class="gp-badge gp-mid">${pct.toFixed(1)}%</span>`;
+  if(pct<40)  return `<span class="gp-badge gp-ok">${pct.toFixed(1)}%</span>`;
+  return `<span class="gp-badge gp-high">${pct.toFixed(1)}%</span>`;
+}
+
+/* ── tabs ── */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-'+t.dataset.tab).classList.add('active');
+  });
+});
+
+/* ── store tab ── */
+function renderStores(){
+  const S = STORE_SORT;
+  STORE_FILTERED.sort((a,b)=>{
+    let av=a[S.col],bv=b[S.col];
+    if(av==null)av=S.dir>0?-Infinity:Infinity;
+    if(bv==null)bv=S.dir>0?-Infinity:Infinity;
+    return S.dir*(av<bv?-1:av>bv?1:0);
+  });
+  const tbody=document.getElementById('store-tbody');
+  const html=STORE_FILTERED.map(s=>`<tr>
+    <td>${s.code}</td><td>${s.name}</td><td>${s.dm}</td><td>${s.rm}</td>
+    <td class="r">${fmt(s.sales)}</td><td class="r">${fmt(s.cost)}</td>
+    <td class="r">${fmt(s.gp)}</td><td class="r">${gpBadge(s.gp_pct)}</td>
+  </tr>`).join('');
+  tbody.innerHTML=html;
+
+  const totS=STORE_FILTERED.reduce((a,s)=>a+s.sales,0);
+  const totC=STORE_FILTERED.reduce((a,s)=>a+s.cost,0);
+  const totG=totS-totC;
+  document.getElementById('store-tfoot').innerHTML=`<tr>
+    <td colspan="4" style="color:var(--muted);font-size:11px">${STORE_FILTERED.length} ร้าน</td>
+    <td class="r">${fmt(totS)}</td><td class="r">${fmt(totC)}</td>
+    <td class="r">${fmt(totG)}</td><td class="r">${gpBadge(totS?totG/totS*100:0)}</td>
+  </tr>`;
+}
+
+function applyStoreFilters(){
+  const rm=document.getElementById('fs-rm').value;
+  const dm=document.getElementById('fs-dm').value;
+  const q=document.getElementById('fs-search').value.trim().toLowerCase();
+  STORE_FILTERED=STORES_ALL.filter(s=>{
+    if(rm&&s.rm!==rm)return false;
+    if(dm&&s.dm!==dm)return false;
+    if(q&&!s.code.includes(q)&&!s.name.toLowerCase().includes(q))return false;
+    return true;
+  });
+  renderStores();
+}
+function clearStoreFilters(){
+  document.getElementById('fs-rm').value='';
+  document.getElementById('fs-dm').value='';
+  document.getElementById('fs-search').value='';
+  applyStoreFilters();
+}
+
+/* ── product tab ── */
+function renderProds(){
+  const S=PROD_SORT;
+  PROD_FILTERED.sort((a,b)=>{
+    let av=a[S.col],bv=b[S.col];
+    if(typeof av==='string')return S.dir*(av.localeCompare(bv));
+    if(av==null)av=S.dir>0?-Infinity:Infinity;
+    if(bv==null)bv=S.dir>0?-Infinity:Infinity;
+    return S.dir*(av<bv?-1:av>bv?1:0);
+  });
+  const tbody=document.getElementById('prod-tbody');
+  const shown=PROD_FILTERED.slice(0,3000);
+  tbody.innerHTML=shown.map(p=>`<tr>
+    <td>${p.iprod}</td><td>${p.name||'—'}</td>
+    <td>${p.type_name||'—'}</td><td>${p.group_name||p.group||'—'}</td>
+    <td class="r">${fmt(p.sales)}</td><td class="r">${fmt(p.cost)}</td>
+    <td class="r">${fmt(p.gp)}</td><td class="r">${gpBadge(p.gp_pct)}</td>
+  </tr>`).join('');
+
+  const totS=PROD_FILTERED.reduce((a,p)=>a+p.sales,0);
+  const totC=PROD_FILTERED.reduce((a,p)=>a+p.cost,0);
+  const totG=totS-totC;
+  document.getElementById('prod-tfoot').innerHTML=`<tr>
+    <td colspan="4" style="color:var(--muted);font-size:11px">${PROD_FILTERED.length.toLocaleString()} รายการ${PROD_FILTERED.length>3000?' (แสดง 3,000 แรก)':''}</td>
+    <td class="r">${fmt(totS)}</td><td class="r">${fmt(totC)}</td>
+    <td class="r">${fmt(totG)}</td><td class="r">${gpBadge(totS?totG/totS*100:0)}</td>
+  </tr>`;
+}
+
+function applyProdFilters(){
+  const ty=document.getElementById('fp-type').value;
+  const gr=document.getElementById('fp-group').value;
+  const q=document.getElementById('fp-search').value.trim().toLowerCase();
+  PROD_FILTERED=PRODS_ALL.filter(p=>{
+    if(ty&&p.type_code!==ty)return false;
+    if(gr&&p.group!==gr)return false;
+    if(q&&!p.iprod.includes(q)&&!(p.name||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  renderProds();
+}
+function clearProdFilters(){
+  document.getElementById('fp-type').value='';
+  document.getElementById('fp-group').value='';
+  document.getElementById('fp-search').value='';
+  applyProdFilters();
+}
+
+/* ── trend tab ── */
+let trendChart=null;
+function renderTrend(monthly){
+  const TH=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const labels=monthly.map(m=>{
+    const [y,mo]=m.month.split('-');
+    return (TH[+mo]||mo)+' '+y.slice(2) + (m.is_mtd?' (MTD)':'');
+  });
+  const ctx=document.getElementById('trend-chart').getContext('2d');
+  if(trendChart)trendChart.destroy();
+  trendChart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {type:'bar',label:'Sales',data:monthly.map(m=>m.sales),backgroundColor:'rgba(46,134,171,0.6)',yAxisID:'y',order:2},
+        {type:'bar',label:'Cost',data:monthly.map(m=>m.cost),backgroundColor:'rgba(230,126,34,0.4)',yAxisID:'y',order:3},
+        {type:'line',label:'GP %',data:monthly.map(m=>m.gp_pct),borderColor:'#27ae60',backgroundColor:'#27ae60',pointRadius:5,pointBackgroundColor:'#27ae60',yAxisID:'y1',order:1,tension:0.3},
+      ]
+    },
+    options:{
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        y:{type:'linear',position:'left',ticks:{callback:v=>'฿'+Number(v/1e6).toFixed(0)+'M'},title:{display:true,text:'Amount (฿)'}},
+        y1:{type:'linear',position:'right',min:0,max:50,ticks:{callback:v=>v+'%'},grid:{drawOnChartArea:false},title:{display:true,text:'GP %'}},
+      },
+      plugins:{legend:{position:'top'}}
+    }
+  });
+
+  // table
+  document.getElementById('trend-tbody').innerHTML=monthly.map(m=>`<tr>
+    <td>${labels[monthly.indexOf(m)]}</td>
+    <td class="r">${fmt(m.sales)}</td><td class="r">${fmt(m.cost)}</td>
+    <td class="r">${fmt(m.gp)}</td><td class="r">${gpBadge(m.gp_pct)}</td>
+    <td>${m.is_mtd?'<span style="color:var(--muted);font-size:11px">MTD</span>':''}</td>
+  </tr>`).join('');
+}
+
+/* ── sort headers ── */
+function initSort(tblId, sortObj, renderFn){
+  document.querySelectorAll(`#${tblId} thead th[data-col]`).forEach(th=>{
+    th.addEventListener('click',()=>{
+      const col=th.dataset.col;
+      if(sortObj.col===col)sortObj.dir*=-1;
+      else{sortObj.col=col;sortObj.dir=1;}
+      document.querySelectorAll(`#${tblId} thead th`).forEach(t=>t.classList.remove('sort-asc','sort-desc'));
+      th.classList.add(sortObj.dir===1?'sort-asc':'sort-desc');
+      renderFn();
+    });
+  });
+}
+
+/* ── CSV export ── */
+function exportCSV(headers, dataRows, filename){
+  const rows=[headers,...dataRows];
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=filename;a.click();
+}
+function exportStoreCSV(){
+  exportCSV(
+    ['รหัส','ร้าน','DM','RM','Sales','Cost','GP','GP%'],
+    STORE_FILTERED.map(s=>[s.code,s.name,s.dm,s.rm,s.sales,s.cost,s.gp,s.gp_pct]),
+    `gp_store_${new Date().toISOString().slice(0,10)}.csv`
+  );
+}
+function exportProdCSV(){
+  exportCSV(
+    ['Parcode','ชื่อสินค้า','ประเภท','กลุ่ม','Sales','Cost','GP','GP%'],
+    PROD_FILTERED.map(p=>[p.iprod,p.name||'',p.type_name||'',p.group_name||'',p.sales,p.cost,p.gp,p.gp_pct]),
+    `gp_product_${new Date().toISOString().slice(0,10)}.csv`
+  );
+}
+
+/* ── filter events ── */
+['fs-rm','fs-dm'].forEach(id=>document.getElementById(id).addEventListener('change',applyStoreFilters));
+document.getElementById('fs-search').addEventListener('input',applyStoreFilters);
+['fp-type','fp-group'].forEach(id=>document.getElementById(id).addEventListener('change',applyProdFilters));
+document.getElementById('fp-search').addEventListener('input',applyProdFilters);
+
+/* ── load data ── */
+fetch('./gp_analysis_data.json')
+  .then(r=>r.json())
+  .then(data=>{
+    DATA=data;
+    const m=data._meta||{};
+    const s=data.summary||{};
+    STORES_ALL=data.stores||[];
+    PRODS_ALL=data.products||[];
+
+    document.getElementById('hdr-sub').textContent=
+      `${m.current_month||''} (วัน 1-${m.days_elapsed||'?'}) · built by ${m.built_by||''}`;
+    document.getElementById('k-sales').textContent='฿'+fmt(s.sales);
+    document.getElementById('k-cost').textContent='฿'+fmt(s.cost);
+    document.getElementById('k-gp').textContent='฿'+fmt(s.gp);
+    document.getElementById('k-gp-pct').textContent=fmtP(s.gp_pct);
+
+    // populate RM/DM dropdowns
+    const rms=new Set(), dms=new Set();
+    STORES_ALL.forEach(st=>{if(st.rm)rms.add(st.rm);if(st.dm)dms.add(st.dm);});
+    const rmSel=document.getElementById('fs-rm');
+    [...rms].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;rmSel.appendChild(o);});
+    const dmSel=document.getElementById('fs-dm');
+    [...dms].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;dmSel.appendChild(o);});
+
+    // populate type/group dropdowns
+    const typMap={},grpMap={};
+    PRODS_ALL.forEach(p=>{
+      if(p.type_code)typMap[p.type_code]=p.type_name||p.type_code;
+      if(p.group)grpMap[p.group]=p.group_name||p.group;
+    });
+    const tSel=document.getElementById('fp-type');
+    Object.keys(typMap).sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=typMap[c]?`${typMap[c]} (${c})`:c;tSel.appendChild(o);});
+    const gSel=document.getElementById('fp-group');
+    Object.keys(grpMap).sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=grpMap[c]?`${grpMap[c]} (${c})`:c;gSel.appendChild(o);});
+
+    // init
+    STORE_FILTERED=[...STORES_ALL];
+    PROD_FILTERED=[...PRODS_ALL];
+    initSort('store-tbl',STORE_SORT,renderStores);
+    initSort('prod-tbl',PROD_SORT,renderProds);
+    renderStores();
+    renderProds();
+    renderTrend(data.monthly||[]);
+
+    document.getElementById('loading').style.display='none';
+  })
+  .catch(e=>{
+    document.getElementById('loading').textContent='❌ Failed: '+e.message;
+  });
+</script>
+</body>
+</html>
