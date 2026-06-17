@@ -256,7 +256,6 @@ function refreshDropdowns(){
   rmSel.value=rms.has(rm)?rm:'';
 }
 function applyStoreFilters(){
-  refreshDropdowns();
   var rm=document.getElementById('fs-rm').value;
   var dm=document.getElementById('fs-dm').value;
   var q=document.getElementById('fs-search').value.trim().toLowerCase();
@@ -267,6 +266,7 @@ function applyStoreFilters(){
     return true;
   });
   renderStores();
+  refreshDropdowns();
 }
 function clearStoreFilters(){
   document.getElementById('fs-rm').value='';
