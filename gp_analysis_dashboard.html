@@ -12,30 +12,30 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--te
 .hdr{background:#1a252f;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:16px}
 .hdr h1{font-size:20px;font-weight:600}
 .hdr .sub{font-size:14px;color:#aab;margin-left:auto}
-/* kpi */
 .kpi-row{display:flex;gap:12px;padding:14px 20px;flex-wrap:wrap}
 .kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 18px;min-width:150px;flex:1}
 .kpi .label{font-size:13px;color:var(--muted);margin-bottom:4px}
 .kpi .value{font-size:26px;font-weight:700}
+.kpi .compare{font-size:12px;margin-top:4px;color:var(--muted)}
+.kpi .compare .up{color:#16a34a}
+.kpi .compare .down{color:#dc2626}
 .kpi.green .value{color:var(--green)}
 .kpi.blue .value{color:var(--blue)}
 .kpi.orange .value{color:var(--orange)}
+.kpi.purple .value{color:var(--purple)}
 .kpi.teal .value{color:var(--teal)}
-/* tabs */
 .tabs{display:flex;gap:0;padding:0 20px;border-bottom:2px solid var(--border)}
 .tab{padding:10px 20px;cursor:pointer;font-size:15px;font-weight:500;color:var(--muted);border-bottom:3px solid transparent;transition:.2s}
 .tab:hover{color:var(--text)}
 .tab.active{color:var(--blue);border-bottom-color:var(--blue)}
 .tab-panel{display:none;padding:14px 20px 40px}
 .tab-panel.active{display:block}
-/* filters */
 .filters{display:flex;gap:10px;padding:0 0 12px;flex-wrap:wrap;align-items:center}
 .filters select,.filters input{border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:14px;background:#fff;color:var(--text)}
 .filters label{font-size:14px;color:var(--muted)}
 .btn{border:none;border-radius:6px;padding:8px 16px;font-size:14px;cursor:pointer;font-weight:500}
 .btn-clear{background:#ecf0f1;color:var(--text)}
 .btn-xlsx{background:#27ae60;color:#fff}
-/* table */
 table{width:100%;border-collapse:collapse;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
 thead th{background:#2c3e50;color:#fff;padding:10px 12px;text-align:left;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;user-select:none}
 thead th:hover{background:#34495e}
@@ -46,57 +46,81 @@ tbody tr{border-bottom:1px solid var(--border)}
 tbody tr:hover{background:#f8f9fa}
 tbody td{padding:7px 10px;vertical-align:top}
 tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px solid var(--border)}
-/* gp badge */
 .gp-badge{display:inline-block;border-radius:10px;padding:2px 9px;font-size:13px;font-weight:600;color:#fff}
 .gp-nocost{background:#95a5a6;font-weight:500;font-size:12px}
 .gp-low{background:var(--red)}
 .gp-mid{background:var(--orange)}
 .gp-ok{background:var(--green)}
 .gp-high{background:var(--teal)}
-/* chart */
 .chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;max-width:700px}
-/* loading */
 #loading{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--muted);z-index:999}
+#prod-tbl th:nth-child(1),#prod-tbl td:nth-child(1){width:100px}
+#prod-tbl th:nth-child(2),#prod-tbl td:nth-child(2){max-width:280px;overflow:hidden;text-overflow:ellipsis}
+#prod-tbl th:nth-child(3),#prod-tbl td:nth-child(3){white-space:nowrap}
+#prod-tbl th:nth-child(4),#prod-tbl td:nth-child(4){max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#prod-tbl td:nth-child(5),#prod-tbl td:nth-child(6),#prod-tbl td:nth-child(7),#prod-tbl td:nth-child(8){white-space:nowrap}
 .no-data{text-align:center;padding:40px;color:var(--muted)}
+.ai-bar{background:linear-gradient(135deg,#f3e8ff,#fce7f3);padding:8px 18px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #e9d5ff}
+.ai-label{font-size:11px;font-weight:800;color:#6b21a8;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px}
+.ai-btn{border:none;border-radius:18px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:#fff;background:linear-gradient(135deg,#a855f7,#6366f1);box-shadow:0 1px 3px rgba(99,102,241,.2);font-family:inherit;display:inline-flex;gap:4px;align-items:center;transition:transform .12s,box-shadow .12s}
+.ai-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.4)}
+.ai-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;justify-content:center;align-items:flex-start;padding:60px 16px}
+.ai-modal.open{display:flex}
+.ai-modal-body{background:#fff;border-radius:12px;max-width:700px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:aiSlide .25s ease-out}
+@keyframes aiSlide{from{transform:translateY(-20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.ai-modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #e5e7eb;background:#f8fafc;border-radius:12px 12px 0 0}
+.ai-modal-head h3{font-size:15px;margin:0;color:#1e293b}
+.ai-close{border:none;background:none;font-size:20px;cursor:pointer;color:#94a3b8;padding:0 4px}
+.ai-close:hover{color:#1e293b}
+#ai-modal-content{padding:16px 18px;font-size:13px;line-height:1.7;color:#334155}
 </style>
 </head>
 <body>
-<div id="loading">&#9203; Loading GP data...</div>
+<div id="loading">⏳ Loading GP data...</div>
 
 <div class="hdr">
-  <h1>&#128200; GP Analysis Dashboard</h1>
+  <h1>📈 GP Analysis Dashboard</h1>
   <span id="hdr-sub" class="sub"></span>
 </div>
 
+<div class="ai-bar">
+  <span class="ai-label">✨ AI Analysis:</span>
+  <button class="ai-btn" onclick="aiAnalyze('cause')">🔍 สินค้า GP ติดลบ</button>
+  <button class="ai-btn" onclick="aiAnalyze('lowgp')">⚠️ GP ต่ำกว่าเกณฑ์</button>
+  <button class="ai-btn" onclick="aiAnalyze('nocost')">❓ ไม่มีต้นทุน</button>
+  <button class="ai-btn" onclick="aiAnalyze('trend')">📊 Trend GP รายเดือน</button>
+</div>
+
 <div class="kpi-row">
-  <div class="kpi blue"><div class="label">Net Sales MTD</div><div class="value" id="k-sales">&#8212;</div></div>
-  <div class="kpi orange"><div class="label">Cost MTD</div><div class="value" id="k-cost">&#8212;</div></div>
-  <div class="kpi green"><div class="label">GP Amount</div><div class="value" id="k-gp">&#8212;</div></div>
-  <div class="kpi teal"><div class="label">GP %</div><div class="value" id="k-gp-pct">&#8212;</div></div>
+  <div class="kpi blue"><div class="label">Net Sales MTD</div><div class="value" id="k-sales">—</div><div class="compare" id="k-sales-cmp"></div></div>
+  <div class="kpi purple"><div class="label">Discount MTD</div><div class="value" id="k-disc">—</div><div class="compare" id="k-disc-cmp"></div></div>
+  <div class="kpi orange"><div class="label">Cost MTD</div><div class="value" id="k-cost">—</div><div class="compare" id="k-cost-cmp"></div></div>
+  <div class="kpi green"><div class="label">GP Amount</div><div class="value" id="k-gp">—</div><div class="compare" id="k-gp-cmp"></div></div>
+  <div class="kpi teal"><div class="label">GP %</div><div class="value" id="k-gp-pct">—</div><div class="compare" id="k-gp-pct-cmp"></div></div>
 </div>
 
 <div class="tabs">
-  <div class="tab active" data-tab="store">&#127978; Store</div>
-  <div class="tab" data-tab="product">&#128230; Product</div>
-  <div class="tab" data-tab="trend">&#128200; Trend</div>
+  <div class="tab active" data-tab="store">🏪 Store</div>
+  <div class="tab" data-tab="product">📦 Product</div>
+  <div class="tab" data-tab="trend">📈 Trend</div>
 </div>
 
-<!-- ═══ STORE TAB ═══ -->
+<!-- STORE TAB -->
 <div class="tab-panel active" id="panel-store">
   <div class="filters">
     <label>RM:</label>
-    <select id="fs-rm"><option value="">&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</option></select>
+    <select id="fs-rm"><option value="">ทั้งหมด</option></select>
     <label>DM:</label>
-    <select id="fs-dm"><option value="">&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</option></select>
-    <label>&#3588;&#3657;&#3609;&#3627;&#3634;:</label>
-    <input id="fs-search" type="text" placeholder="&#3594;&#3639;&#3656;&#3629; / &#3619;&#3627;&#3633;&#3626;..." style="width:160px">
-    <button class="btn btn-clear" onclick="clearStoreFilters()">&#3621;&#3657;&#3634;&#3591;</button>
-    <button class="btn btn-xlsx" onclick="exportStoreCSV()">&#11015; XLSX</button>
+    <select id="fs-dm"><option value="">ทั้งหมด</option></select>
+    <label>ค้นหา:</label>
+    <input id="fs-search" type="text" placeholder="ชื่อ / รหัส..." style="width:160px">
+    <button class="btn btn-clear" onclick="clearStoreFilters()">ล้าง</button>
+    <button class="btn btn-xlsx" onclick="exportStoreCSV()">⬇ XLSX</button>
   </div>
   <table id="store-tbl">
     <thead><tr>
-      <th data-col="code">&#3619;&#3627;&#3633;&#3626;</th>
-      <th data-col="name">&#3619;&#3657;&#3634;&#3609;</th>
+      <th data-col="code">รหัส</th>
+      <th data-col="name">ร้าน</th>
       <th data-col="dm">DM</th>
       <th data-col="rm">RM</th>
       <th data-col="sales" class="r">Sales MTD</th>
@@ -110,24 +134,24 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
   </table>
 </div>
 
-<!-- ═══ PRODUCT TAB ═══ -->
+<!-- PRODUCT TAB -->
 <div class="tab-panel" id="panel-product">
   <div class="filters">
-    <label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;:</label>
-    <select id="fp-type"><option value="">&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</option></select>
-    <label>&#3585;&#3621;&#3640;&#3656;&#3617;:</label>
-    <select id="fp-group"><option value="">&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</option></select>
-    <label>&#3588;&#3657;&#3609;&#3627;&#3634;:</label>
-    <input id="fp-search" type="text" placeholder="&#3594;&#3639;&#3656;&#3629; / parcode..." style="width:160px">
-    <button class="btn btn-clear" onclick="clearProdFilters()">&#3621;&#3657;&#3634;&#3591;</button>
-    <button class="btn btn-xlsx" onclick="exportProdCSV()">&#11015; XLSX</button>
+    <label>ประเภท:</label>
+    <select id="fp-type"><option value="">ทั้งหมด</option></select>
+    <label>กลุ่ม:</label>
+    <select id="fp-group"><option value="">ทั้งหมด</option></select>
+    <label>ค้นหา:</label>
+    <input id="fp-search" type="text" placeholder="ชื่อ / parcode..." style="width:160px">
+    <button class="btn btn-clear" onclick="clearProdFilters()">ล้าง</button>
+    <button class="btn btn-xlsx" onclick="exportProdCSV()">⬇ XLSX</button>
   </div>
   <table id="prod-tbl">
     <thead><tr>
       <th data-col="iprod">Parcode</th>
-      <th data-col="name">&#3594;&#3639;&#3656;&#3629;&#3626;&#3636;&#3609;&#3588;&#3657;&#3634;</th>
-      <th data-col="type_name">&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</th>
-      <th data-col="group_name">&#3585;&#3621;&#3640;&#3656;&#3617;</th>
+      <th data-col="name">ชื่อสินค้า</th>
+      <th data-col="type_name">ประเภท</th>
+      <th data-col="group_name">กลุ่ม</th>
       <th data-col="sales" class="r">Sales MTD</th>
       <th data-col="disc" class="r">ส่วนลด</th>
       <th data-col="cost" class="r">Cost</th>
@@ -139,14 +163,14 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
   </table>
 </div>
 
-<!-- ═══ TREND TAB ═══ -->
+<!-- TREND TAB -->
 <div class="tab-panel" id="panel-trend">
   <div class="chart-wrap">
     <canvas id="trend-chart" height="220"></canvas>
   </div>
   <table id="trend-tbl">
     <thead><tr>
-      <th>&#3648;&#3604;&#3639;&#3629;&#3609;</th>
+      <th>เดือน</th>
       <th class="r">Net Sales</th>
       <th class="r">ส่วนลด</th>
       <th class="r">Cost</th>
@@ -158,66 +182,63 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
   </table>
 </div>
 
-<script>
-/* ── globals ── */
-let DATA = {}, STORES_ALL = [], PRODS_ALL = [];
-let STORE_FILTERED = [], PROD_FILTERED = [];
-let STORE_SORT = {col:'gp_pct', dir:1}, PROD_SORT = {col:'gp_pct', dir:1};
-const fmt  = n => n==null?'—':Number(n).toLocaleString('th-TH',{maximumFractionDigits:0});
-const fmtP = n => n==null?'—':n.toFixed(1)+'%';
+<div class="ai-modal" id="ai-modal" onclick="if(event.target.id==='ai-modal')closeAi()">
+  <div class="ai-modal-body">
+    <div class="ai-modal-head">
+      <h3 id="ai-modal-title">AI Analysis</h3>
+      <button class="ai-close" onclick="closeAi()">✕</button>
+    </div>
+    <div id="ai-modal-content"></div>
+  </div>
+</div>
 
-function gpBadge(pct, cost){
-  if(cost===0) return `<span class="gp-badge gp-nocost">ไม่มีต้นทุน</span>`;
-  if(pct==null) return '—';
-  if(pct<20)  return `<span class="gp-badge gp-low">${pct.toFixed(1)}%</span>`;
-  if(pct<30)  return `<span class="gp-badge gp-mid">${pct.toFixed(1)}%</span>`;
-  if(pct<40)  return `<span class="gp-badge gp-ok">${pct.toFixed(1)}%</span>`;
-  return `<span class="gp-badge gp-high">${pct.toFixed(1)}%</span>`;
+<script>
+var DATA={},STORES_ALL=[],PRODS_ALL=[];
+var STORE_FILTERED=[],PROD_FILTERED=[];
+var STORE_SORT={col:'gp_pct',dir:1},PROD_SORT={col:'gp_pct',dir:1};
+function fmt(n){return n==null?'—':Number(n).toLocaleString('th-TH',{maximumFractionDigits:0})}
+function fmtP(n){return n==null?'—':n.toFixed(1)+'%'}
+
+function gpBadge(pct,cost){
+  if(cost===0)return '<span class="gp-badge gp-nocost">ไม่มีต้นทุน</span>';
+  if(pct==null)return '—';
+  if(pct<20)return '<span class="gp-badge gp-low">'+pct.toFixed(1)+'%</span>';
+  if(pct<30)return '<span class="gp-badge gp-mid">'+pct.toFixed(1)+'%</span>';
+  if(pct<40)return '<span class="gp-badge gp-ok">'+pct.toFixed(1)+'%</span>';
+  return '<span class="gp-badge gp-high">'+pct.toFixed(1)+'%</span>';
 }
 
-/* ── tabs ── */
-document.querySelectorAll('.tab').forEach(t=>{
-  t.addEventListener('click',()=>{
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click',function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active')});
+    document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active')});
     t.classList.add('active');
     document.getElementById('panel-'+t.dataset.tab).classList.add('active');
   });
 });
 
-/* ── store tab ── */
 function renderStores(){
-  const S = STORE_SORT;
-  STORE_FILTERED.sort((a,b)=>{
-    let av=a[S.col],bv=b[S.col];
+  var S=STORE_SORT;
+  STORE_FILTERED.sort(function(a,b){
+    var av=a[S.col],bv=b[S.col];
     if(av==null)av=S.dir>0?-Infinity:Infinity;
     if(bv==null)bv=S.dir>0?-Infinity:Infinity;
     return S.dir*(av<bv?-1:av>bv?1:0);
   });
-  const tbody=document.getElementById('store-tbody');
-  const html=STORE_FILTERED.map(s=>`<tr>
-    <td>${s.code}</td><td>${s.name}</td><td>${s.dm}</td><td>${s.rm}</td>
-    <td class="r">${fmt(s.sales)}</td><td class="r">${fmt(s.disc||0)}</td><td class="r">${fmt(s.cost)}</td>
-    <td class="r">${fmt(s.gp)}</td><td class="r">${gpBadge(s.gp_pct, s.cost)}</td>
-  </tr>`).join('');
-  tbody.innerHTML=html;
-
-  const totS=STORE_FILTERED.reduce((a,s)=>a+s.sales,0);
-  const totC=STORE_FILTERED.reduce((a,s)=>a+s.cost,0);
-  const totG=totS-totC;
-  const totD=STORE_FILTERED.reduce((a,s)=>a+(s.disc||0),0);
-  document.getElementById('store-tfoot').innerHTML=`<tr>
-    <td colspan="4" style="color:var(--muted);font-size:11px">${STORE_FILTERED.length} ร้าน</td>
-    <td class="r">${fmt(totS)}</td><td class="r">${fmt(totD)}</td><td class="r">${fmt(totC)}</td>
-    <td class="r">${fmt(totG)}</td><td class="r">${gpBadge(totS?totG/totS*100:0, totC)}</td>
-  </tr>`;
+  var tbody=document.getElementById('store-tbody');
+  tbody.innerHTML=STORE_FILTERED.map(function(s){return '<tr><td>'+s.code+'</td><td>'+s.name+'</td><td>'+s.dm+'</td><td>'+s.rm+'</td><td class="r">'+fmt(s.sales)+'</td><td class="r">'+fmt(s.disc||0)+'</td><td class="r">'+fmt(s.cost)+'</td><td class="r">'+fmt(s.gp)+'</td><td class="r">'+gpBadge(s.gp_pct,s.cost)+'</td></tr>'}).join('');
+  var totS=STORE_FILTERED.reduce(function(a,s){return a+s.sales},0);
+  var totC=STORE_FILTERED.reduce(function(a,s){return a+s.cost},0);
+  var totG=totS-totC;
+  var totD=STORE_FILTERED.reduce(function(a,s){return a+(s.disc||0)},0);
+  document.getElementById('store-tfoot').innerHTML='<tr><td colspan="4" style="color:var(--muted);font-size:11px">'+STORE_FILTERED.length+' ร้าน</td><td class="r">'+fmt(totS)+'</td><td class="r">'+fmt(totD)+'</td><td class="r">'+fmt(totC)+'</td><td class="r">'+fmt(totG)+'</td><td class="r">'+gpBadge(totS?totG/totS*100:0,totC)+'</td></tr>';
 }
 
 function applyStoreFilters(){
-  const rm=document.getElementById('fs-rm').value;
-  const dm=document.getElementById('fs-dm').value;
-  const q=document.getElementById('fs-search').value.trim().toLowerCase();
-  STORE_FILTERED=STORES_ALL.filter(s=>{
+  var rm=document.getElementById('fs-rm').value;
+  var dm=document.getElementById('fs-dm').value;
+  var q=document.getElementById('fs-search').value.trim().toLowerCase();
+  STORE_FILTERED=STORES_ALL.filter(function(s){
     if(rm&&s.rm!==rm)return false;
     if(dm&&s.dm!==dm)return false;
     if(q&&!s.code.includes(q)&&!s.name.toLowerCase().includes(q))return false;
@@ -232,41 +253,29 @@ function clearStoreFilters(){
   applyStoreFilters();
 }
 
-/* ── product tab ── */
 function renderProds(){
-  const S=PROD_SORT;
-  PROD_FILTERED.sort((a,b)=>{
-    let av=a[S.col],bv=b[S.col];
+  var S=PROD_SORT;
+  PROD_FILTERED.sort(function(a,b){
+    var av=a[S.col],bv=b[S.col];
     if(typeof av==='string')return S.dir*(av.localeCompare(bv));
     if(av==null)av=S.dir>0?-Infinity:Infinity;
     if(bv==null)bv=S.dir>0?-Infinity:Infinity;
     return S.dir*(av<bv?-1:av>bv?1:0);
   });
-  const tbody=document.getElementById('prod-tbody');
-  const shown=PROD_FILTERED.slice(0,3000);
-  tbody.innerHTML=shown.map(p=>`<tr>
-    <td>${p.iprod}</td><td>${p.name||'—'}</td>
-    <td>${p.type_name||'—'}</td><td>${p.group_name||p.group||'—'}</td>
-    <td class="r">${fmt(p.sales)}</td><td class="r">${fmt(p.disc||0)}</td><td class="r">${fmt(p.cost)}</td>
-    <td class="r">${fmt(p.gp)}</td><td class="r">${gpBadge(p.gp_pct, p.cost)}</td>
-  </tr>`).join('');
-
-  const totS=PROD_FILTERED.reduce((a,p)=>a+p.sales,0);
-  const totC=PROD_FILTERED.reduce((a,p)=>a+p.cost,0);
-  const totG=totS-totC;
-  const totPD=PROD_FILTERED.reduce((a,p)=>a+(p.disc||0),0);
-  document.getElementById('prod-tfoot').innerHTML=`<tr>
-    <td colspan="4" style="color:var(--muted);font-size:11px">${PROD_FILTERED.length.toLocaleString()} รายการ${PROD_FILTERED.length>3000?' (แสดง 3,000 แรก)':''}</td>
-    <td class="r">${fmt(totS)}</td><td class="r">${fmt(totPD)}</td><td class="r">${fmt(totC)}</td>
-    <td class="r">${fmt(totG)}</td><td class="r">${gpBadge(totS?totG/totS*100:0, totC)}</td>
-  </tr>`;
+  var shown=PROD_FILTERED.slice(0,3000);
+  document.getElementById('prod-tbody').innerHTML=shown.map(function(p){return '<tr><td>'+p.iprod+'</td><td>'+(p.name||'—')+'</td><td>'+(p.type_name||'—')+'</td><td>'+(p.group_name||p.group||'—')+'</td><td class="r">'+fmt(p.sales)+'</td><td class="r">'+fmt(p.disc||0)+'</td><td class="r">'+fmt(p.cost)+'</td><td class="r">'+fmt(p.gp)+'</td><td class="r">'+gpBadge(p.gp_pct,p.cost)+'</td></tr>'}).join('');
+  var totS=PROD_FILTERED.reduce(function(a,p){return a+p.sales},0);
+  var totC=PROD_FILTERED.reduce(function(a,p){return a+p.cost},0);
+  var totG=totS-totC;
+  var totPD=PROD_FILTERED.reduce(function(a,p){return a+(p.disc||0)},0);
+  document.getElementById('prod-tfoot').innerHTML='<tr><td colspan="4" style="color:var(--muted);font-size:11px">'+PROD_FILTERED.length.toLocaleString()+' รายการ'+(PROD_FILTERED.length>3000?' (แสดง 3,000 แรก)':'')+'</td><td class="r">'+fmt(totS)+'</td><td class="r">'+fmt(totPD)+'</td><td class="r">'+fmt(totC)+'</td><td class="r">'+fmt(totG)+'</td><td class="r">'+gpBadge(totS?totG/totS*100:0,totC)+'</td></tr>';
 }
 
 function applyProdFilters(){
-  const ty=document.getElementById('fp-type').value;
-  const gr=document.getElementById('fp-group').value;
-  const q=document.getElementById('fp-search').value.trim().toLowerCase();
-  PROD_FILTERED=PRODS_ALL.filter(p=>{
+  var ty=document.getElementById('fp-type').value;
+  var gr=document.getElementById('fp-group').value;
+  var q=document.getElementById('fp-search').value.trim().toLowerCase();
+  PROD_FILTERED=PRODS_ALL.filter(function(p){
     if(ty&&p.type_code!==ty)return false;
     if(gr&&p.group!==gr)return false;
     if(q&&!p.iprod.includes(q)&&!(p.name||'').toLowerCase().includes(q))return false;
@@ -281,140 +290,185 @@ function clearProdFilters(){
   applyProdFilters();
 }
 
-/* ── trend tab ── */
-let trendChart=null;
+var trendChart=null;
 function renderTrend(monthly){
-  const TH=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  const labels=monthly.map(m=>{
-    const [y,mo]=m.month.split('-');
-    return (TH[+mo]||mo)+' '+y.slice(2) + (m.is_mtd?' (MTD)':'');
+  var TH=['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  var labels=monthly.map(function(m){
+    var parts=m.month.split('-');
+    return (TH[+parts[1]]||parts[1])+' '+parts[0].slice(2)+(m.is_mtd?' (MTD)':'');
   });
-  const ctx=document.getElementById('trend-chart').getContext('2d');
+  var ctx=document.getElementById('trend-chart').getContext('2d');
   if(trendChart)trendChart.destroy();
   trendChart=new Chart(ctx,{
     type:'bar',
-    data:{
-      labels,
-      datasets:[
-        {type:'bar',label:'Sales',data:monthly.map(m=>m.sales),backgroundColor:'rgba(46,134,171,0.6)',yAxisID:'y',order:2},
-        {type:'bar',label:'Cost',data:monthly.map(m=>m.cost),backgroundColor:'rgba(230,126,34,0.4)',yAxisID:'y',order:3},
-        {type:'line',label:'GP %',data:monthly.map(m=>m.gp_pct),borderColor:'#27ae60',backgroundColor:'#27ae60',pointRadius:5,pointBackgroundColor:'#27ae60',yAxisID:'y1',order:1,tension:0.3},
-      ]
-    },
-    options:{
-      responsive:true,
-      interaction:{mode:'index',intersect:false},
+    data:{labels:labels,datasets:[
+      {type:'bar',label:'Sales',data:monthly.map(function(m){return m.sales}),backgroundColor:'rgba(46,134,171,0.6)',yAxisID:'y',order:2},
+      {type:'bar',label:'Cost',data:monthly.map(function(m){return m.cost}),backgroundColor:'rgba(230,126,34,0.4)',yAxisID:'y',order:3},
+      {type:'line',label:'GP %',data:monthly.map(function(m){return m.gp_pct}),borderColor:'#27ae60',backgroundColor:'#27ae60',pointRadius:5,pointBackgroundColor:'#27ae60',yAxisID:'y1',order:1,tension:0.3}
+    ]},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},
       scales:{
         x:{ticks:{font:{size:14}}},
-        y:{type:'linear',position:'left',ticks:{callback:v=>'฿'+Number(v/1e6).toFixed(0)+'M',font:{size:13}},title:{display:true,text:'Amount (฿)',font:{size:14}}},
-        y1:{type:'linear',position:'right',min:0,max:50,ticks:{callback:v=>v+'%',font:{size:13}},grid:{drawOnChartArea:false},title:{display:true,text:'GP %',font:{size:14}}},
+        y:{type:'linear',position:'left',ticks:{callback:function(v){return '฿'+(v/1e6).toFixed(0)+'M'},font:{size:13}},title:{display:true,text:'Amount (฿)',font:{size:14}}},
+        y1:{type:'linear',position:'right',min:0,max:50,ticks:{callback:function(v){return v+'%'},font:{size:13}},grid:{drawOnChartArea:false},title:{display:true,text:'GP %',font:{size:14}}}
       },
       plugins:{legend:{position:'top',labels:{font:{size:14}}}}
     }
   });
-
-  // table
-  document.getElementById('trend-tbody').innerHTML=monthly.map(m=>`<tr>
-    <td>${labels[monthly.indexOf(m)]}</td>
-    <td class="r">${fmt(m.sales)}</td><td class="r">${fmt(m.disc||0)}</td><td class="r">${fmt(m.cost)}</td>
-    <td class="r">${fmt(m.gp)}</td><td class="r">${gpBadge(m.gp_pct, m.cost)}</td>
-    <td>${m.is_mtd?'<span style="color:var(--muted);font-size:11px">MTD</span>':''}</td>
-  </tr>`).join('');
+  document.getElementById('trend-tbody').innerHTML=monthly.map(function(m,i){return '<tr><td>'+labels[i]+'</td><td class="r">'+fmt(m.sales)+'</td><td class="r">'+fmt(m.disc||0)+'</td><td class="r">'+fmt(m.cost)+'</td><td class="r">'+fmt(m.gp)+'</td><td class="r">'+gpBadge(m.gp_pct,m.cost)+'</td><td>'+(m.is_mtd?'<span style="color:var(--muted);font-size:11px">MTD</span>':'')+'</td></tr>'}).join('');
 }
 
-/* ── sort headers ── */
-function initSort(tblId, sortObj, renderFn){
-  document.querySelectorAll(`#${tblId} thead th[data-col]`).forEach(th=>{
-    th.addEventListener('click',()=>{
-      const col=th.dataset.col;
+function initSort(tblId,sortObj,renderFn){
+  document.querySelectorAll('#'+tblId+' thead th[data-col]').forEach(function(th){
+    th.addEventListener('click',function(){
+      var col=th.dataset.col;
       if(sortObj.col===col)sortObj.dir*=-1;
       else{sortObj.col=col;sortObj.dir=1;}
-      document.querySelectorAll(`#${tblId} thead th`).forEach(t=>t.classList.remove('sort-asc','sort-desc'));
+      document.querySelectorAll('#'+tblId+' thead th').forEach(function(t){t.classList.remove('sort-asc','sort-desc')});
       th.classList.add(sortObj.dir===1?'sort-asc':'sort-desc');
       renderFn();
     });
   });
 }
 
-/* ── CSV export ── */
-function exportCSV(headers, dataRows, filename){
-  const rows=[headers,...dataRows];
-  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+function exportCSV(headers,dataRows,filename){
+  var rows=[headers].concat(dataRows);
+  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"'}).join(',')}).join('\n');
+  var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download=filename;a.click();
 }
 function exportStoreCSV(){
-  exportCSV(
-    ['รหัส','ร้าน','DM','RM','Sales','ส่วนลด','Cost','GP','GP%'],
-    STORE_FILTERED.map(s=>[s.code,s.name,s.dm,s.rm,s.sales,s.disc||0,s.cost,s.gp,s.gp_pct]),
-    `gp_store_${new Date().toISOString().slice(0,10)}.csv`
-  );
+  exportCSV(['รหัส','ร้าน','DM','RM','Sales','ส่วนลด','Cost','GP','GP%'],
+    STORE_FILTERED.map(function(s){return[s.code,s.name,s.dm,s.rm,s.sales,s.disc||0,s.cost,s.gp,s.gp_pct]}),
+    'gp_store_'+new Date().toISOString().slice(0,10)+'.csv');
 }
 function exportProdCSV(){
-  exportCSV(
-    ['Parcode','ชื่อสินค้า','ประเภท','กลุ่ม','Sales','ส่วนลด','Cost','GP','GP%'],
-    PROD_FILTERED.map(p=>[p.iprod,p.name||'',p.type_name||'',p.group_name||'',p.sales,p.disc||0,p.cost,p.gp,p.gp_pct]),
-    `gp_product_${new Date().toISOString().slice(0,10)}.csv`
-  );
+  exportCSV(['Parcode','ชื่อสินค้า','ประเภท','กลุ่ม','Sales','ส่วนลด','Cost','GP','GP%'],
+    PROD_FILTERED.map(function(p){return[p.iprod,p.name||'',p.type_name||'',p.group_name||'',p.sales,p.disc||0,p.cost,p.gp,p.gp_pct]}),
+    'gp_product_'+new Date().toISOString().slice(0,10)+'.csv');
 }
 
-/* ── filter events ── */
-['fs-rm','fs-dm'].forEach(id=>document.getElementById(id).addEventListener('change',applyStoreFilters));
+['fs-rm','fs-dm'].forEach(function(id){document.getElementById(id).addEventListener('change',applyStoreFilters)});
 document.getElementById('fs-search').addEventListener('input',applyStoreFilters);
-['fp-type','fp-group'].forEach(id=>document.getElementById(id).addEventListener('change',applyProdFilters));
+['fp-type','fp-group'].forEach(function(id){document.getElementById(id).addEventListener('change',applyProdFilters)});
 document.getElementById('fp-search').addEventListener('input',applyProdFilters);
 
-/* ── load data ── */
 fetch('./gp_analysis_data.json')
-  .then(r=>r.json())
-  .then(data=>{
+  .then(function(r){return r.json()})
+  .then(function(data){
     DATA=data;
-    const m=data._meta||{};
-    const s=data.summary||{};
+    var m=data._meta||{};
+    var s=data.summary||{};
     STORES_ALL=data.stores||[];
     PRODS_ALL=data.products||[];
 
-    document.getElementById('hdr-sub').textContent=
-      `${m.current_month||''} (วัน 1-${m.days_elapsed||'?'}) · built by ${m.built_by||''}`;
+    document.getElementById('hdr-sub').textContent=(m.current_month||'')+' (วัน 1-'+(m.days_elapsed||'?')+') · built by '+(m.built_by||'');
     document.getElementById('k-sales').textContent='฿'+fmt(s.sales);
+    document.getElementById('k-disc').textContent='฿'+fmt(s.disc||0);
     document.getElementById('k-cost').textContent='฿'+fmt(s.cost);
     document.getElementById('k-gp').textContent='฿'+fmt(s.gp);
     document.getElementById('k-gp-pct').textContent=fmtP(s.gp_pct);
 
-    // populate RM/DM dropdowns
-    const rms=new Set(), dms=new Set();
-    STORES_ALL.forEach(st=>{if(st.rm)rms.add(st.rm);if(st.dm)dms.add(st.dm);});
-    const rmSel=document.getElementById('fs-rm');
-    [...rms].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;rmSel.appendChild(o);});
-    const dmSel=document.getElementById('fs-dm');
-    [...dms].sort().forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;dmSel.appendChild(o);});
+    /* MoM comparison */
+    var monthly=data.monthly||[];
+    var curIdx=-1;
+    for(var i=0;i<monthly.length;i++){if(monthly[i].is_mtd){curIdx=i;break;}}
+    var prev=curIdx>0?monthly[curIdx-1]:null;
+    var cur=curIdx>=0?monthly[curIdx]:null;
+    function cmpHtml(curV,prevV,id,invert){
+      if(!prev||prevV==null||prevV===0){document.getElementById(id).innerHTML='';return;}
+      var ratio=(m.days_elapsed)?m.days_elapsed/30:1;
+      var adjPrev=prevV*ratio;
+      var diff=curV-adjPrev;
+      var pct=((diff/Math.abs(adjPrev))*100).toFixed(1);
+      var isGood=invert?(diff<=0):(diff>=0);
+      var cls=isGood?'up':'down';
+      var arrow=diff>=0?'▲':'▼';
+      document.getElementById(id).innerHTML='<span class="'+cls+'">'+arrow+' '+Math.abs(pct)+'%</span> vs เดือนก่อน (฿'+fmt(adjPrev)+')';
+    }
+    function cmpPct(curV,prevV,id){
+      if(!prev||prevV==null){document.getElementById(id).innerHTML='';return;}
+      var diff=curV-prevV;
+      var isGood=diff>=0;
+      var cls=isGood?'up':'down';
+      var arrow=diff>=0?'▲':'▼';
+      document.getElementById(id).innerHTML='<span class="'+cls+'">'+arrow+' '+Math.abs(diff).toFixed(1)+' pp</span> vs '+prevV.toFixed(1)+'%';
+    }
+    if(cur&&prev){
+      cmpHtml(cur.sales,prev.sales,'k-sales-cmp',false);
+      cmpHtml(cur.disc||0,prev.disc||0,'k-disc-cmp',true);
+      cmpHtml(cur.cost,prev.cost,'k-cost-cmp',true);
+      cmpHtml(cur.gp,prev.gp,'k-gp-cmp',false);
+      cmpPct(cur.gp_pct,prev.gp_pct,'k-gp-pct-cmp');
+    }
 
-    // populate type/group dropdowns
-    const typMap={},grpMap={};
-    PRODS_ALL.forEach(p=>{
+    var rms=new Set(),dms=new Set();
+    STORES_ALL.forEach(function(st){if(st.rm)rms.add(st.rm);if(st.dm)dms.add(st.dm)});
+    var rmSel=document.getElementById('fs-rm');
+    Array.from(rms).sort().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;rmSel.appendChild(o)});
+    var dmSel=document.getElementById('fs-dm');
+    Array.from(dms).sort().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;dmSel.appendChild(o)});
+
+    var typMap={},grpMap={};
+    PRODS_ALL.forEach(function(p){
       if(p.type_code)typMap[p.type_code]=p.type_name||p.type_code;
       if(p.group)grpMap[p.group]=p.group_name||p.group;
     });
-    const tSel=document.getElementById('fp-type');
-    Object.keys(typMap).sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=typMap[c]?`${typMap[c]} (${c})`:c;tSel.appendChild(o);});
-    const gSel=document.getElementById('fp-group');
-    Object.keys(grpMap).sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=grpMap[c]?`${grpMap[c]} (${c})`:c;gSel.appendChild(o);});
+    var tSel=document.getElementById('fp-type');
+    Object.keys(typMap).sort().forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=typMap[c]?typMap[c]+' ('+c+')':c;tSel.appendChild(o)});
+    var gSel=document.getElementById('fp-group');
+    Object.keys(grpMap).sort().forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=grpMap[c]?grpMap[c]+' ('+c+')':c;gSel.appendChild(o)});
 
-    // init
-    STORE_FILTERED=[...STORES_ALL];
-    PROD_FILTERED=[...PRODS_ALL];
+    STORE_FILTERED=STORES_ALL.slice();
+    PROD_FILTERED=PRODS_ALL.slice();
     initSort('store-tbl',STORE_SORT,renderStores);
     initSort('prod-tbl',PROD_SORT,renderProds);
     renderStores();
     renderProds();
     renderTrend(data.monthly||[]);
-
     document.getElementById('loading').style.display='none';
   })
-  .catch(e=>{
+  .catch(function(e){
     document.getElementById('loading').textContent='❌ Failed: '+e.message;
   });
+
+/* AI Analysis */
+function openAi(title,html){
+  document.getElementById('ai-modal-title').textContent=title;
+  document.getElementById('ai-modal-content').innerHTML=html;
+  document.getElementById('ai-modal').classList.add('open');
+}
+function closeAi(){document.getElementById('ai-modal').classList.remove('open')}
+
+function aiAnalyze(type){
+  var prods=PRODS_ALL||[];
+  if(type==='cause'){
+    var neg=prods.filter(function(p){return p.gp<0}).sort(function(a,b){return a.gp-b.gp}).slice(0,20);
+    var h='<p><b>สินค้า GP ติดลบ Top 20</b> — ขายได้น้อยกว่าต้นทุน</p><table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="background:#f1f5f9"><th style="padding:6px;text-align:left">สินค้า</th><th style="text-align:right;padding:6px">Sales</th><th style="text-align:right;padding:6px">Cost</th><th style="text-align:right;padding:6px">GP</th><th style="text-align:right;padding:6px">GP%</th></tr>';
+    neg.forEach(function(p){h+='<tr style="border-bottom:1px solid #e5e7eb"><td style="padding:5px">'+(p.name||p.iprod)+'</td><td style="text-align:right;padding:5px">'+Number(p.sales).toLocaleString()+'</td><td style="text-align:right;padding:5px">'+Number(p.cost).toLocaleString()+'</td><td style="text-align:right;padding:5px;color:#dc2626">'+Number(p.gp).toLocaleString()+'</td><td style="text-align:right;padding:5px;color:#dc2626">'+p.gp_pct.toFixed(1)+'%</td></tr>'});
+    h+='</table><p style="margin-top:10px;color:#64748b;font-size:12px">💡 สาเหตุหลัก: ส่วนลดมากเกินไป / ต้นทุนสูงขึ้น / ราคาขายต่ำกว่าทุน</p>';
+    openAi('🔍 สินค้า GP ติดลบ',h);
+  }else if(type==='lowgp'){
+    var low=prods.filter(function(p){return p.gp_pct>=0&&p.gp_pct<20&&p.sales>500}).sort(function(a,b){return a.gp_pct-b.gp_pct}).slice(0,20);
+    var h='<p><b>สินค้า GP ต่ำกว่า 20%</b> (ยอดขาย > ฿500)</p><table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="background:#f1f5f9"><th style="padding:6px;text-align:left">สินค้า</th><th style="text-align:right;padding:6px">Sales</th><th style="text-align:right;padding:6px">Disc</th><th style="text-align:right;padding:6px">GP%</th></tr>';
+    low.forEach(function(p){h+='<tr style="border-bottom:1px solid #e5e7eb"><td style="padding:5px">'+(p.name||p.iprod)+'</td><td style="text-align:right;padding:5px">'+Number(p.sales).toLocaleString()+'</td><td style="text-align:right;padding:5px">'+Number(p.disc||0).toLocaleString()+'</td><td style="text-align:right;padding:5px;color:#ea580c">'+p.gp_pct.toFixed(1)+'%</td></tr>'});
+    h+='</table>';
+    openAi('⚠️ GP ต่ำกว่าเกณฑ์',h);
+  }else if(type==='nocost'){
+    var nc=prods.filter(function(p){return p.cost===0&&p.sales>0}).sort(function(a,b){return b.sales-a.sales});
+    var h='<p><b>'+nc.length+' สินค้าไม่มีต้นทุน</b> — ไม่มี record ใน item_cost</p><table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="background:#f1f5f9"><th style="padding:6px;text-align:left">สินค้า</th><th style="text-align:right;padding:6px">Sales</th><th style="text-align:right;padding:6px">ประเภท</th></tr>';
+    nc.forEach(function(p){h+='<tr style="border-bottom:1px solid #e5e7eb"><td style="padding:5px">'+(p.name||p.iprod)+'</td><td style="text-align:right;padding:5px">'+Number(p.sales).toLocaleString()+'</td><td style="padding:5px">'+(p.type_name||'')+'</td></tr>'});
+    h+='</table><p style="margin-top:10px;color:#64748b;font-size:12px">💡 แจ้งทีมจัดซื้อเพิ่ม cost master สำหรับสินค้าเหล่านี้</p>';
+    openAi('❓ สินค้าไม่มีต้นทุน',h);
+  }else if(type==='trend'){
+    var monthly=DATA.monthly||[];
+    var h='<p><b>GP% Trend รายเดือน</b></p><table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="background:#f1f5f9"><th style="padding:6px">เดือน</th><th style="text-align:right;padding:6px">Sales</th><th style="text-align:right;padding:6px">Disc</th><th style="text-align:right;padding:6px">Cost</th><th style="text-align:right;padding:6px">GP%</th></tr>';
+    monthly.forEach(function(m){var c=m.gp_pct<25?'#dc2626':m.gp_pct<33?'#ea580c':'#16a34a';h+='<tr style="border-bottom:1px solid #e5e7eb"><td style="padding:5px">'+m.month+(m.is_mtd?' (MTD)':'')+'</td><td style="text-align:right;padding:5px">'+Number(m.sales).toLocaleString()+'</td><td style="text-align:right;padding:5px">'+Number(m.disc||0).toLocaleString()+'</td><td style="text-align:right;padding:5px">'+Number(m.cost).toLocaleString()+'</td><td style="text-align:right;padding:5px;color:'+c+';font-weight:700">'+m.gp_pct.toFixed(1)+'%</td></tr>'});
+    h+='</table>';
+    openAi('📊 Trend GP รายเดือน',h);
+  }
+}
 </script>
 </body>
 </html>
