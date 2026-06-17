@@ -234,7 +234,29 @@ function renderStores(){
   document.getElementById('store-tfoot').innerHTML='<tr><td colspan="4" style="color:var(--muted);font-size:11px">'+STORE_FILTERED.length+' ร้าน</td><td class="r">'+fmt(totS)+'</td><td class="r">'+fmt(totD)+'</td><td class="r">'+fmt(totC)+'</td><td class="r">'+fmt(totG)+'</td><td class="r">'+gpBadge(totS?totG/totS*100:0,totC)+'</td></tr>';
 }
 
+function refreshDropdowns(){
+  var rm=document.getElementById('fs-rm').value;
+  var dm=document.getElementById('fs-dm').value;
+  /* rebuild DM options based on selected RM */
+  var dms=new Set();
+  STORES_ALL.forEach(function(s){if(s.dm&&(!rm||s.rm===rm))dms.add(s.dm)});
+  var dmSel=document.getElementById('fs-dm');
+  var opts=dmSel.querySelectorAll('option:not(:first-child)');
+  for(var i=0;i<opts.length;i++)opts[i].remove();
+  Array.from(dms).sort().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;dmSel.appendChild(o)});
+  if(!dms.has(dm))dmSel.value='';
+  /* rebuild RM options based on selected DM */
+  var rms=new Set();
+  var curDm=dmSel.value;
+  STORES_ALL.forEach(function(s){if(s.rm&&(!curDm||s.dm===curDm))rms.add(s.rm)});
+  var rmSel=document.getElementById('fs-rm');
+  opts=rmSel.querySelectorAll('option:not(:first-child)');
+  for(var i=0;i<opts.length;i++)opts[i].remove();
+  Array.from(rms).sort().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;rmSel.appendChild(o)});
+  if(!rms.has(rm))rmSel.value='';
+}
 function applyStoreFilters(){
+  refreshDropdowns();
   var rm=document.getElementById('fs-rm').value;
   var dm=document.getElementById('fs-dm').value;
   var q=document.getElementById('fs-search').value.trim().toLowerCase();
@@ -403,12 +425,7 @@ fetch('./gp_analysis_data.json')
       cmpPct(cur.gp_pct,prev.gp_pct,'k-gp-pct-cmp');
     }
 
-    var rms=new Set(),dms=new Set();
-    STORES_ALL.forEach(function(st){if(st.rm)rms.add(st.rm);if(st.dm)dms.add(st.dm)});
-    var rmSel=document.getElementById('fs-rm');
-    Array.from(rms).sort().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;rmSel.appendChild(o)});
-    var dmSel=document.getElementById('fs-dm');
-    Array.from(dms).sort().forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=v;dmSel.appendChild(o)});
+    /* dropdowns populated by refreshDropdowns() via applyStoreFilters */
 
     var typMap={},grpMap={};
     PRODS_ALL.forEach(function(p){
