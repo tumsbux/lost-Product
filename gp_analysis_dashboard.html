@@ -82,6 +82,13 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
 .prod-detail-tbl .r{text-align:right}
 tr.prod-row{cursor:pointer}
 tr.prod-row:hover{background:rgba(59,130,246,0.08)}
+@media print {
+  body > * { display: none !important; }
+  body > #ai-modal, body > #ai-modal * { display: block !important; visibility: visible !important; }
+  #ai-modal { position: absolute; left: 0; top: 0; width: 100%; height: auto; background: none !important; display: block !important; }
+  .ai-modal-body { box-shadow: none !important; max-height: none !important; overflow: visible !important; width: 100% !important; max-width: none !important; padding: 0 !important; }
+  .ai-close, .ai-btn { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -98,6 +105,7 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
   <button class="ai-btn" onclick="aiAnalyze('lowgp')">⚠️ GP ต่ำกว่าเกณฑ์</button>
   <button class="ai-btn" onclick="aiAnalyze('nocost')">❓ ไม่มีต้นทุน</button>
   <button class="ai-btn" onclick="aiAnalyze('trend')">📊 Trend GP รายเดือน</button>
+  <button class="ai-btn" style="background:linear-gradient(135deg,#e11d48,#be123c);margin-left:auto;" onclick="openExecutiveReport()">📋 Executive Report</button>
 </div>
 
 <div class="kpi-row">
@@ -546,6 +554,97 @@ function aiAnalyze(type){
     h+='</table>';
     openAi('📊 Trend GP รายเดือน',h);
   }
+}
+
+function openExecutiveReport() {
+  var s = DATA.summary || {};
+  var m = DATA._meta || {};
+  var stores = DATA.stores || [];
+  
+  // Group by RM
+  var rmMap = {};
+  stores.forEach(function(st) {
+    var rm = st.rm || 'ไม่ระบุ';
+    if (!rmMap[rm]) rmMap[rm] = { sales: 0, cost: 0, count: 0 };
+    rmMap[rm].sales += st.sales;
+    rmMap[rm].cost += st.cost;
+    rmMap[rm].count++;
+  });
+  
+  var rmRows = Object.keys(rmMap).sort().map(function(rm) {
+    var v = rmMap[rm];
+    var gp = v.sales - v.cost;
+    var gp_pct = v.sales ? (gp / v.sales * 100) : 0;
+    return '<tr style="border-bottom:1px solid #e2e8f0"><td style="padding:6px;font-weight:600">' + rm + ' (รวม ' + v.count + ' สาขา)</td><td class="r" style="padding:6px">' + fmt(v.sales) + '</td><td class="r" style="padding:6px">' + fmt(gp) + '</td><td class="r" style="padding:6px">' + gp_pct.toFixed(1) + '%</td></tr>';
+  }).join('');
+
+  // Group by DM
+  var dmMap = {};
+  stores.forEach(function(st) {
+    var dm = st.dm || 'ไม่ระบุ';
+    if (!dmMap[dm]) dmMap[dm] = { rm: st.rm || '', sales: 0, cost: 0, count: 0 };
+    dmMap[dm].sales += st.sales;
+    dmMap[dm].cost += st.cost;
+    dmMap[dm].count++;
+  });
+  
+  var dmRows = Object.keys(dmMap).sort(function(a,b) { return dmMap[b].sales - dmMap[a].sales; }).map(function(dm) {
+    var v = dmMap[dm];
+    var gp = v.sales - v.cost;
+    var gp_pct = v.sales ? (gp / v.sales * 100) : 0;
+    return '<tr style="border-bottom:1px solid #e2e8f0"><td style="padding:6px;font-weight:600">' + dm + '</td><td style="padding:6px">' + v.rm + '</td><td class="r" style="padding:6px">' + v.count + '</td><td class="r" style="padding:6px">' + fmt(v.sales) + '</td><td class="r" style="padding:6px">' + fmt(gp) + '</td><td class="r" style="padding:6px">' + gp_pct.toFixed(1) + '%</td></tr>';
+  }).join('');
+
+  var title = '📊 รายงานสรุปสำหรับผู้บริหาร (EXECUTIVE BOARD REPORT)';
+  var html = '<div style="font-family:\'Sarabun\',sans-serif;color:#1e293b;padding:10px;line-height:1.6;">' +
+    '<div style="text-align:center;margin-bottom:20px;border-bottom:2px solid #0f172a;padding-bottom:10px;">' +
+    '<h2 style="font-size:18px;font-weight:700;margin-bottom:4px;">รายงานสรุปสำหรับผู้บริหาร (EXECUTIVE BOARD REPORT)</h2>' +
+    '<p style="font-size:13px;color:#475569;margin-bottom:4px;">สรุปผลประกอบการค้าปลีกรายภูมิภาค (RM/DM) ดัชนีความเสี่ยงทุจริตหน้าร้าน และแผนปฏิบัติการฟื้นฟูสาขา</p>' +
+    '<p style="font-size:12px;font-weight:700;color:#0f172a;">ข้อมูลเฉพาะเดือน (MTD) ประจำวันที่ 1 - ' + (m.days_elapsed || '?') + ' มิถุนายน พ.ศ. 2569</p>' +
+    '</div>' +
+    
+    '<div style="margin-bottom:20px;">' +
+    '<h3 style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;border-left:4px solid #e11d48;padding-left:8px;">1. สรุปผลการดำเนินงานภาพรวมและรายภูมิภาค (Overall & Regional Performance)</h3>' +
+    '<p style="font-size:12px;margin-bottom:10px;">ผลการดำเนินงานรวมของเครือข่ายร้านตื่นใจเฉพาะเดือน (MTD) มียอดขายสุทธิสะสมอยู่ที่ <b>฿' + fmt(s.sales) + '</b> มีผลกำไรขั้นต้น (Gross Profit) สะสมอยู่ที่ <b>฿' + fmt(s.gp) + '</b> คิดเป็นอัตราส่วนกำไรขั้นต้นเฉลี่ยของบริษัท <b>' + fmtP(s.gp_pct) + '</b></p>' +
+    '<table style="width:100%;font-size:12px;border-collapse:collapse;margin-top:10px;margin-bottom:10px;">' +
+    '<tr style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;"><th style="padding:6px;text-align:left">ภูมิภาคการขาย (RM)</th><th class="r" style="padding:6px">ยอดขาย MTD (฿)</th><th class="r" style="padding:6px">กำไร MTD (฿)</th><th class="r" style="padding:6px">อัตรากำไร GP%</th></tr>' +
+    rmRows +
+    '</table>' +
+    '</div>' +
+    
+    '<div style="margin-bottom:20px;">' +
+    '<h3 style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;border-left:4px solid #e11d48;padding-left:8px;">2. ผลงานจำแนกรายผู้จัดการเขตพื้นที่ (District Manager MTD Scorecard)</h3>' +
+    '<table style="width:100%;font-size:11px;border-collapse:collapse;margin-top:10px;">' +
+    '<tr style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;"><th style="padding:6px;text-align:left">ผู้จัดการเขต (DM)</th><th style="padding:6px;text-align:left">สังกัด RM</th><th class="r" style="padding:6px">สาขา</th><th class="r" style="padding:6px">ยอดขาย (฿)</th><th class="r" style="padding:6px">กำไร (฿)</th><th class="r" style="padding:6px">GP%</th></tr>' +
+    dmRows +
+    '</table>' +
+    '</div>' +
+
+    '<div style="margin-bottom:20px;">' +
+    '<h3 style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;border-left:4px solid #e11d48;padding-left:8px;">3. ระบบสืบค้นและเฝ้าระวังความเสี่ยงการทุจริตหน้าร้าน (Loss Prevention & Fraud Watchlist)</h3>' +
+    '<ul style="font-size:12px;padding-left:20px;margin-bottom:10px;">' +
+    '<li><b>สถิติมูลค่าส่วนลดพิเศษ (Price Overrides):</b> ต้องมีการควบคุมระดับสาขาและตั้งระบบเฝ้าระวังพฤติกรรมเสี่ยง</li>' +
+    '<li><b>สถิติยกเลิกบิลคืนสินค้า (Returns Log):</b> ตรวจสอบเคสคืนสินค้าที่ชิ้นสูงผิดธรรมชาติ เช่น ช้อนใหญ่ ตราหัวม้าลาย หรือจานชามเมลามีน ที่มีปริมาณการคืนจำนวนมากผิดปกติ</li>' +
+    '<li><b>กลยุทธ์การตรวจสอบความปลอดภัย:</b> สั่งการฝ่ายตรวจสอบกู้ไฟล์กล้อง CCTV ย้อนหลังเพื่อหาหลักฐานการคืนเงินที่ต้องสงสัย</li>' +
+    '</ul>' +
+    '</div>' +
+
+    '<div style="margin-bottom:20px;">' +
+    '<h3 style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;border-left:4px solid #e11d48;padding-left:8px;">4. แผนปฏิบัติการเพื่อแก้ไขและฟื้นฟูเชิงยุทธศาสตร์ (Management Action Plan)</h3>' +
+    '<ol style="font-size:12px;padding-left:20px;margin-bottom:10px;">' +
+    '<li><b>POS Security restriction:</b> ล็อกสิทธิ์และระงับรหัสผ่านผู้ใช้งานที่มีประวัติต้องสงสัยทันที และเปิดใช้ระบบอนุมัติ Dual-Authorization (ผู้จัดการสาขาและผู้จัดการเขตร่วมกัน) สำหรับการยกเลิกบิลหรือคืนสินค้ามูลค่าสูง</li>' +
+    '<li><b>GP Merchandising:</b> ดึงสัดส่วนยอดขายกลุ่มสินค้า Core (เครื่องครัว, เครื่องนอน, เครื่องเขียน) ที่มีอัตรากำไร GP% สูง (40-45%) คืนมา และปรับปรุงยอดขายกลุ่ม Minimart (GP 30-33%)</li>' +
+    '<li><b>Inventory Adjustment WMS Control:</b> ให้ฝ่ายวิเคราะห์คลังลดเกณฑ์ Safety Stock และควบคุม Purchase Order ของสาขาที่มีปัญหาสต๊อกบวม</li>' +
+    '</ol>' +
+    '</div>' +
+    
+    '<div style="text-align:right;margin-top:20px;border-top:1px solid #cbd5e1;padding-top:10px;">' +
+    '<button class="ai-btn" style="background:#475569;" onclick="window.print()">🖨️ พิมพ์รายงาน</button>' +
+    '</div>' +
+    '</div>';
+    
+  openAi(title, html);
+}
 }
 </script>
 </body>
