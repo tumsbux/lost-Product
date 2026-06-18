@@ -71,6 +71,13 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
 .ai-close{border:none;background:none;font-size:20px;cursor:pointer;color:#94a3b8;padding:0 4px}
 .ai-close:hover{color:#1e293b}
 #ai-modal-content{padding:16px 18px;font-size:13px;line-height:1.7;color:#334155}
+@media print {
+  body > * { display: none !important; }
+  body > #ai-modal, body > #ai-modal * { display: block !important; visibility: visible !important; }
+  #ai-modal { position: absolute; left: 0; top: 0; width: 100%; height: auto; background: none !important; display: block !important; }
+  .ai-modal-body { box-shadow: none !important; max-height: none !important; overflow: visible !important; width: 100% !important; max-width: none !important; padding: 0 !important; }
+  .ai-close, .ai-btn { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -79,6 +86,7 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
 <div class="ai-bar">
   <span class="ai-label">✨ AI Analysis:</span>
   <button class="ai-btn" onclick="aiAnalyze('aging')">📦 วิเคราะห์ Aging</button><button class="ai-btn" onclick="aiAnalyze('topvalue')">💰 มูลค่าค้างสต็อกสูง</button><button class="ai-btn" onclick="aiAnalyze('category')">📊 แยกตามประเภท</button><button class="ai-btn" onclick="aiAnalyze('action')">🎯 แนะนำ Action</button>
+  <button class="ai-btn" style="background:linear-gradient(135deg,#e11d48,#be123c);margin-left:auto;" onclick="openExecutiveReport()">📋 Executive Report</button>
 </div>
 
 <div class="hdr">
@@ -133,7 +141,7 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
 </div>
 
 <script>
-let ALL = [], FILTERED = [], SORT_COL = 'days_since', SORT_DIR = -1;
+let ALL = [], FILTERED = [], SORT_COL = 'days_since', SORT_DIR = -1, META = {}, SUMMARY = {}, STORE_INFO = {};
 const fmt  = n => n == null ? '—' : Number(n).toLocaleString('th-TH', {maximumFractionDigits:0});
 const fmtD = n => n == null ? '—' : Number(n).toLocaleString('th-TH', {maximumFractionDigits:2});
 
@@ -267,14 +275,15 @@ fetch('./dead_stock_data.json')
   .then(r => r.json())
   .then(data => {
     ALL = data.products || [];
-    const m = data._meta || {};
-    const s = data.summary || {};
+    META = data._meta || {};
+    SUMMARY = data.summary || {};
+    STORE_INFO = data.store_info || {};
 
     document.getElementById('hdr-sub').textContent =
-      `ข้อมูล ณ ${m.as_of||''} · threshold ${m.threshold_days||90} วัน · built by ${m.built_by||''}`;
-    document.getElementById('k-products').textContent = (s.total_products||0).toLocaleString();
-    document.getElementById('k-value').textContent    = '฿' + fmt(s.total_onhand_value);
-    document.getElementById('k-qty').textContent      = fmtD(s.total_onhand_qty);
+      `ข้อมูล ณ ${META.as_of||''} · threshold ${META.threshold_days||90} วัน · built by ${META.built_by||''}`;
+    document.getElementById('k-products').textContent = (SUMMARY.total_products||0).toLocaleString();
+    document.getElementById('k-value').textContent    = '฿' + fmt(SUMMARY.total_onhand_value);
+    document.getElementById('k-qty').textContent      = fmtD(SUMMARY.total_onhand_qty);
 
     // populate type filter — show type_name (itycode), filter by itycode
     const typMap = {};
@@ -327,6 +336,89 @@ function aiAnalyze(type){
   }
 }
 
+function openExecutiveReport() {
+  var storeMap = {};
+  ALL.forEach(function(p) {
+    var sts = p.stores || [];
+    sts.forEach(function(st) {
+      var code = st.c;
+      if (!storeMap[code]) storeMap[code] = { qty: 0, value: 0 };
+      storeMap[code].qty += st.q;
+      storeMap[code].value += st.v;
+    });
+  });
+
+  var storeList = Object.keys(storeMap).map(function(code) {
+    var info = STORE_INFO[code] || {};
+    return {
+      code: code,
+      name: info.name || 'ไม่ระบุ',
+      dm: info.dm || 'ไม่ระบุ',
+      rm: info.rm || 'ไม่ระบุ',
+      qty: storeMap[code].qty,
+      value: storeMap[code].value
+    };
+  });
+
+  storeList.sort(function(a, b) { return b.value - a.value; });
+  var top5 = storeList.slice(0, 5);
+
+  var top5Rows = top5.map(function(s) {
+    return '<tr style="border-bottom:1px solid #e2e8f0"><td style="padding:6px;font-weight:600">' + s.code + '</td><td style="padding:6px">' + s.name + '</td><td style="padding:6px">' + s.rm + '</td><td style="padding:6px">' + s.dm + '</td><td class="r" style="padding:6px">' + fmt(s.qty) + '</td><td class="r" style="padding:6px">' + fmt(s.value) + '</td></tr>';
+  }).join('');
+
+  var title = '📊 รายงานสรุปสำหรับผู้บริหาร (EXECUTIVE BOARD REPORT)';
+  var html = '<div style="font-family:\'Sarabun\',sans-serif;color:#1e293b;padding:10px;line-height:1.6;">' +
+    '<div style="text-align:center;margin-bottom:20px;border-bottom:2px solid #0f172a;padding-bottom:10px;">' +
+    '<h2 style="font-size:18px;font-weight:700;margin-bottom:4px;">รายงานสรุปสำหรับผู้บริหาร (EXECUTIVE BOARD REPORT)</h2>' +
+    '<p style="font-size:13px;color:#475569;margin-bottom:4px;">สรุปสุขภาพสินค้าคงคลัง เงินทุนหมุนเวียนจม และแผนปฏิบัติการระบายสินค้า</p>' +
+    '<p style="font-size:12px;font-weight:700;color:#0f172a;">ข้อมูล ณ วันที่ ' + (META.as_of || '?') + ' (สินค้าค้างส่งมอบ ≥ ' + (META.threshold_days || '90') + ' วัน)</p>' +
+    '</div>' +
+    
+    '<div style="margin-bottom:20px;">' +
+    '<h3 style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;border-left:4px solid #e11d48;padding-left:8px;">1. รายงานวิเคราะห์สุขภาพสินค้าคงคลังและเงินทุนหมุนเวียนจม (Inventory Health Analysis)</h3>' +
+    '<p style="font-size:12px;margin-bottom:10px;">จากการเชื่อมโยงระบบ WMS กับสถิติความเร็วการขายย้อนหลัง พบข้อมูลวิเคราะห์สินค้าคงคลังค้างสะสมดังนี้:</p>' +
+    '<ul style="font-size:12px;padding-left:20px;margin-bottom:10px;">' +
+    '<li><b>สินค้าค้างสต็อกไม่มีการเคลื่อนไหว (SKU Count):</b> สะสมสูงถึง <b>' + (SUMMARY.total_products || 0).toLocaleString() + ' รายการ</b></li>' +
+    '<li><b>จำนวนชิ้นคงคลังรวม (Total Quantity):</b> สะสม <b>' + fmtD(SUMMARY.total_onhand_qty) + ' ชิ้น</b></li>' +
+    '<li><b>มูลค่าเงินทุนหมุนเวียนที่จมในคลัง (Total Value):</b> มีมูลค่ารวมสูงถึง <b>฿' + fmt(SUMMARY.total_onhand_value) + '</b></li>' +
+    '</ul>' +
+    '</div>' +
+    
+    '<div style="margin-bottom:20px;">' +
+    '<h3 style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;border-left:4px solid #e11d48;padding-left:8px;">2. รายชื่อสาขาที่มีมูลค่าสินค้าทุนจมสะสมสูงสุด 5 อันดับแรก (Top 5 Locked Inventory Branches)</h3>' +
+    '<table style="width:100%;font-size:11px;border-collapse:collapse;margin-top:10px;">' +
+    '<tr style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;"><th style="padding:6px;text-align:left">รหัสสาขา</th><th style="padding:6px;text-align:left">ชื่อสาขา</th><th style="padding:6px;text-align:left">ภูมิภาค (RM)</th><th style="padding:6px;text-align:left">ผู้จัดการเขต (DM)</th><th class="r" style="padding:6px">Onhand (ชิ้น)</th><th class="r" style="padding:6px">มูลค่าสินค้าจม (฿)</th></tr>' +
+    top5Rows +
+    '</table>' +
+    '</div>' +
+
+    '<div style="margin-bottom:20px;">' +
+    '<h3 style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;border-left:4px solid #e11d48;padding-left:8px;">3. แผนปฏิบัติการระบายและปรับปรุงสินค้าคงคลัง (Inventory Liquidation Plan)</h3>' +
+    '<ul style="font-size:12px;padding-left:20px;margin-bottom:10px;">' +
+    '<li><b>การระบายสินค้าค้างคลัง (Dead Stock Liquidation):</b> จัดแคมเปญลดราคาสินค้าค้างคลังหน้าร้านลด 30-50% เพื่อเร่งเปลี่ยนสต๊อกจมเป็นกระแสเงินสดกลับคืนมา</li>' +
+    '<li><b>การโอนย้ายกระจายสต๊อก (Inter-store Transfers):</b> สั่งการโยกย้ายถ่ายโอนสินค้ากลุ่ม Over Stock ในสาขาที่มีปัญหาสต๊อกบวมไปยังสาขาที่มีอัตราความเร็วการขายสูงกว่า</li>' +
+    '<li><b>การระงับคำสั่งซื้อชั่วคราว (Purchase Order Caps):</b> ตั้งค่าระงับการออกใบสั่งซื้อ (PO Freeze) สำหรับรายการสินค้า SKU ที่มีจำนวนวันครอบคลุมความเร็วในการขายเกิน 180 วันขึ้นไป</li>' +
+    '</ul>' +
+    '</div>' +
+
+    '<div style="margin-bottom:20px;">' +
+    '<h3 style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;border-left:4px solid #e11d48;padding-left:8px;">4. ตารางสรุปบทบาทการปฏิบัติงานผู้บริหาร (PDCA Management Action)</h3>' +
+    '<ol style="font-size:12px;padding-left:20px;margin-bottom:10px;">' +
+    '<li><b>วางแผน (Plan):</b> กำหนดเป้าหมายกู้ยอดขายรายภาคและฟื้นฟูสาขาเฝ้าระวังสีแดงร่วมกับ DMs</li>' +
+    '<li><b>ปฏิบัติ (Do):</b> จัดสรรสินค้าขายดีและสินค้าอัตรากำไรขั้นต้นสูงเข้าสาขาเป้าหมาย</li>' +
+    '<li><b>ตรวจสอบ (Check):</b> ติดตามและตรวจสอบมูลค่าสินค้าค้างคลัง/สินค้าขาดโอกาสขายเป็นรายสัปดาห์</li>' +
+    '<li><b>ปรับปรุง (Act):</b> วิเคราะห์สินค้า Dead Stock เพื่อให้คลังปรับลด Safety Stock ในระบบ WMS ลง 50% ให้สอดคล้องกับความต้องการจริง</li>' +
+    '</ol>' +
+    '</div>' +
+    
+    '<div style="text-align:right;margin-top:20px;border-top:1px solid #cbd5e1;padding-top:10px;">' +
+    '<button class="ai-btn" style="background:#475569;" onclick="window.print()">🖨️ พิมพ์รายงาน</button>' +
+    '</div>' +
+    '</div>';
+    
+  openAi(title, html);
+}
 </script>
 
 <div class="ai-modal" id="ai-modal" onclick="if(event.target.id==='ai-modal')closeAi()">
