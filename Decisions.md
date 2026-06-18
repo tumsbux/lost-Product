@@ -5,6 +5,28 @@
 
 ---
 
+## [2026-06-18] Executive Board Report (รายงานสรุปสำหรับผู้บริหาร)
+
+**Status:** Accepted
+
+**Context:** The management requested a professional, printable "Executive Board Report" in Thai for all 4 dashboards to summarize key MTD/inventory performance, regional/DM rankings, security plans, and accountability schedules.
+
+**Decision:**
+- Embedded a `@media print` style in the `<style>` block of all four HTML dashboards to isolate the report modal and hide all other UI controls when printing.
+- Placed a crimson gradient `📋 Executive Report` button inside the `.ai-bar` of each dashboard.
+- Implemented `openExecutiveReport()` using the existing `#ai-modal` framework to dynamically aggregate data from the global dashboard datasets:
+  - **GP Analysis**: Aggregates sales/costs by RM and DM, compiling regional and scorecard tables alongside Loss Prevention guidelines.
+  - **Dead Stock**: Promoted data structures to global variables and extracts the Top 5 locked inventory stores.
+  - **Lost Product**: Summarizes active/stale/lost counts and lists the Top 10 lost products by impact.
+  - **Visual Adjustment**: Counts High/Medium risk branches, lists the Top 5 outlier stores, and details CCTV/security action plans.
+
+**Consequences:**
+- ✅ Provides a professional, printable A4 board report directly from the client browser.
+- ✅ Reuses the existing modal system, avoiding extra HTML elements or external dependencies.
+- ✅ Dynamic calculation ensures consistency between the report figures and the dashboard's active JSON data.
+
+---
+
 ## [2026-06-04] GitHub Actions — Multi-cron 5 slots 07:30-09:30 BKK
 
 **Status:** Accepted
