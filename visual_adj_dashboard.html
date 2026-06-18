@@ -73,6 +73,13 @@ tfoot td{padding:7px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
 .ai-close{border:none;background:none;font-size:20px;cursor:pointer;color:#94a3b8;padding:0 4px}
 .ai-close:hover{color:#1e293b}
 #ai-modal-content{padding:16px 18px;font-size:13px;line-height:1.7;color:#334155}
+@media print {
+  body > * { display: none !important; }
+  body > #ai-modal, body > #ai-modal * { display: block !important; visibility: visible !important; }
+  #ai-modal { position: absolute; left: 0; top: 0; width: 100%; height: auto; background: none !important; display: block !important; }
+  .ai-modal-body { box-shadow: none !important; max-height: none !important; overflow: visible !important; width: 100% !important; max-width: none !important; padding: 0 !important; }
+  .ai-close, .ai-btn { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -87,6 +94,7 @@ tfoot td{padding:7px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
 <div class="ai-bar">
   <span class="ai-label">✨ AI Analysis:</span>
   <button class="ai-btn" onclick="aiAnalyze('outlier')">🔍 ตรวจจับ Outlier</button><button class="ai-btn" onclick="aiAnalyze('pattern')">📊 Pattern ผิดปกติ</button><button class="ai-btn" onclick="aiAnalyze('store')">🏪 ร้านเสี่ยงสูง</button><button class="ai-btn" onclick="aiAnalyze('action')">🎯 แนะนำ Action</button>
+  <button class="ai-btn" style="background:linear-gradient(135deg,#e11d48,#be123c);margin-left:auto;" onclick="openExecutiveReport()">📋 Executive Report</button>
 </div>
 <div class="tabs">
   <div class="tab active" onclick="switchTab('stores')">🏪 ตามร้าน</div>
@@ -444,6 +452,95 @@ function closeAi(){document.getElementById('ai-modal').classList.remove('open');
 
 function aiAnalyze(type){
   openAi('🔧 กำลังพัฒนา','<p>ฟีเจอร์นี้กำลังพัฒนา</p>');
+}
+
+function openExecutiveReport() {
+  if (!DATA) return;
+  const s = DATA.summary || {};
+  const m = DATA._meta || {};
+  const stores = DATA.stores || [];
+
+  // Count risk levels dynamically
+  let highRiskCount = 0;
+  let medRiskCount = 0;
+  stores.forEach(st => {
+    const absV = Math.abs(st.net_value || 0);
+    if (absV > 1000000) highRiskCount++;
+    else if (absV > 300000) medRiskCount++;
+  });
+
+  // Get Top 5 stores with largest net adjustments (by absolute net value)
+  const sortedStores = [...stores].sort((a, b) => Math.abs(b.net_value || 0) - Math.abs(a.net_value || 0));
+  const top5Stores = sortedStores.slice(0, 5);
+
+  const top5Rows = top5Stores.map((st, idx) => {
+    const netValStr = st.net_value > 0 ? `+฿${fmt(st.net_value)}` : st.net_value < 0 ? `−฿${fmt(Math.abs(st.net_value))}` : '฿0';
+    const netQtyStr = st.net_qty > 0 ? `+${fmt(st.net_qty)}` : st.net_qty < 0 ? `−${fmt(Math.abs(st.net_qty))}` : '0';
+    const risk = Math.abs(st.net_value) > 1000000 ? '<span style="color:#e74c3c;font-weight:700">HIGH</span>' :
+                 Math.abs(st.net_value) > 300000  ? '<span style="color:#e67e22;font-weight:700">MED</span>'  :
+                                                  '<span style="color:#2e86ab;font-weight:700">LOW</span>';
+    return `<tr style="border-bottom:1px solid #e2e8f0">` +
+      `<td style="padding:6px;text-align:center">${idx + 1}</td>` +
+      `<td style="padding:6px;font-weight:600">${st.store}</td>` +
+      `<td style="padding:6px;white-space:normal">${st.name || '—'}</td>` +
+      `<td style="padding:6px;text-align:center">${risk}</td>` +
+      `<td class="r" style="padding:6px;text-align:right">${netQtyStr}</td>` +
+      `<td class="r" style="padding:6px;text-align:right;font-weight:600">${netValStr}</td>` +
+      `</tr>`;
+  }).join('');
+
+  const title = '📊 รายงานสรุปสำหรับผู้บริหาร (EXECUTIVE BOARD REPORT)';
+  const html = '<div style="font-family:\'Sarabun\',sans-serif;color:#1e293b;padding:10px;line-height:1.6;">' +
+    '<div style="text-align:center;margin-bottom:20px;border-bottom:2px solid #0f172a;padding-bottom:10px;">' +
+    '<h2 style="font-size:18px;font-weight:700;margin-bottom:4px;">รายงานสรุปสำหรับผู้บริหาร (EXECUTIVE BOARD REPORT)</h2>' +
+    '<p style="font-size:13px;color:#475569;margin-bottom:4px;">สรุปรายการปรับปรุงยอดสต๊อกหน้าจอคลัง (WMS Visual Adjustment) และการควบคุมช่องโหว่ความมั่นคงทางสินค้า</p>' +
+    '<p style="font-size:12px;font-weight:700;color:#0f172a;">ข้อมูลสรุปสะสม ณ วันที่สร้าง ' + (m.built_at?.slice(0,10) || '—') + '</p>' +
+    '</div>' +
+    
+    '<div style="margin-bottom:20px;">' +
+    '<h3 style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;border-left:4px solid #e11d48;padding-left:8px;">1. ดัชนีรวมการปรับปรุงยอดคลังสินค้าผ่านหน้าจอ (WMS Visual Adjustment Overview)</h3>' +
+    '<p style="font-size:12px;margin-bottom:10px;">การปรับปรุงยอดแบบทัศนวิสัย (Visual Adjustment) บน WMS ซึ่งมักใช้ในการปรับสต๊อกดิบโดยไม่ระบุเอกสารอ้างอิงชัดเจน:</p>' +
+    '<table style="width:100%;font-size:12px;border-collapse:collapse;margin-top:10px;margin-bottom:10px;">' +
+    '<tr style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;"><th style="padding:6px;text-align:left">ตัวชี้วัดความเสี่ยง</th><th style="padding:6px;text-align:right">ยอดสะสม</th><th style="padding:6px;text-align:left">คำอธิบายสถานะ</th></tr>' +
+    '<tr style="border-bottom:1px solid #e2e8f0"><td style="padding:6px;font-weight:600">🏪 จำนวนสาขาที่มีการปรับยอด</td><td style="padding:6px;text-align:right">' + fmt(s.total_stores) + ' สาขา</td><td style="padding:6px">มีการใช้งานฟังก์ชั่นปรับปรุงยอดหน้าจอ</td></tr>' +
+    '<tr style="border-bottom:1px solid #e2e8f0"><td style="padding:6px;font-weight:600">📦 ปริมาณปรับปรุงสุทธิ (Net Qty)</td><td style="padding:6px;text-align:right">' + fmt(s.total_net_qty) + ' ชิ้น</td><td style="padding:6px">ผลต่างรวมของการรับเข้าและจ่ายออก (สะสม)</td></tr>' +
+    '<tr style="border-bottom:1px solid #e2e8f0"><td style="padding:6px;font-weight:600">฿ มูลค่าสุทธิปรับปรุง (Net Value)</td><td style="padding:6px;text-align:right;font-weight:700;color:#dc2626">฿' + fmt(s.total_net_value) + '</td><td style="padding:6px">มูลค่าต้นทุนสินค้าสะสมที่ถูกปรับปรุงออกจากระบบคลัง</td></tr>' +
+    '<tr style="border-bottom:1px solid #e2e8f0"><td style="padding:6px;font-weight:600">🚨 สาขาเสี่ยงสูง (Net > ฿1M)</td><td style="padding:6px;text-align:right;color:#dc2626;font-weight:700">' + fmt(highRiskCount) + ' สาขา</td><td style="padding:6px">ต้องเร่งจัดส่งทีมตรวจสอบ Loss Prevention เข้าพื้นที่ตรวจนับจริง</td></tr>' +
+    '<tr style="border-bottom:1px solid #e2e8f0"><td style="padding:6px;font-weight:600">⚠️ สาขาเสี่ยงปานกลาง (฿300k–฿1M)</td><td style="padding:6px;text-align:right;color:#ea580c">' + fmt(medRiskCount) + ' สาขา</td><td style="padding:6px">ต้องเฝ้าระวังพฤติกรรมการปรับสต๊อกเป็นรายรอบเดือน</td></tr>' +
+    '</table>' +
+    '</div>' +
+    
+    '<div style="margin-bottom:20px;">' +
+    '<h3 style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;border-left:4px solid #e11d48;padding-left:8px;">2. รายชื่อ 5 สาขาแรกที่มีการปรับปรุงสต๊อกสูงสุด (Top 5 Outlier Stores Watchlist)</h3>' +
+    '<table style="width:100%;font-size:11px;border-collapse:collapse;margin-top:10px;">' +
+    '<tr style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;"><th style="padding:6px;text-align:center">#</th><th style="padding:6px;text-align:left">รหัสร้าน</th><th style="padding:6px;text-align:left">ชื่อสาขา</th><th style="padding:6px;text-align:center">ระดับความเสี่ยง</th><th style="padding:6px;text-align:right">Net Qty</th><th style="padding:6px;text-align:right">Net มูลค่า (฿)</th></tr>' +
+    top5Rows +
+    '</table>' +
+    '</div>' +
+ 
+    '<div style="margin-bottom:20px;">' +
+    '<h3 style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;border-left:4px solid #e11d48;padding-left:8px;">3. มาตรการควบคุมสิทธิ์และความมั่นคงของสต๊อกสินค้า (Management Security Audit Plan)</h3>' +
+    '<ul style="font-size:12px;padding-left:20px;margin-bottom:10px;">' +
+    '<li><b>POS & WMS Access Lockdown:</b> สั่งการฝ่ายไอทีระงับสิทธิ์การปรับยอดสต๊อกด้วยวิธี Visual Adjustment สำหรับพนักงานทั่วไป และระบุให้ผู้จัดการเขต (DM) หรือฝ่ายตรวจสอบส่วนกลางเป็นผู้อนุมัติเท่านั้น</li>' +
+    '<li><b>CCTV & Session Video Verification:</b> ให้แผนกป้องกันการสูญเสีย (Loss Prevention) ดำเนินการเปิดภาพกล้อง CCTV ย้อนหลังตรวจสอบเวลาการเข้าระบบ (Session timestamps) ของ 5 สาขาแรกที่มีสถิติการปรับยอดมูลค่าสูงสุด เพื่อพิสูจน์เจตนาและความสอดคล้องทางกายภาพ</li>' +
+    '<li><b>Regular Stock Counting Audits:</b> มอบหมายผู้จัดการร้านเฝ้าระวังดำเนินการนับสต๊อกจริง (Physical Count) ของสินค้ากลุ่มเสี่ยงที่มีสถิติถูกปรับบ่อยเป็นรอบวงจรรายสัปดาห์</li>' +
+    '</ul>' +
+    '</div>' +
+ 
+    '<div style="margin-bottom:20px;">' +
+    '<h3 style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;border-left:4px solid #e11d48;padding-left:8px;">4. การติดตามและเป้าหมายการดำเนินงาน (PDCA & Financial ROI Tracker)</h3>' +
+    '<ol style="font-size:12px;padding-left:20px;margin-bottom:10px;">' +
+    '<li><b>Audit Timeline:</b> กำหนดให้สายตรวจสอบเริ่มเข้าตรวจประเมินพื้นที่สาขาเสี่ยงสูงให้เสร็จสิ้นภายในระยะเวลา 30 วันนับจากนี้</li>' +
+    '<li><b>Loss Reduction target:</b> ตั้งเป้าหมายลดมูลค่าการปรับปรุงยอดสต๊อกที่อธิบายสาเหตุไม่ได้ (Unexplained Adjustments) ลงให้ได้ 75% ภายในสิ้นไตรมาสถัดไป ซึ่งจะลดต้นทุนสูญเสียและช่วยรักษากำไรสุทธิให้บริษัทอย่างมีนัยสำคัญ</li>' +
+    '</ol>' +
+    '</div>' +
+    
+    '<div style="text-align:right;margin-top:20px;border-top:1px solid #cbd5e1;padding-top:10px;">' +
+    '<button class="ai-btn" style="background:#475569;" onclick="window.print()">🖨️ พิมพ์รายงาน</button>' +
+    '</div>' +
+    '</div>';
+    
+  openAi(title, html);
 }
 
 </script>
