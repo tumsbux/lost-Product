@@ -648,6 +648,11 @@ function aiAnalyze(type){
   document.getElementById('ai-modal').classList.add('open');
   if(typeof Analytics!=='undefined' && Analytics.dashboardNavigated) Analytics.dashboardNavigated('ai_'+type);
 }
+function openAi(title, html) {
+  document.getElementById('ai-modal-title').textContent = title;
+  document.getElementById('ai-modal-content').innerHTML = html;
+  document.getElementById('ai-modal').classList.add('open');
+}
 function closeAi(){ document.getElementById('ai-modal').classList.remove('open'); }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAi(); });
 
