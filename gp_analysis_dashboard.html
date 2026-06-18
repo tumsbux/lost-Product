@@ -529,14 +529,14 @@ function aiAnalyze(type){
     openAi('🔍 สินค้า GP ติดลบ',h);
   }else if(type==='lowgp'){
     var low=prods.filter(function(p){return p.gp_pct>=0&&p.gp_pct<20&&p.sales>500}).sort(function(a,b){return a.gp_pct-b.gp_pct}).slice(0,20);
-    var h='<p><b>สินค้า GP ต่ำกว่า 20%</b> (ยอดขาย > ฿500)</p><table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="background:#f1f5f9"><th style="padding:6px;text-align:left">สินค้า</th><th style="text-align:right;padding:6px">Sales</th><th style="text-align:right;padding:6px">Disc</th><th style="text-align:right;padding:6px">GP%</th></tr>';
-    low.forEach(function(p){h+='<tr style="border-bottom:1px solid #e5e7eb"><td style="padding:5px">'+(p.name||p.iprod)+'</td><td style="text-align:right;padding:5px">'+Number(p.sales).toLocaleString()+'</td><td style="text-align:right;padding:5px">'+Number(p.disc||0).toLocaleString()+'</td><td style="text-align:right;padding:5px;color:#ea580c">'+p.gp_pct.toFixed(1)+'%</td></tr>'});
+    var h='<p><b>สินค้า GP ต่ำกว่า 20%</b> (ยอดขาย > ฿500)</p><table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="background:#f1f5f9"><th style="padding:6px;text-align:left">Parcode</th><th style="padding:6px;text-align:left">สินค้า</th><th style="text-align:right;padding:6px">Sales</th><th style="text-align:right;padding:6px">Disc</th><th style="text-align:right;padding:6px">GP%</th></tr>';
+    low.forEach(function(p){h+='<tr style="border-bottom:1px solid #e5e7eb"><td style="padding:5px">'+p.iprod+'</td><td style="padding:5px">'+(p.name||p.iprod)+'</td><td style="text-align:right;padding:5px">'+Number(p.sales).toLocaleString()+'</td><td style="text-align:right;padding:5px">'+Number(p.disc||0).toLocaleString()+'</td><td style="text-align:right;padding:5px;color:#ea580c">'+p.gp_pct.toFixed(1)+'%</td></tr>'});
     h+='</table>';
     openAi('⚠️ GP ต่ำกว่าเกณฑ์',h);
   }else if(type==='nocost'){
     var nc=prods.filter(function(p){return p.cost===0&&p.sales>0}).sort(function(a,b){return b.sales-a.sales});
-    var h='<p><b>'+nc.length+' สินค้าไม่มีต้นทุน</b> — ไม่มี record ใน item_cost</p><table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="background:#f1f5f9"><th style="padding:6px;text-align:left">สินค้า</th><th style="text-align:right;padding:6px">Sales</th><th style="text-align:right;padding:6px">ประเภท</th></tr>';
-    nc.forEach(function(p){h+='<tr style="border-bottom:1px solid #e5e7eb"><td style="padding:5px">'+(p.name||p.iprod)+'</td><td style="text-align:right;padding:5px">'+Number(p.sales).toLocaleString()+'</td><td style="padding:5px">'+(p.type_name||'')+'</td></tr>'});
+    var h='<p><b>'+nc.length+' สินค้าไม่มีต้นทุน</b> — ไม่มี record ใน item_cost</p><table style="width:100%;font-size:12px;border-collapse:collapse"><tr style="background:#f1f5f9"><th style="padding:6px;text-align:left">Parcode</th><th style="padding:6px;text-align:left">สินค้า</th><th style="text-align:right;padding:6px">Sales</th><th style="text-align:right;padding:6px">ประเภท</th></tr>';
+    nc.forEach(function(p){h+='<tr style="border-bottom:1px solid #e5e7eb"><td style="padding:5px">'+p.iprod+'</td><td style="padding:5px">'+(p.name||p.iprod)+'</td><td style="text-align:right;padding:5px">'+Number(p.sales).toLocaleString()+'</td><td style="padding:5px">'+(p.type_name||'')+'</td></tr>'});
     h+='</table><p style="margin-top:10px;color:#64748b;font-size:12px">💡 แจ้งทีมจัดซื้อเพิ่ม cost master สำหรับสินค้าเหล่านี้</p>';
     openAi('❓ สินค้าไม่มีต้นทุน',h);
   }else if(type==='trend'){
