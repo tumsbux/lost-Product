@@ -5,6 +5,23 @@
 
 ---
 
+## [2026-06-18] Executive Board Report (รายงานสรุปสำหรับผู้บริหาร) (Antigravity)
+
+### Added
+- **📋 Executive Report** button and modal on all 4 dashboards (`gp_analysis`, `dead_stock`, `lost_product`, `visual_adj`).
+- `@media print` style overrides to isolate the report modal and format it beautifully for A4 paper printouts.
+- **Dynamic JavaScript Reports**:
+  - `gp_analysis_dashboard.html`: Dynamically groups store sales/costs/GP by RM and DM and compiles them into performance scorecards.
+  - `dead_stock_dashboard.html`: Promoted local variables to global (`META`, `SUMMARY`, `STORE_INFO`) and dynamically displays the Top 5 locked inventory stores.
+  - `lost_product_dashboard.html`: Summarizes active, stale, and lost SKU counts, extracts the Top 10 lost products by sales impact (`lost_score`), and outlines replenishment safety buffers.
+  - `visual_adj_dashboard.html`: Dynamically counts High-Risk (net > ฿1M) and Medium-Risk (฿300k–฿1M) adjustment branches, lists the Top 5 outlier stores, and details security recommendations (CCTV and POS lockdowns).
+
+### Changed
+- Synced the updated HTML files to `F:\lost-Product-git` mirror.
+- Deployed the changes to GitHub main branch using `push_lost_product_files.py` REST API script.
+
+---
+
 ## [2026-06-17] AI bar + Cascading RM/DM filters + Visual polish (Claude)
 
 ### Added
