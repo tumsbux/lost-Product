@@ -111,6 +111,7 @@ User ทำงาน Dashboard ด้วย **2 agents** ขนานกัน:
 | **Phase C Dead Stock** | **2026-06-15** | 6,474 products, 90d threshold, group_name dropdown |
 | **Phase D Visual Adjustment** | **2026-06-15** | all SKUs, ibl+itd_acc, store-level fraud signal |
 | **GHA weekly-rebuild.yml** (lost-Product) | **2026-06-15** | Sundays 09:00 BKK, test run 7m 36s ✅ |
+| **Executive Board Report** | **2026-06-18** | Thai executive report modal + print media query overrides on all 4 dashboards |
 
 ## 🟡 Pending
 
@@ -121,4 +122,4 @@ User ทำงาน Dashboard ด้วย **2 agents** ขนานกัน:
 
 ---
 
-_Last updated: 2026-06-15_
+_Last updated: 2026-06-18_
