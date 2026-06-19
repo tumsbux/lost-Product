@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-06-19] Thongfah Dashboard Query Optimization and Run Recovery (Antigravity)
+
+### Fixed
+- **⚡ Thongfah Query Timeout**: Replaced `CAST(f.sotowhs AS UNSIGNED) <= 500` with the indexed string comparison `f.sotowhs >= '001' AND f.sotowhs <= '500'` and added `FORCE INDEX (idx_optimize_sales_report)` to the query in `thongfah_dashboard/build_data.py`. This resolved the 5-minute timeout failures on GitHub Actions, reducing execution time to ~55 seconds.
+- **📅 Data Range Update**: Manually rebuilt the dataset locally to include data up to `2026-06-18` (181,382 rows) and successfully pushed `data.json` to GitHub using `push_data_json.ps1` to resolve the user's report of stale date ranges.
+- **🚀 Code Sync**: Deployed the optimized `build_data.py` script to the `tumsbux/thongfah-dashboard` repository to recover the automated daily update workflow.
+
 ## [2026-06-18] Executive Board Report (รายงานสรุปสำหรับผู้บริหาร) (Antigravity)
 
 ### Added
