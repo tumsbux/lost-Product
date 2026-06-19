@@ -2,7 +2,9 @@ name: Daily GP Analysis Rebuild
 
 on:
   schedule:
-    # 10:30 BKK (10:27+ buffer for fact_sales ETL completion)
+    # 08:30 BKK
+    - cron: '30 1 * * *'
+    # 10:30 BKK (after fact_sales ETL sync completes)
     - cron: '30 3 * * *'
   workflow_dispatch:
 
