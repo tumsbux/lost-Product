@@ -20,7 +20,7 @@ except ImportError:
 # ── config ────────────────────────────────────────────────────────────────────
 SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(SCRIPT_DIR, 'gp_analysis_data.json')
-BUILT_BY    = 'claude-opus-4-6'
+BUILT_BY    = 'antigravity-gemini-3-flash'
 EXCLUDED_ITY = {'03', '12', '15', '20', '26'}  # Supply Use, อุปกรณ์ไฟฟ้า, สินทรัพย์, ค่าใช้จ่าย, สินค้าสมนาคุณ
 
 DB_PATHS = [
@@ -59,7 +59,7 @@ def query_gp_data(cfg, start_date):
         WHERE sodate >= %s
           AND solinetype NOT IN ('C','R')
           AND soretflag = 'N'
-          AND CAST(sotowhs AS UNSIGNED) BETWEEN 1 AND 500
+          AND sotowhs >= '001' AND sotowhs <= '500'
         GROUP BY sotowhs, iprod, mo
     """, (start_date.isoformat(),))
     rows = []
@@ -117,7 +117,7 @@ def query_products(cfg):
     cur2.execute("SELECT itycode, itydesc FROM MYPOS2018_CENTER.item_type")
     types = {str(c): (d or '') for c, d in cur2}
 
-    # barcode → master iprod mapping
+    # barcode -> master iprod mapping
     cur2.execute("SELECT barcode, parcode FROM MYPOS2018_CENTER.item_barcode WHERE baractive = 'Y'")
     barcodes = {str(b): str(p) for b, p in cur2}
     cur2.close(); conn2.close()
@@ -129,7 +129,7 @@ def query_products(cfg):
 def build_json(rows, stores, prods, groups, types, barcodes, months, current_month, days_elapsed):
     print('[4/4] Building gp_analysis_data.json ...')
 
-    # ── resolve barcodes → master iprod & filter excluded types ──────────────
+    # ── resolve barcodes -> master iprod & filter excluded types ──────────────
     resolved_rows = []
     barcode_resolved = 0
     excluded_type = 0
@@ -146,7 +146,7 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
             excluded_type += 1
             continue
         resolved_rows.append((whs, master, mo, sales, cost, sd, bd))
-    print(f'  barcode→master resolved: {barcode_resolved:,}, excluded types: {excluded_type:,}, kept: {len(resolved_rows):,}')
+    print(f'  barcode->master resolved: {barcode_resolved:,}, excluded types: {excluded_type:,}, kept: {len(resolved_rows):,}')
     rows = resolved_rows
 
     # ── monthly totals ────────────────────────────────────────────────────────
@@ -256,9 +256,15 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
 
     prod_stores = {}
     for iprod, stores_data in ps_agg.items():
+        # include store detail for products with GP% < 15% (low/negative margin)
+        pa = prod_agg.get(iprod)
+        if pa and pa['sales'] > 0:
+            pgp_pct = (pa['sales'] - pa['cost']) / pa['sales'] * 100
+            if pgp_pct >= 15:
+                continue
         detail = []
         for whs, v in stores_data.items():
-            si = store_info.get(whs, {})
+            si = stores.get(whs, {})
             gp = v['sales'] - v['cost']
             detail.append({
                 'c': whs,
@@ -270,6 +276,8 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
             })
         detail.sort(key=lambda x: x['s'], reverse=True)
         prod_stores[iprod] = detail
+
+    print(f'  prod_stores: {len(prod_stores)} products with store detail (of {len(ps_agg)} total)')
 
     # ── summary ──────────────────────────────────────────────────────────────
     mtd = monthly.get(current_month, {'sales': 0, 'cost': 0, 'disc': 0})
@@ -303,7 +311,7 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
         json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
 
     size_mb = os.path.getsize(OUTPUT_FILE) / 1024 / 1024
-    print(f'  Wrote {len(store_list):,} stores + {len(prod_list):,} products → {OUTPUT_FILE} ({size_mb:.1f} MB)')
+    print(f'  Wrote {len(store_list):,} stores + {len(prod_list):,} products -> {OUTPUT_FILE} ({size_mb:.1f} MB)')
     return payload
 
 # ── push ──────────────────────────────────────────────────────────────────────
@@ -342,20 +350,26 @@ def main():
         else:
             d = d.replace(month=d.month+1)
 
-    print(f'=== GP Analysis Builder === months={args.months} ({start_date} → {today})')
+    print(f'=== GP Analysis Builder === months={args.months} ({start_date} -> {today})')
     try:
         raw = query_gp_data(cfg, start_date)
         gc.collect()
 
         # auto-detect days_elapsed from data
+        month_start = today.replace(day=1).isoformat()
+        if today.month == 12:
+            next_month_start = today.replace(year=today.year+1, month=1, day=1).isoformat()
+        else:
+            next_month_start = today.replace(month=today.month+1, day=1).isoformat()
+            
         conn = get_conn(cfg)
         cur = conn.cursor()
         cur.execute("""
             SELECT MAX(DAY(sodate)) FROM `data-lake`.fact_sales
-            WHERE YEAR(sodate) = %s AND MONTH(sodate) = %s
+            WHERE sodate >= %s AND sodate < %s
               AND soretflag = 'N'
-              AND CAST(sotowhs AS UNSIGNED) BETWEEN 1 AND 500
-        """, (today.year, today.month))
+              AND sotowhs >= '001' AND sotowhs <= '500'
+        """, (month_start, next_month_start))
         row = cur.fetchone()
         days_elapsed = int(row[0]) if row and row[0] else 1
         cur.close(); conn.close()
@@ -385,4 +399,6 @@ def main():
     except Exception as e:
         print(f'ERROR: {type(e).__name__}: {e!r}')
         traceback.print_exc()
-  
+
+if __name__ == '__main__':
+    main()
