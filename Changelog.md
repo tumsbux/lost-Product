@@ -14,7 +14,7 @@
 - **⚡ GP Analysis Query Optimization**: Optimized the SQL queries in `build_gp_analysis.py` by replacing the CPU-heavy `CAST(sotowhs AS UNSIGNED)` with `sotowhs >= '001' AND sotowhs <= '500'` and changing the `YEAR(sodate) = %s AND MONTH(sodate) = %s` filter to an indexed range search (`sodate >= %s AND sodate < %s`). Also cleaned all unicode arrow characters (`→` / `\u2192`) causing crashes on standard Windows consoles.
 - **📅 GP Analysis Data Range Update**: Rebuilt and pushed `gp_analysis_data.json` successfully (covering up to `2026-06-18`, 2,054,783 rows) to resolve the user's report of stale date range.
 - **🚀 GP Analysis Code Sync**: Deployed the optimized `build_gp_analysis.py` to the repository.
-- **⚙️ GP Analysis Auto-Update**: Created and deployed `.github/workflows/daily-update.yml` in the `lost-Product` repository to automatically run the builder daily at 10:30 AM Bangkok time (after the MySQL ETL completes), keeping the dashboard updated automatically every morning.
+- **⚙️ GP Analysis Auto-Update**: Created and deployed `.github/workflows/daily-update.yml` in the `lost-Product` repository to automatically run the builder daily at 08:30 AM (for initial update) and 10:30 AM Bangkok time (after the MySQL ETL completes to get yesterday's freshly synced data), keeping the dashboard updated automatically every morning.
 
 ## [2026-06-18] Executive Board Report (รายงานสรุปสำหรับผู้บริหาร) (Antigravity)
 
