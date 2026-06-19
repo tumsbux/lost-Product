@@ -112,7 +112,7 @@ User ทำงาน Dashboard ด้วย **2 agents** ขนานกัน:
 | **Phase D Visual Adjustment** | **2026-06-15** | all SKUs, ibl+itd_acc, store-level fraud signal |
 | **GHA weekly-rebuild.yml** (lost-Product) | **2026-06-15** | Sundays 09:00 BKK, test run 7m 36s ✅ |
 | **Executive Board Report** | **2026-06-18** | Thai executive report modal + print media query overrides on all 4 dashboards |
-| **Thongfah Query Optimization** | **2026-06-19** | `build_data.py` FORCE INDEX + range filter (resolved 5m timeout on GHA, query down to 55s) |
+| **Thongfah & GP Query Optimizations** | **2026-06-19** | `build_data.py` + `build_gp_analysis.py` query optimizations (removed slow CAST and YEAR/MONTH filters, resolving timeouts and reducing execution to ~55s) |
 
 ## 🟡 Pending
 
