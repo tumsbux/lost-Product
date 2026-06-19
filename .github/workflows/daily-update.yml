@@ -1,0 +1,79 @@
+name: Daily GP Analysis Rebuild
+
+on:
+  schedule:
+    # 10:30 BKK (10:27+ buffer for fact_sales ETL completion)
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+concurrency:
+  group: daily-gp-rebuild
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout lost-Product
+        uses: actions/checkout@v4.2.2
+        with:
+          token: ${{ secrets.GH_PAT }}
+          fetch-depth: 1
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install mysql-connector-python
+
+      - name: Create db_config.json from secrets
+        env:
+          DB_HOST:     ${{ secrets.DB_HOST }}
+          DB_PORT:     ${{ secrets.DB_PORT }}
+          DB_USER:     ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          GH_PAT:      ${{ secrets.GH_PAT }}
+        run: |
+          python3 -c "
+          import json, os
+          cfg = {
+              'host':         os.environ['DB_HOST'],
+              'port':         int(os.environ.get('DB_PORT', '13306')),
+              'user':         os.environ['DB_USER'],
+              'password':     os.environ['DB_PASSWORD'],
+              'database':     os.environ['DB_DATABASE'],
+              'github_token': os.environ['GH_PAT'],
+              'github_repo':  'tumsbux/lost-Product'
+          }
+          json.dump(cfg, open('db_config.json', 'w'))
+          print('db_config.json created')
+          "
+
+      - name: Build GP analysis data
+        run: python build_gp_analysis.py --no-push
+
+      - name: Commit and push rebuilt JSON
+        run: |
+          git config user.email "bot@dashboard"
+          git config user.name "Dashboard Bot"
+          git add gp_analysis_data.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No changes — data identical to last build"
+          else
+            DATE=$(TZ=Asia/Bangkok date +%Y-%m-%d)
+            git commit -m "auto: daily rebuild gp-analysis ${DATE}"
+            git push
+            echo "OK pushed"
+          fi
+
+      - name: Clean up credentials
+        if: always()
+        run: rm -f db_config.json
