@@ -95,7 +95,7 @@ User ทำงาน Dashboard ด้วย **2 agents** ขนานกัน:
 
 ---
 
-## 📦 Deployed (ล่าสุด — 2026-06-15)
+## 📦 Deployed (ล่าสุด — 2026-06-20)
 
 | งาน | วันที่ | หมายเหตุ |
 |---|---|---|
@@ -113,8 +113,12 @@ User ทำงาน Dashboard ด้วย **2 agents** ขนานกัน:
 | **GHA weekly-rebuild.yml** (lost-Product) | **2026-06-15** | Sundays 09:00 BKK, test run 7m 36s ✅ |
 | **Executive Board Report** | **2026-06-18** | Thai executive report modal + print media query overrides on all 4 dashboards |
 | **Thongfah & GP Optimizations + Auto-Update** | **2026-06-19** | `build_data.py` + `build_gp_analysis.py` query optimizations (~55s runtime) + added daily GP analysis GHA rebuild workflow in `lost-Product` repo (runs at 08:30 AM & 10:30 AM BKK) |
+| **Discount Structure Fix** | **2026-06-19** | Claude: แก้ double-subtraction + double-counting bugs, split discount columns ใน GP Analysis + Thongfah — ดู ADR |
+| **GP & Product Analysis June 1-19 Sync & Index Fix** | **2026-06-20** | Antigravity: Added `FORCE INDEX` to `build_gp_analysis.py` to fix GHA query timeouts. Triggered manual GHA runs for both `lost-Product` and `daily-report` to update June 1-19 dashboards (days_elapsed: 19) |
 
 ## 🟡 Pending
+
+- [ ] **Rebuild + Push dashboards** — thongfah data.json มี field ใหม่ (sku_disc), gp_analysis_dashboard.html + thongfah index.html แก้แล้วรอ push
 
 - 🖥️ **ขอ IT ตั้ง restart policy VM** (`agent-ab-sandbox.tjinternal.com`) — container ตายแล้วไม่มี auto-restart — ops: `How_To_Modify_Dashboards.md §4b`
 - [ ] **ย้าย SSH creds ออกจาก scripts** ใน `F:\lost-Product\` (run_vm_command.py ฯลฯ ฝัง password ใน working copy ของ repo) → ย้ายเป็น config แยก หรือ move ไป `F:\co work dashboard\`
@@ -123,4 +127,4 @@ User ทำงาน Dashboard ด้วย **2 agents** ขนานกัน:
 
 ---
 
-_Last updated: 2026-06-19_
+_Last updated: 2026-06-20_
