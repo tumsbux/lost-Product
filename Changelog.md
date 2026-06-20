@@ -5,6 +5,45 @@
 
 ---
 
+## [2026-06-20] GP & Product Analysis June 1-19 Sync and Performance Fix (Antigravity)
+
+### Fixed
+- **⚡ GP Analysis Database Query Timeout (GHA)**: Added `FORCE INDEX (idx_optimize_sales_report)` to both queries in `build_gp_analysis.py`. This resolved the 15-minute query timeout issue on the `fact_sales` table which was causing the `Daily GP Analysis Rebuild` workflow to be cancelled. The query now finishes in ~3.3 minutes on GHA.
+- **📅 June 1–19 Data Rebuild**: Manually triggered the GHA workflows for both `lost-Product` (`Daily GP Analysis Rebuild`) and `daily-report` (`Daily Dashboard Update`). Both completed successfully, updating:
+  - `gp_analysis_dashboard.html` / `gp_analysis_data.json` to show **วัน 1-19** (June 1-19, 2026).
+  - `product_dashboard.html` / `product_data.json` to show **วัน 1-19** (June 1-19, 2026).
+- **⚙️ Auto-Update Verification**: Verified that:
+  - GP Analysis, Thongfah, and Product/Sales/Fraud dashboards are scheduled and configured to auto-update daily.
+  - The weekly rebuild for Dead Stock and Visual Adjustment is scheduled for Sundays at 09:00 BKK and will run automatically tomorrow morning (June 21).
+
+## [2026-06-19] Bill-level Comparison: blh_acc/bld_acc vs fact_sales (Claude)
+
+### Added
+- **📊 Bill-level comparison Excel report** (`bill_level_comparison.xlsx`) — 7 sheets:
+  1. สรุปผลที่แก้ไขแล้ว (corrected summary)
+  2. สาเหตุของผลต่าง (root cause decomposition — 100% explained)
+  3. รายบิลที่มีส่วนลด (top 30 bills with prorated_discount)
+  4. โครงสร้างส่วนลด (discount field relationships)
+  5. sotype=3 detail (77 bills in DW but filtered from ACC query)
+  6. SQL ที่ถูกต้อง (corrected queries)
+  7. sodisc_bath วิเคราะห์ (sodisc_bath is supplementary field, not in sodisc formula)
+
+### Fixed (BUG corrections from earlier report)
+- **⚠️ Double-subtraction bug:** `SUM(net_sales_amt - prorated_discount)` double-deducted bill discounts → correct: `SUM(net_sales_amt)` directly (34,268,972 vs wrong 34,083,851)
+- **⚠️ Double-counting bill discounts:** `sodisc + sodisc_bill + sodisc_score` counted twice → correct: `sodisc` alone = 195,376 (not 390,752)
+
+### Documentation updated
+- `Architecture.md` — added gap analysis results, sodisc_bath deep analysis, BUG warnings
+- `Gotchas.md` — added net_sales_amt double-subtraction trap + sodisc double-counting trap
+
+### Findings
+- **Data quality 99.95%** — 228,070 bills match perfectly, zero actual data corruption
+- **Gap ฿110,228** = prorated_discount (−185K) + sotype=3 (+75K) + rounding (~207฿)
+- `sodisc_bath` = supplementary copy of `sodisc_bill` (recorded in only 36/602 bills), not used in calculations
+- `sodisc_score` unit = baht (not points), most common value = 20฿
+
+---
+
 ## [2026-06-19] Thongfah & GP Analysis Dashboard Optimizations and Updates (Antigravity)
 
 ### Fixed
