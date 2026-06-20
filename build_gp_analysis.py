@@ -55,7 +55,7 @@ def query_gp_data(cfg, start_date):
                SUM(total_cost) as cost,
                SUM(soqty * sopricdisc) as sku_disc,
                SUM(solineamt - net_sales_amt) as bill_disc
-        FROM `data-lake`.fact_sales
+        FROM `data-lake`.fact_sales FORCE INDEX (idx_optimize_sales_report)
         WHERE sodate >= %s
           AND solinetype NOT IN ('C','R')
           AND soretflag = 'N'
@@ -365,7 +365,7 @@ def main():
         conn = get_conn(cfg)
         cur = conn.cursor()
         cur.execute("""
-            SELECT MAX(DAY(sodate)) FROM `data-lake`.fact_sales
+            SELECT MAX(DAY(sodate)) FROM `data-lake`.fact_sales FORCE INDEX (idx_optimize_sales_report)
             WHERE sodate >= %s AND sodate < %s
               AND soretflag = 'N'
               AND sotowhs >= '001' AND sotowhs <= '500'
