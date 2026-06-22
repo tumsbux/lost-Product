@@ -40,6 +40,22 @@ User ทำงาน Dashboard ด้วย **2 agents** ขนานกัน:
 - **CLAUDE.md** (ไฟล์นี้) = primary doc, ทั้ง 2 agents อ่าน
 - **ถ้าเจอ commit ไม่รู้จัก:** อ่าน Decisions.md + Changelog.md ก่อนเสมอ
 
+## 🔒 Verification Gates (จาก AI DevKit concept — เพิ่ม 2026-06-20)
+
+**Rule 1 — No "done" without evidence:**
+ทุก Roadmap item ก่อน mark ✅ ต้องมี verification evidence:
+- Pipeline change → GHA run log หรือ manual Windows test output
+- Dashboard change → screenshot หรือ verify step ใน bash
+- SQL change → query result จาก MySQL MCP
+ห้าม assume จากการที่ code ดูถูกต้อง
+
+**Rule 2 — Plan-first, no-code-before-approval:**
+ทั้ง Claude และ Antigravity: ถ้างานมี architectural impact (ใหม่, เปลี่ยน pipeline, schema, caching) ต้อง:
+1. Draft plan ใน Decisions.md (ADR)
+2. **STOP — รอ user confirm ก่อน**
+3. ห้าม implement จนกว่าจะได้รับการ approve
+Reason: Antigravity IR-B/C/D incident 2026-06-10
+
 ---
 
 ## 🔔 Session Management Rules (user preference)
@@ -115,6 +131,7 @@ User ทำงาน Dashboard ด้วย **2 agents** ขนานกัน:
 | **Thongfah & GP Optimizations + Auto-Update** | **2026-06-19** | `build_data.py` + `build_gp_analysis.py` query optimizations (~55s runtime) + added daily GP analysis GHA rebuild workflow in `lost-Product` repo (runs at 08:30 AM & 10:30 AM BKK) |
 | **Discount Structure Fix** | **2026-06-19** | Claude: แก้ double-subtraction + double-counting bugs, split discount columns ใน GP Analysis + Thongfah — ดู ADR |
 | **GP & Product Analysis June 1-19 Sync & Index Fix** | **2026-06-20** | Antigravity: Added `FORCE INDEX` to `build_gp_analysis.py` to fix GHA query timeouts. Triggered manual GHA runs for both `lost-Product` and `daily-report` to update June 1-19 dashboards (days_elapsed: 19) |
+| **Dead Stock Executive Report Fix** | **2026-06-22** | Antigravity: Fixed undefined/NaN values in Dead Stock Executive Report Top 5 table by extracting store metadata directly from product stores array. |
 
 ## 🟡 Pending
 
@@ -127,4 +144,4 @@ User ทำงาน Dashboard ด้วย **2 agents** ขนานกัน:
 
 ---
 
-_Last updated: 2026-06-20_
+_Last updated: 2026-06-22_
