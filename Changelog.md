@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-06-22] Fix undefined and missing store info in Dead Stock Executive Report (Antigravity)
+
+### Fixed
+- **📋 Dead Stock Dashboard Executive Report**: Fixed the `undefined` store code and `NaN` values shown in the Top 5 Locked Inventory Branches table of the Executive Report modal.
+- **🏬 Store Metadata Extraction**: Rewrote `openExecutiveReport()` in `dead_stock_dashboard.html` to aggregate store name, DM, and RM properties directly from the product stores array in `dead_stock_data.json` instead of relying on the empty `data.store_info` object, resolving the `'ไม่ระบุ'` ('Unspecified') and `'undefined'` display issues.
+- **🚀 Deploy**: Pushed the updated `dead_stock_dashboard.html` file directly to the `tumsbux/lost-Product` repository via the GitHub Contents API, and synchronized it with the local `F:\lost-Product-git\` mirror.
+
 ## [2026-06-20] GP & Product Analysis June 1-19 Sync and Performance Fix (Antigravity)
 
 ### Fixed
