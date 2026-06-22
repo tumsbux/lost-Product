@@ -341,22 +341,30 @@ function openExecutiveReport() {
   ALL.forEach(function(p) {
     var sts = p.stores || [];
     sts.forEach(function(st) {
-      var code = st.c;
-      if (!storeMap[code]) storeMap[code] = { qty: 0, value: 0 };
-      storeMap[code].qty += st.q;
-      storeMap[code].value += st.v;
+      var code = st.code;
+      if (!storeMap[code]) {
+        storeMap[code] = {
+          qty: 0,
+          value: 0,
+          name: st.name || 'ไม่ระบุ',
+          dm: st.dm || 'ไม่ระบุ',
+          rm: st.rm || 'ไม่ระบุ'
+        };
+      }
+      storeMap[code].qty += st.qty;
+      storeMap[code].value += st.value;
     });
   });
 
   var storeList = Object.keys(storeMap).map(function(code) {
-    var info = STORE_INFO[code] || {};
+    var storeData = storeMap[code];
     return {
       code: code,
-      name: info.name || 'ไม่ระบุ',
-      dm: info.dm || 'ไม่ระบุ',
-      rm: info.rm || 'ไม่ระบุ',
-      qty: storeMap[code].qty,
-      value: storeMap[code].value
+      name: storeData.name,
+      dm: storeData.dm,
+      rm: storeData.rm,
+      qty: storeData.qty,
+      value: storeData.value
     };
   });
 
