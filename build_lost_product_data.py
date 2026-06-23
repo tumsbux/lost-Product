@@ -3,7 +3,11 @@ Identifies LOST products (no 2025+2026 sales) and STALE (no 2026 sales).
 
 Source: data-lake.bld_acc_*_lake (5 tables: 2021, 2022, 2023, 2024, current)
 Output: lost_product_data.json with full year-by-year qty grid + status + lost_score.
+Format: compact schema v2 (_meta.schema=2) — global `codes` barcode table,
+products as array-of-arrays + products_header, store_breakdown keyed by code
+index. See Decisions.md ADR [2026-06-11]. Decoded by index.html decodeData().
 """
+import gc
 import json, os, sys, warnings
 from datetime import date, timedelta
 import mysql.connector
@@ -27,10 +31,14 @@ YEARS         = sorted(list(YEAR_TABLES.keys()) + [2025, CURRENT_YEAR])  # [2021
 
 # ── Connection ───────────────────────────────────────────────────────────────
 def _load_cfg():
-    try:
-        return json.load(open(os.path.join(FOLDER, 'db_config.json'), encoding='utf-8'))
-    except FileNotFoundError:
-        return None
+    paths = [
+        os.path.join(FOLDER, 'db_config.json'),
+        r'F:\co work dashboard\db_config.json',
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            return json.load(open(p, encoding='utf-8'))
+    return None
 
 def _conn(cfg, db='data-lake'):
     return mysql.connector.connect(
@@ -46,10 +54,15 @@ def query_year(conn, bld_table, blh_table, where_year=None):
     JOIN bld_acc + blh_acc on sono to get real sotowhs (matches dim_branch.code)
     and sodate (DATETIME, supports YEAR())."""
     if where_year is not None:
-        year_filter = f"AND YEAR(blh.sodate) = {where_year}"
+        year_filter = (
+            f"AND blh.sodate >= '{where_year}-01-01' "
+            f"AND blh.sodate <  '{where_year+1}-01-01'"
+        )
     else:
         year_filter = ""
 
+    # NOTE: soqty = total qty (ไม่หัก returns — bld_acc ไม่มี retqty)
+    # ใช้สำหรับนับจำนวนขาย ไม่ได้ใช้คำนวณ GP
     sql_tot = f"""
         SELECT bld.iprod, SUM(bld.soqty) AS qty
         FROM `{bld_table}` bld
@@ -59,9 +72,16 @@ def query_year(conn, bld_table, blh_table, where_year=None):
         GROUP BY bld.iprod
         HAVING qty > 0
     """
+    gc.collect()
     df = pd.read_sql(sql_tot, conn)
     tot = dict(zip(df['iprod'].astype(str), df['qty'].astype(float)))
+    del df
+    gc.collect()
 
+    # NOTE: solineamt = ยอดก่อนหักส่วนลดท้ายบิล (pre-bill-discount)
+    # ไม่เท่ากับ net_sales_amt ใน fact_sales (ซึ่ง = solineamt - prorated_discount)
+    # สำหรับ lost product analysis (qty-focused) ค่านี้เพียงพอ — ใช้ดู scale ของยอดขาย
+    # ถ้าต้องการ GP จริง ให้ใช้ fact_sales.net_sales_amt แทน
     sql_store = f"""
         SELECT blh.sotowhs AS whs, bld.iprod,
                SUM(bld.soqty) AS qty,
@@ -84,6 +104,8 @@ def query_year(conn, bld_table, blh_table, where_year=None):
                 store[(f'{n:03d}', ip)] = (q, a)
         except ValueError:
             pass
+    del df2
+    gc.collect()
     return tot, store
 
 
@@ -218,22 +240,61 @@ def main():
     print(f'  Lost Product Builder — years {YEARS[0]}..{YEARS[-1]}')
     print('=' * 60)
 
-    # Per-year aggregation (chain + per-store)
-    year_qty = {}                 # {year: {iprod: qty}}
-    year_store_qty = {}           # {year: {(whs,iprod): qty}}
-    for year, (bld, blh) in YEAR_TABLES.items():
-        print(f'[{year}] JOIN {bld} + {blh} ...')
-        tot, store = query_year(conn, bld, blh)
-        year_qty[year] = tot
-        year_store_qty[year] = store
-        print(f'  {len(tot):,} iprods | {len(store):,} (whs,iprod) | qty={sum(tot.values()):,.0f}')
+    # Check for --full-refresh flag or missing cache
+    FULL_REFRESH = '--full-refresh' in sys.argv
+    qty_cache_path = os.path.join(FOLDER, 'cache', 'lost_qty_2021_2025.parquet')
+    store_cache_path = os.path.join(FOLDER, 'cache', 'lost_store_2021_2025.parquet')
+    
+    if FULL_REFRESH or not os.path.exists(qty_cache_path) or not os.path.exists(store_cache_path):
+        print("Historical cache missing or --full-refresh requested. Building cache...")
+        import subprocess
+        script_path = os.path.join(FOLDER, 'scripts', 'build_lost_cache_2021_2024.py')
+        subprocess.run([sys.executable, script_path], check=True)
 
+    # Load from cache (2021-2025)
+    year_qty = {}                 # {year: {iprod: qty}}
+    store_breakdown = {}          # {whs: {iprod: [q21..q26, amt]}}
+    yidx = {y: i for i, y in enumerate(YEARS)}
+    
+    print("Loading 2021-2025 historical cache...")
+    df_qty_cache = pd.read_parquet(qty_cache_path)
+    df_store_cache = pd.read_parquet(store_cache_path)
+    
+    import gc
+    
+    for yr in [2021, 2022, 2023, 2024, 2025]:
+        sub_qty = df_qty_cache[df_qty_cache['year'] == yr]
+        year_qty[yr] = dict(zip(sub_qty['iprod'].astype(str), sub_qty['qty'].astype(float)))
+        
+        idx = yidx[yr]
+        sub_store = df_store_cache[df_store_cache['year'] == yr]
+        for whs, ip, q, a in zip(sub_store['whs'].astype(str), sub_store['iprod'].astype(str),
+                                  sub_store['qty'].astype(float), sub_store['amt'].astype(float)):
+            arr = store_breakdown.setdefault(whs, {}).setdefault(ip, [0]*(len(YEARS) + 1))
+            arr[idx] = round(q)
+            arr[-1] += a
+        print(f"  [{yr}] Loaded from cache: {len(year_qty[yr]):,} iprods | {len(sub_store):,} store rows")
+
+    # Clear DataFrame RAM immediately
+    del df_qty_cache, df_store_cache
+    gc.collect()
+
+    # Query active years dynamically (only CURRENT_YEAR)
     bld_cur, blh_cur = CURRENT_TABLES
-    for year in [2025, CURRENT_YEAR]:
-        print(f'[{year}] JOIN {bld_cur} + {blh_cur} WHERE YEAR(sodate)={year} ...')
+    for year in [CURRENT_YEAR]:
+        print(f'[{year}] JOIN {bld_cur} + {blh_cur} (sodate range query) ...')
         tot, store = query_year(conn, bld_cur, blh_cur, where_year=year)
         year_qty[year] = tot
-        year_store_qty[year] = store
+        
+        idx = yidx[year]
+        for (whs, ip), val in store.items():
+            if isinstance(val, tuple):
+                q, a = val
+            else:
+                q, a = val, 0
+            arr = store_breakdown.setdefault(whs, {}).setdefault(ip, [0]*(len(YEARS) + 1))
+            arr[idx] = round(q)
+            arr[-1] += a
         print(f'  {len(tot):,} iprods | {len(store):,} (whs,iprod) | qty={sum(tot.values()):,.0f}')
 
     all_parcodes = set()
@@ -241,21 +302,6 @@ def main():
         all_parcodes.update(yq.keys())
     print(f'\nTotal unique parcodes across all years: {len(all_parcodes):,}')
 
-    print('Building per-store breakdown ...')
-    store_breakdown = {}      # {whs: {iprod: [q21..q26]}}
-    store_amt_total = {}      # {(whs,iprod): total_amt across all 6 years}
-    yidx = {y: i for i, y in enumerate(YEARS)}
-    for year, sd in year_store_qty.items():
-        idx = yidx[year]
-        for (whs, ip), val in sd.items():
-            # val is (qty, amt) tuple from updated query_year
-            if isinstance(val, tuple):
-                q, a = val
-            else:
-                q, a = val, 0
-            arr = store_breakdown.setdefault(whs, {}).setdefault(ip, [0]*len(YEARS))
-            arr[idx] = round(q)
-            store_amt_total[(whs, ip)] = store_amt_total.get((whs, ip), 0) + a
     n_pairs = sum(len(p) for p in store_breakdown.values())
     print(f'  {len(store_breakdown)} stores, {n_pairs:,} (whs,iprod) pairs (pre-prune)')
 
@@ -268,13 +314,14 @@ def main():
     for whs in list(store_breakdown.keys()):
         for ip in list(store_breakdown[whs].keys()):
             arr = store_breakdown[whs][ip]
-            total_qty = sum(arr)
-            total_amt = store_amt_total.get((whs, ip), 0)
+            total_qty = sum(arr[:len(YEARS)])
+            total_amt = arr[-1]
             # Drop if BOTH below threshold (OR keep logic = NOT(qty<MIN AND amt<MIN))
             if total_qty < MIN_QTY and total_amt < MIN_AMT:
                 del store_breakdown[whs][ip]
                 removed += 1
             else:
+                arr.pop()  # Remove total_amt element
                 while len(arr) > 1 and arr[-1] == 0:
                     arr.pop()
         if not store_breakdown[whs]:
@@ -338,7 +385,46 @@ def main():
     n_lost   = sum(1 for p in products if p['status'] == 'LOST')
     qty_lost_last_year = sum(p['max_qty'] for p in products if p['status'] == 'LOST')
 
+    # ── Compact encoding (schema v2) — ADR [2026-06-11] ─────────────────────
+    # Global code table: every barcode/iprod string stored ONCE in `codes`,
+    # referenced by int index everywhere (products + store_breakdown keys).
+    # Products emitted as array-of-arrays + single `products_header` row.
+    # BREAKING vs v1 — decoded one-time by decodeData() in index.html.
+    code_set = set()
+    for p in products:
+        code_set.add(p['parcode'])
+        code_set.add(p['iprod'])
+    for _prods in store_breakdown.values():
+        code_set.update(_prods.keys())
+    codes = sorted(code_set)
+    cidx = {c: i for i, c in enumerate(codes)}
+    print(f'  codes table: {len(codes):,} unique barcodes/iprods')
+
+    STATUS_CODES = ['ACTIVE', 'STALE', 'LOST']
+    PRODUCTS_HEADER = [
+        'parcode', 'iprod', 'name', 'brand', 'group', 'type', 'ipunit3',
+        'q2021', 'q2022', 'q2023', 'q2024', 'q2025', 'q2026',
+        'first_year', 'last_year', 'years_active', 'years_gone',
+        'total_qty', 'max_qty', 'status', 'lost_score',
+    ]
+    prod_rows = []
+    for p in products:
+        row = [cidx[p['parcode']], cidx[p['iprod']]]
+        row += [p[k] for k in PRODUCTS_HEADER[2:19]]   # name .. max_qty
+        row += [STATUS_CODES.index(p['status']), p['lost_score']]
+        prod_rows.append(row)
+
+    sb_compact = {
+        whs: {str(cidx[ip]): arr for ip, arr in _prods.items()}
+        for whs, _prods in store_breakdown.items()
+    }
+
     output = {
+        '_meta': {
+            'schema':       2,
+            'built_by':     'dashboard-bot',
+            'status_codes': STATUS_CODES,
+        },
         'generated':       (date.today() - timedelta(days=1)).isoformat(),  # data lake = today-1
         'years':           YEARS,
         'current_year':    CURRENT_YEAR,
@@ -349,8 +435,10 @@ def main():
             'lost':           n_lost,
             'qty_lost_peak':  qty_lost_last_year,
         },
-        'products':        products,
-        'store_breakdown': store_breakdown,
+        'codes':           codes,
+        'products_header': PRODUCTS_HEADER,
+        'products':        prod_rows,
+        'store_breakdown': sb_compact,
         'store_info':      branch_info,
     }
 
