@@ -62,6 +62,13 @@ jobs:
       - name: Build GP analysis data
         run: python build_gp_analysis.py --no-push
 
+      - name: Restore parquet cache
+        run: |
+          git fetch origin cache
+          git checkout cache -- cache/
+          echo "Cache files restored:"
+          ls cache/
+
       - name: Build lost product data
         continue-on-error: true
         timeout-minutes: 20
