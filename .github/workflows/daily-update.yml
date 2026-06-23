@@ -1,4 +1,4 @@
-name: Daily GP Analysis Rebuild
+name: Daily GP Analysis & Lost Product Rebuild
 
 on:
   schedule:
@@ -18,7 +18,7 @@ concurrency:
 jobs:
   rebuild:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 45
 
     steps:
       - name: Checkout lost-Product
@@ -33,7 +33,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install mysql-connector-python
+        run: pip install mysql-connector-python pandas
 
       - name: Create db_config.json from secrets
         env:
@@ -62,16 +62,21 @@ jobs:
       - name: Build GP analysis data
         run: python build_gp_analysis.py --no-push
 
+      - name: Build lost product data
+        continue-on-error: true
+        timeout-minutes: 20
+        run: python build_lost_product_data.py
+
       - name: Commit and push rebuilt JSON
         run: |
           git config user.email "bot@dashboard"
           git config user.name "Dashboard Bot"
-          git add gp_analysis_data.json 2>/dev/null || true
+          git add gp_analysis_data.json lost_product_data.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No changes — data identical to last build"
           else
             DATE=$(TZ=Asia/Bangkok date +%Y-%m-%d)
-            git commit -m "auto: daily rebuild gp-analysis ${DATE}"
+            git commit -m "auto: daily rebuild gp-analysis + lost-product ${DATE}"
             git push
             echo "OK pushed"
           fi
