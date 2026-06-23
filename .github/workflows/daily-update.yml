@@ -33,7 +33,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install mysql-connector-python pandas
+        run: pip install mysql-connector-python pandas pyarrow
 
       - name: Create db_config.json from secrets
         env:
