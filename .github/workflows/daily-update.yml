@@ -66,6 +66,7 @@ jobs:
         run: |
           git fetch origin cache
           git checkout FETCH_HEAD -- cache/
+          git reset HEAD cache/ 2>/dev/null || true
           echo "Cache files restored:"
           ls cache/
 
@@ -78,12 +79,14 @@ jobs:
         run: |
           git config user.email "bot@dashboard"
           git config user.name "Dashboard Bot"
+          git reset HEAD cache/ 2>/dev/null || true
           git add gp_analysis_data.json lost_product_data.json 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "No changes — data identical to last build"
           else
             DATE=$(TZ=Asia/Bangkok date +%Y-%m-%d)
             git commit -m "auto: daily rebuild gp-analysis + lost-product ${DATE}"
+            git pull --rebase origin main
             git push
             echo "OK pushed"
           fi
