@@ -65,7 +65,7 @@ jobs:
       - name: Restore parquet cache
         run: |
           git fetch origin cache
-          git checkout cache -- cache/
+          git checkout FETCH_HEAD -- cache/
           echo "Cache files restored:"
           ls cache/
 
