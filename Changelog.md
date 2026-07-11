@@ -5,6 +5,38 @@
 
 ---
 
+## [2026-07-11] Fix: silent MySQL disconnect crash in build_lost_product_data.py (Claude, Cowork)
+
+### Root cause
+- GHA runs #87 (08:58 BKK) and #88 (09:57 BKK) today both showed job Status "Success" but step "Build lost product data" actually failed with exit code 1 — masked by `continue-on-error: true` in `daily-update.yml`
+- Identical symptom to `build_store_discount_data.py`'s Jul 10 crash (Changelog `[2026-07-10]` in `co work dashboard` repo) — one long-lived MySQL connection held across the whole script run, including the heavy current-year JOIN + batched name/branch lookups, which run LATE in the pipeline after other DB-heavy steps
+- This is exactly the "not yet done" item flagged in that earlier fix's Changelog entry
+
+### Fixed — `build_lost_product_data.py`
+- Added `_run_with_retry(cfg, fn, *args, **kwargs)` — opens a fresh connection per call, retries up to 3x (5s backoff) on errno 2013 ("lost connection during query") / 2006 ("server has gone away")
+- `query_year()` (current year), `query_branch_info()`, `query_name_map()` now each get their own fresh connection via the wrapper instead of sharing one `conn` opened at the top of `main()`
+- Verified via `python3 -m py_compile` on a reconstructed copy (bash mount workaround, per Gotchas.md)
+- ADR in `Decisions.md` `[2026-07-11]`
+
+### Not yet pushed
+- Sandbox has no direct network access to `api.github.com` (proxy allowlist blocks it) — fix is saved locally in `F:\lost-Product\build_lost_product_data.py` but needs the user to run `push_lost_product_files.py` on their own machine to deploy, then verify the next GHA run has no exit-code-1 annotation on "Build lost product data"
+
+## [2026-06-23] Lost Product Dashboard Auto-Update Fix (Claude)
+
+### Fixed
+- **🔄 `lost_product_data.json` ไม่อัปเดตรายวัน**: root cause คือ `daily-update.yml` ใน lost-Product repo ไม่มี step สำหรับ `build_lost_product_data.py` — ข้อมูลถูก build แค่จาก daily-report GHA ซึ่ง push ล้มเหลวมาตั้งแต่ 6 มิ.ย.
+- **📋 `daily-update.yml`** — แก้หลายรอบ (commits `e38a1cf` → `6bbf3e0` → `d094a9f` → `db16084` → `f6d57a8`):
+  - เพิ่ม "Restore parquet cache" step: `git fetch origin cache` + `git checkout FETCH_HEAD -- cache/` + `git reset HEAD cache/` (unstage)
+  - เพิ่ม "Build lost product data" step (continue-on-error, timeout 20 min)
+  - เพิ่ม `pyarrow` ใน pip install (ขาดทำให้ pandas.read_parquet() crash)
+  - เพิ่ม `git pull --rebase origin main` ก่อน `git push` (ป้องกัน push rejection จาก concurrent runs)
+  - เพิ่ม `git reset HEAD cache/` ซ้ำใน commit step (ป้องกัน parquet ถูก commit ไปบน main)
+  - เพิ่ม job timeout 15 → 45 min
+- **🏷️ `build_lost_product_data.py`**: แก้ `built_by` จาก hardcoded `antigravity-gemini-3-flash` เป็น `dashboard-bot`
+- **🌿 Orphan branch `cache`**: สร้าง branch ใน `tumsbux/lost-Product` เก็บ `cache/lost_qty_2021_2025.parquet` (1.3MB) + `cache/lost_store_2021_2025.parquet` (32MB)
+- **🚫 `.gitignore`**: เพิ่ม `cache/*.parquet` ป้องกัน parquet ถูก commit ไป main branch โดยไม่ตั้งใจ (commit `db16084`)
+- **🧹 Cleanup**: ลบ parquet files ที่ commit ไป main โดยไม่ตั้งใจ (`git rm --cached`, commit `d094a9f`)
+
 ## [2026-06-22] Fix undefined and missing store info in Dead Stock Executive Report (Antigravity)
 
 ### Fixed
