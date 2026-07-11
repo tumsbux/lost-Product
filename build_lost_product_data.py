@@ -8,7 +8,7 @@ products as array-of-arrays + products_header, store_breakdown keyed by code
 index. See Decisions.md ADR [2026-06-11]. Decoded by index.html decodeData().
 """
 import gc
-import json, os, sys, warnings
+import json, os, sys, time, warnings
 from datetime import date, timedelta
 import mysql.connector
 import pandas as pd
@@ -46,6 +46,45 @@ def _conn(cfg, db='data-lake'):
         user=cfg['user'], password=cfg['password'],
         database=db,
     )
+
+
+# ── Retry-on-disconnect wrapper ─────────────────────────────────────────────
+# FIXED 2026-07-11: this script runs LATE in the daily pipeline (after "Build
+# GP analysis data" + parquet cache restore), and previously held ONE
+# long-lived connection (opened at the top of main()) across the entire run,
+# including the heavy current-year JOIN query and the batched name/branch
+# lookups. GHA runs #87/#88 (Jul 11) both failed this step with exit code 1
+# — same "silent MySQL disconnect" symptom already fixed in
+# build_store_discount_data.py (Changelog [2026-07-10]), masked green by
+# `continue-on-error: true` in daily-update.yml. This mirrors that fix:
+# each query gets its OWN fresh connection, with retry on errno 2013
+# ("lost connection during query") / 2006 ("server has gone away").
+RETRYABLE_ERRNOS = {2013, 2006}
+MAX_QUERY_RETRIES = 3
+RETRY_DELAY_SECS = 5
+
+def _run_with_retry(cfg, fn, *args, **kwargs):
+    """Run fn(conn, *args, **kwargs) on a fresh connection, retrying with a
+    new connection on transient MySQL disconnects."""
+    import mysql.connector.errors as _mysql_errors
+    attempt = 0
+    while True:
+        attempt += 1
+        conn = _conn(cfg)
+        try:
+            return fn(conn, *args, **kwargs)
+        except _mysql_errors.OperationalError as e:
+            errno = getattr(e, 'errno', None)
+            if errno not in RETRYABLE_ERRNOS or attempt >= MAX_QUERY_RETRIES:
+                raise
+            print(f'      WARN: {fn.__name__} lost connection (errno {errno}), '
+                  f'retry {attempt}/{MAX_QUERY_RETRIES - 1} in {RETRY_DELAY_SECS}s...')
+            time.sleep(RETRY_DELAY_SECS)
+        finally:
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 # ── STEP 1: Per-year qty aggregation ─────────────────────────────────────────
@@ -234,7 +273,10 @@ def main():
     cfg = _load_cfg()
     if not cfg:
         print('ERROR: db_config.json not found'); return
-    conn = _conn(cfg)
+    # Quick connectivity check only — heavy queries below each open their
+    # own fresh, short-lived connection via _run_with_retry() (fix 2026-07-11)
+    _test_conn = _conn(cfg)
+    _test_conn.close()
     print('Connected to data-lake @ ' + cfg['host'])
     print('=' * 60)
     print(f'  Lost Product Builder — years {YEARS[0]}..{YEARS[-1]}')
@@ -283,7 +325,7 @@ def main():
     bld_cur, blh_cur = CURRENT_TABLES
     for year in [CURRENT_YEAR]:
         print(f'[{year}] JOIN {bld_cur} + {blh_cur} (sodate range query) ...')
-        tot, store = query_year(conn, bld_cur, blh_cur, where_year=year)
+        tot, store = _run_with_retry(cfg, query_year, bld_cur, blh_cur, where_year=year)
         year_qty[year] = tot
         
         idx = yidx[year]
@@ -331,14 +373,13 @@ def main():
     print(f'  final: {len(store_breakdown)} stores, {n_after:,} pairs')
 
     print('Querying dim_branch ...')
-    branch_info = query_branch_info(conn)
+    branch_info = _run_with_retry(cfg, query_branch_info)
     print(f'  {len(branch_info)} stores with branch metadata')
 
     # Name lookup
     print('Resolving names from dim_product ...')
-    name_map = query_name_map(conn, all_parcodes)
+    name_map = _run_with_retry(cfg, query_name_map, all_parcodes)
     print(f'  Names resolved: {len(name_map):,}/{len(all_parcodes):,}')
-    conn.close()
 
     # Build product list
     products = []
