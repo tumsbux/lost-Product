@@ -5,6 +5,60 @@
 
 ---
 
+## [2026-07-11] Fix: silent MySQL disconnect in build_lost_product_data.py (Claude, Cowork)
+
+**Status:** Accepted (fix mirrors already-deployed pattern, applied directly at user's request)
+
+**Context:** GHA runs #87 and #88 (Jul 11, both dispatched from `daily-report`'s cross-repo trigger) showed job Status "Success" but step "Build lost product data" failed with exit code 1, masked by `continue-on-error: true` in `.github/workflows/daily-update.yml`. This is the identical symptom already diagnosed and fixed in `build_store_discount_data.py` (see Changelog `[2026-07-10]` in `F:\co work dashboard\`) but explicitly left unfixed there ("different script, out of scope for this dashboard fix").
+
+**Root cause:** `build_lost_product_data.py` opened ONE long-lived MySQL connection at the top of `main()` and reused it for the entire run — including the heavy current-year JOIN (`bld_acc_lake` + `blh_acc_lake`, ~6+ months of 2026 sales) and the batched `dim_product`/`dim_branch` lookups. This step runs LATE in the daily pipeline (after "Build GP analysis data" + parquet cache restore), so by the time these queries run the connection has been open long enough to hit idle-timeout or mid-query drop (`errno 2013`/`2006`).
+
+**Decision:** Apply the same fix already accepted for `build_store_discount_data.py`: each heavy query now opens its OWN fresh, short-lived connection via a new `_run_with_retry(cfg, fn, *args, **kwargs)` wrapper, retrying up to 3x with a fresh connection on `errno 2013`/`2006`. The single shared `conn` opened at the top of `main()` was removed (replaced by a throwaway connectivity check that opens + immediately closes).
+
+**Files changed:** `build_lost_product_data.py` — added `RETRYABLE_ERRNOS`, `MAX_QUERY_RETRIES`, `RETRY_DELAY_SECS`, `_run_with_retry()`; call sites for `query_year()` (current year), `query_branch_info()`, `query_name_map()` now go through the wrapper instead of sharing one `conn`.
+
+**Verification:** `python3 -m py_compile` passed on reconstructed copy (sandbox has no direct GitHub network access — user must run `push_lost_product_files.py` locally to deploy, then watch the next GHA run for a clean "Build lost product data" step with no exit-code-1 annotation).
+
+---
+
+## [2026-06-19] Discount Structure Clarification + Dashboard Discount Columns (Claude)
+
+**Status:** Accepted
+
+**Context:** Bill-level comparison blh_acc/bld_acc vs fact_sales พบ 2 bugs สำคัญในการวิเคราะห์ + ความเข้าใจผิดเรื่องโครงสร้างส่วนลด ต้องแก้ไข dashboard ให้แสดง breakdown ที่ถูกต้อง
+
+**Findings (verified Jan 1-7, 2025 — 231K bills):**
+```
+สูตรส่วนลด:
+  sodisc = sodisc_bill + sodisc_score + sodisc_coupon + sodisc_perc  (ยอดรวม)
+  sodisc_bath = ฟิลด์เสริมนอกสูตร (สำเนา sodisc_bill, บันทึกไม่สม่ำเสมอ)
+  sodisc_score = หน่วยบาท (ไม่ใช่คะแนน)
+
+สูตร net sales:
+  fact_sales.net_sales_amt = solineamt - prorated_discount  (ETL คำนวณให้แล้ว)
+  prorated_discount = sodisc จาก blh_acc ปันส่วนตามมูลค่า
+
+BUG ห้ามทำซ้ำ:
+  ❌ SUM(net_sales_amt - prorated_discount)  → หักซ้ำ!
+  ❌ sodisc + sodisc_bill + sodisc_score     → นับซ้ำ!
+  ✅ SUM(net_sales_amt) = ยอดขายสุทธิจริง
+  ✅ sodisc = ยอดส่วนลดท้ายบิลจริง
+```
+
+**Decision:**
+1. **gp_analysis_dashboard.html** — Product table: split "ส่วนลด" → "ส่วนลดรวม" + "ลดรายการ" (sku_disc) + "ลดท้ายบิล" (bill_disc) พร้อม tooltip | Store/Trend: เปลี่ยน label เป็น "ส่วนลดรวม" + tooltip | CSV export เพิ่ม columns
+2. **thongfah build_data.py** — เพิ่ม `SUM(soqty*sopricdisc) AS sku_disc` ใน query
+3. **thongfah index.html** — เปลี่ยน "solineamt" → "ยอดก่อนลดบิล", "ส่วนลด" → "ลดท้ายบิล", เพิ่มคอลัมน์ "ลดรายการ" ทุกตาราง
+4. **build_lost_product_data.py** — เพิ่ม comment ว่า solineamt ยังไม่หักส่วนลดท้ายบิล
+5. **update_dashboard.py** — ไม่แก้ ใช้ net_sales_amt ถูกต้องอยู่แล้ว
+
+**Consequences:**
+- ✅ Dashboard แสดง breakdown ส่วนลดชัดเจน (sku vs bill) ช่วยวิเคราะห์ GP ได้ดีขึ้น
+- ✅ ป้องกัน double-subtraction / double-counting bugs ในอนาคต
+- ⚠️ thongfah data.json จะมี field ใหม่ (index 15 = sku_disc) — ต้อง rebuild data
+
+---
+
 ## [2026-06-18] Executive Board Report (รายงานสรุปสำหรับผู้บริหาร)
 
 **Status:** Accepted
