@@ -177,6 +177,9 @@ tbody tr:hover{background:#f8f9ff}
     <option value="3">≥3 ปี</option>
     <option value="5">≥5 ปี</option>
   </select>
+  <div class="filter-sep"></div>
+  <label><input type="checkbox" id="f-buy-tj" onchange="applyAll()"> ซื้อจาก TJ</label>
+  <label><input type="checkbox" id="f-buy-mni" onchange="applyAll()"> ซื้อจาก มือหนึ่ง(MNI)</label>
   <button class="reset-btn" onclick="resetFilter()">✕ ล้าง</button>
   <input class="search-box" id="f-search" placeholder="🔍 ค้นหา parcode / ชื่อ / กลุ่ม / แบรนด์" oninput="applyAll()">
   <button class="xlsx-btn" onclick="exportXLSX()">📥 Export XLSX</button>
@@ -396,6 +399,8 @@ function applyAll(){
   const fRM=document.getElementById('f-rm').value;
   const fDM=document.getElementById('f-dm').value;
   const fStore=document.getElementById('f-store').value;
+  const fBuyTJ=document.getElementById('f-buy-tj').checked;
+  const fBuyMNI=document.getElementById('f-buy-mni').checked;
 
   // Scope-aware product list — when RM/DM/Store filter, recompute year qty + status
   // from store_breakdown[whs][iprod] = [q2021..q2026]
@@ -461,6 +466,8 @@ function applyAll(){
     if(fGrp && !(p.group||'').toLowerCase().includes(fGrp.toLowerCase())) return false;
     if(fType && !(p.type||'').toLowerCase().includes(fType.toLowerCase())) return false;
     if(fGone && (p.years_gone||0)<fGone) return false;
+    if(fBuyTJ && !p.buy_tj) return false;
+    if(fBuyMNI && !p.buy_mni) return false;
     if(fSearch){
       const hit=(p.parcode||'').toLowerCase().includes(fSearch)||
                 (p.name||'').toLowerCase().includes(fSearch)||
@@ -598,7 +605,10 @@ function renderTable(){
 function decisionOf(parcode){ return DECISIONS[parcode]||{}; }
 function isResolved(parcode){
   const d=DECISIONS[parcode];
-  return !!(d && d.action && d.replacement_parcode && d.note);
+  if(!d || !d.action) return false;
+  if(d.action==='ยกเลิกขาย') return true;
+  if(d.action==='ทดแทน') return !!d.replacement_parcode;
+  return false;
 }
 function rowContext(parcode){
   const p=PRODUCT_BY_PARCODE.get(parcode)||{};
@@ -713,6 +723,8 @@ function resetFilter(){
   document.getElementById('f-rm').value='';
   document.getElementById('f-dm').value='';
   document.getElementById('f-store').value='';
+  document.getElementById('f-buy-tj').checked=false;
+  document.getElementById('f-buy-mni').checked=false;
   rebuildStoreOptions();
   applyAll();
 }
