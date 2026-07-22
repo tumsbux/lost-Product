@@ -225,6 +225,7 @@ tbody tr:hover{background:#f8f9ff}
         <th class="r" onclick="sortBy(12,this)">peak qty<span class="sa"></span></th>
         <th class="c" onclick="sortBy(13,this)">สถานะ<span class="sa"></span></th>
         <th class="r" onclick="sortBy(14,this)">lost_score<span class="sa desc"></span></th>
+        <th class="c">ซื้อจาก</th>
         <th>การจัดการ</th>
         <th>สินค้าทดแทน</th>
         <th>หมายเหตุ</th>
@@ -489,7 +490,7 @@ function applyAll(){
   });
 
   // KPIs reflect every filter except status (status is what KPIs categorize)
-  const anyFilter = scopeStores || fGrp || fType || fGone || fSearch;
+  const anyFilter = scopeStores || fGrp || fType || fGone || fSearch || fBuyTJ || fBuyMNI;
   const parts = [];
   if(scopeStores) parts.push(`${scopeStores.size} ร้าน`);
   if(fType) parts.push(`ประเภท: ${fType}`);
@@ -560,7 +561,7 @@ function renderTable(){
     const hint = hasScope
       ? '⚠️ ไม่มีสินค้าตรงเงื่อนไขในขอบเขตนี้ — ลองล้าง filter ประเภท/กลุ่ม/สถานะ หรือเลือกร้านอื่น (บางสาขายังไม่มีข้อมูลใน bld_acc_lake)'
       : '— ไม่มีรายการตรงเงื่อนไข ลองปรับ filter';
-    tbody.innerHTML=`<tr><td colspan="18" style="text-align:center;padding:20px;color:#94a3b8">${hint}</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="19" style="text-align:center;padding:20px;color:#94a3b8">${hint}</td></tr>`;
     document.getElementById('prod-cnt').textContent='0 รายการ';
     renderPagination();
     return;
@@ -594,11 +595,20 @@ function renderTable(){
       <td class="r">${fmt(p.max_qty)}</td>
       <td class="c"><span class="${stCls}">${stLabel}</span></td>
       <td class="r b">${fmt(p.lost_score)}</td>
+      <td class="c">${buySourceHtml(p)}</td>
       ${decisionCellsHtml(p)}
     </tr>`;
   }).join('');
   document.getElementById('prod-cnt').textContent=filtered.length.toLocaleString()+' รายการ';
   renderPagination();
+}
+
+// ── ซื้อจาก TJ / มือหนึ่ง(MNI) — จาก fact_purchase_tj/fact_purchase_mni (build-time flag) ──
+function buySourceHtml(p){
+  if(p.buy_tj && p.buy_mni) return '<span class="badge-grp" style="background:#ede9fe;color:#6d28d9">TJ+MNI</span>';
+  if(p.buy_tj)  return '<span class="badge-grp" style="background:#dbeafe;color:#1d4ed8">TJ</span>';
+  if(p.buy_mni) return '<span class="badge-grp" style="background:#fef3c7;color:#b45309">มือหนึ่ง</span>';
+  return '<span style="color:#cbd5e1">—</span>';
 }
 
 // ── Action columns (ทดแทน/ยกเลิกขาย) — เก็บใน Google Sheets ผ่าน Apps Script ──────
