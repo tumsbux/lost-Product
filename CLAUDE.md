@@ -132,16 +132,17 @@ Reason: Antigravity IR-B/C/D incident 2026-06-10
 | **Discount Structure Fix** | **2026-06-19** | Claude: แก้ double-subtraction + double-counting bugs, split discount columns ใน GP Analysis + Thongfah — ดู ADR |
 | **GP & Product Analysis June 1-19 Sync & Index Fix** | **2026-06-20** | Antigravity: Added `FORCE INDEX` to `build_gp_analysis.py` to fix GHA query timeouts. Triggered manual GHA runs for both `lost-Product` and `daily-report` to update June 1-19 dashboards (days_elapsed: 19) |
 | **Dead Stock Executive Report Fix** | **2026-06-22** | Antigravity: Fixed undefined/NaN values in Dead Stock Executive Report Top 5 table by extracting store metadata directly from product stores array. |
+| **Lost Product Auto-Update Fix** | **2026-06-23** | Claude: parquet cache restore + pyarrow + pull--rebase + .gitignore cache/*.parquet — `daily-update.yml` ครบ (commits `e38a1cf`→`f6d57a8`) — รอ Run #18 verify ✅ |
+| **การจัดการ per-action fix + TJ/มือหนึ่ง(MNI) purchase column** | **2026-07-22** | Claude: `build_lost_product_data.py` (ตัวจริง — GHA รันไฟล์นี้) เพิ่ม `buy_tj`/`buy_mni` flag (JOIN `fact_purchase_tj`/`fact_purchase_mni.default_code`) — `products_header` schema v2 ยาวขึ้น 21→23 คอลัมน์ — `index_for_lost_product.html` (ใน `co work dashboard`) แก้ `isResolved()` เป็น per-action + เพิ่ม checkbox/คอลัมน์ "ซื้อจาก" + Executive Report ตัด resolved ออก — verified live ผ่าน manual GHA run #138 (commit `34a9089c`) — commits: `d8d4880d`, `51a19750`, `c5dff75c`, `4de01662` — รายละเอียดเต็ม: `F:\co work dashboard\CLAUDE.md` §Deployed 2026-07-22 |
 
 ## 🟡 Pending
 
 - [ ] **Rebuild + Push dashboards** — thongfah data.json มี field ใหม่ (sku_disc), gp_analysis_dashboard.html + thongfah index.html แก้แล้วรอ push
-
+- [ ] **Verify Run #18** ✅ — ดูว่า "Build lost product data" ผ่านครบ + dashboard แสดง 2026-06-23
 - 🖥️ **ขอ IT ตั้ง restart policy VM** (`agent-ab-sandbox.tjinternal.com`) — container ตายแล้วไม่มี auto-restart — ops: `How_To_Modify_Dashboards.md §4b`
 - [ ] **ย้าย SSH creds ออกจาก scripts** ใน `F:\lost-Product\` (run_vm_command.py ฯลฯ ฝัง password ใน working copy ของ repo) → ย้ายเป็น config แยก หรือ move ไป `F:\co work dashboard\`
 - ⚠️ **Push reminders:** daily-report → `push_files_api.py` เท่านั้น (**ห้าม** `push_py_to_github.py`) / lost-Product → `push_lost_product_files.py` / ไฟล์ > 30MB → `push_data_json.ps1` (git clone) / PAT: `dashboard-bot-4`
-- ⚠️ **`F:\lost-Product-git\` stale `index.lock`** — ลบก่อนใช้: `Remove-Item F:\lost-Product-git\.git\index.lock`
 
 ---
 
-_Last updated: 2026-06-22_
+_Last updated: 2026-07-22 (Claude, Cowork) — buy_tj/buy_mni purchase-source flag + isResolved per-action fix, verified live_
