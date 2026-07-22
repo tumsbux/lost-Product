@@ -243,6 +243,31 @@ def query_branch_info(conn):
     return out
 
 
+# ── STEP 2c: TJ / มือหนึ่ง(MNI) purchase flags ────────────────────────────────
+def query_purchase_flags(conn, code_set):
+    """Returns (tj_set, mni_set) — subset of code_set found as default_code
+    in fact_purchase_tj / fact_purchase_mni (PO history). Matches on the raw
+    barcode/parcode value, same convention as bld_acc.iprod (confirmed 2026-07-22:
+    default_code values are the same barcode/parcode used across the dashboard)."""
+    if not code_set:
+        return set(), set()
+    codes = list(code_set)
+    BATCH = 2000
+    tj, mni = set(), set()
+    cur = conn.cursor()
+    for table, out in (('fact_purchase_tj', tj), ('fact_purchase_mni', mni)):
+        for i in range(0, len(codes), BATCH):
+            batch = codes[i:i+BATCH]
+            ph = ','.join(['%s'] * len(batch))
+            cur.execute(f"""
+                SELECT DISTINCT default_code FROM {table}
+                WHERE default_code IN ({ph})
+            """, batch)
+            out.update(r[0] for r in cur.fetchall())
+    cur.close()
+    return tj, mni
+
+
 # ── STEP 3: Compute status + lost_score ──────────────────────────────────────
 def classify(qty_by_year):
     """Returns (status, last_year, years_gone, lost_score)."""
@@ -381,6 +406,15 @@ def main():
     name_map = _run_with_retry(cfg, query_name_map, all_parcodes)
     print(f'  Names resolved: {len(name_map):,}/{len(all_parcodes):,}')
 
+    # Purchase-source flags (TJ / มือหนึ่ง-MNI) — match on parcode AND resolved iprod
+    print('Querying fact_purchase_tj / fact_purchase_mni ...')
+    match_codes = set(all_parcodes)
+    for info in name_map.values():
+        if info.get('iprod'):
+            match_codes.add(info['iprod'])
+    tj_set, mni_set = _run_with_retry(cfg, query_purchase_flags, match_codes)
+    print(f'  TJ: {len(tj_set):,} codes matched | มือหนึ่ง(MNI): {len(mni_set):,} codes matched')
+
     # Build product list
     products = []
     for parcode in all_parcodes:
@@ -393,10 +427,13 @@ def main():
         first_year = min(active_years)
         total_qty = sum(qty_by_year.values())
         max_qty = max(qty_by_year.values())
+        resolved_iprod = info.get('iprod', parcode)
+        buy_tj  = 1 if (parcode in tj_set  or resolved_iprod in tj_set)  else 0
+        buy_mni = 1 if (parcode in mni_set or resolved_iprod in mni_set) else 0
 
         products.append({
             'parcode':     parcode,
-            'iprod':       info.get('iprod', parcode),
+            'iprod':       resolved_iprod,
             'name':        info.get('name', '')[:50],
             'brand':       info.get('brand', '')[:25],
             'group':       info.get('group', 'ไม่ระบุ')[:30],
@@ -416,6 +453,8 @@ def main():
             'max_qty':     max_qty,
             'status':      status,
             'lost_score':  lost_score,
+            'buy_tj':      buy_tj,
+            'buy_mni':     buy_mni,
         })
 
     # Sort by lost_score desc (biggest losses first) then by max_qty
@@ -446,13 +485,14 @@ def main():
         'parcode', 'iprod', 'name', 'brand', 'group', 'type', 'ipunit3',
         'q2021', 'q2022', 'q2023', 'q2024', 'q2025', 'q2026',
         'first_year', 'last_year', 'years_active', 'years_gone',
-        'total_qty', 'max_qty', 'status', 'lost_score',
+        'total_qty', 'max_qty', 'status', 'lost_score', 'buy_tj', 'buy_mni',
     ]
     prod_rows = []
     for p in products:
         row = [cidx[p['parcode']], cidx[p['iprod']]]
         row += [p[k] for k in PRODUCTS_HEADER[2:19]]   # name .. max_qty
         row += [STATUS_CODES.index(p['status']), p['lost_score']]
+        row += [p['buy_tj'], p['buy_mni']]
         prod_rows.append(row)
 
     sb_compact = {
