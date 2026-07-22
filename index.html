@@ -886,8 +886,14 @@ function analyzeTrend(prods){
 
 function openExecutiveReport() {
   if (!D) return;
-  const s = D.summary || {};
-  const prods = D.products || [];
+  // ตัดสินค้าที่ "จัดการแล้ว" (ยกเลิกขาย/ทดแทน) ออกก่อนคำนวณรายงาน — เหมือนตารางหลัก
+  const prods = (D.products || []).filter(p => !isResolved(p.parcode));
+  const s = {
+    active: prods.filter(p => p.status === 'ACTIVE').length,
+    stale:  prods.filter(p => p.status === 'STALE').length,
+    lost:   prods.filter(p => p.status === 'LOST').length,
+    qty_lost_peak: prods.filter(p => p.status === 'LOST').reduce((a, p) => a + (p.max_qty || 0), 0),
+  };
 
   // Filter for LOST products and sort by lost_score descending to get the top 10
   const lostProds = prods.filter(p => p.status === 'LOST')
