@@ -177,9 +177,6 @@ tbody tr:hover{background:#f8f9ff}
     <option value="3">≥3 ปี</option>
     <option value="5">≥5 ปี</option>
   </select>
-  <div class="filter-sep"></div>
-  <label><input type="checkbox" id="f-buy-tj" onchange="applyAll()"> ซื้อจาก TJ</label>
-  <label><input type="checkbox" id="f-buy-mni" onchange="applyAll()"> ซื้อจาก มือหนึ่ง(MNI)</label>
   <button class="reset-btn" onclick="resetFilter()">✕ ล้าง</button>
   <input class="search-box" id="f-search" placeholder="🔍 ค้นหา parcode / ชื่อ / กลุ่ม / แบรนด์" oninput="applyAll()">
   <button class="xlsx-btn" onclick="exportXLSX()">📥 Export XLSX</button>
@@ -225,7 +222,6 @@ tbody tr:hover{background:#f8f9ff}
         <th class="r" onclick="sortBy(12,this)">peak qty<span class="sa"></span></th>
         <th class="c" onclick="sortBy(13,this)">สถานะ<span class="sa"></span></th>
         <th class="r" onclick="sortBy(14,this)">lost_score<span class="sa desc"></span></th>
-        <th class="c">ซื้อจาก</th>
         <th>การจัดการ</th>
         <th>สินค้าทดแทน</th>
         <th>หมายเหตุ</th>
@@ -400,8 +396,6 @@ function applyAll(){
   const fRM=document.getElementById('f-rm').value;
   const fDM=document.getElementById('f-dm').value;
   const fStore=document.getElementById('f-store').value;
-  const fBuyTJ=document.getElementById('f-buy-tj').checked;
-  const fBuyMNI=document.getElementById('f-buy-mni').checked;
 
   // Scope-aware product list — when RM/DM/Store filter, recompute year qty + status
   // from store_breakdown[whs][iprod] = [q2021..q2026]
@@ -467,8 +461,6 @@ function applyAll(){
     if(fGrp && !(p.group||'').toLowerCase().includes(fGrp.toLowerCase())) return false;
     if(fType && !(p.type||'').toLowerCase().includes(fType.toLowerCase())) return false;
     if(fGone && (p.years_gone||0)<fGone) return false;
-    if(fBuyTJ && !p.buy_tj) return false;
-    if(fBuyMNI && !p.buy_mni) return false;
     if(fSearch){
       const hit=(p.parcode||'').toLowerCase().includes(fSearch)||
                 (p.name||'').toLowerCase().includes(fSearch)||
@@ -490,7 +482,7 @@ function applyAll(){
   });
 
   // KPIs reflect every filter except status (status is what KPIs categorize)
-  const anyFilter = scopeStores || fGrp || fType || fGone || fSearch || fBuyTJ || fBuyMNI;
+  const anyFilter = scopeStores || fGrp || fType || fGone || fSearch;
   const parts = [];
   if(scopeStores) parts.push(`${scopeStores.size} ร้าน`);
   if(fType) parts.push(`ประเภท: ${fType}`);
@@ -561,7 +553,7 @@ function renderTable(){
     const hint = hasScope
       ? '⚠️ ไม่มีสินค้าตรงเงื่อนไขในขอบเขตนี้ — ลองล้าง filter ประเภท/กลุ่ม/สถานะ หรือเลือกร้านอื่น (บางสาขายังไม่มีข้อมูลใน bld_acc_lake)'
       : '— ไม่มีรายการตรงเงื่อนไข ลองปรับ filter';
-    tbody.innerHTML=`<tr><td colspan="19" style="text-align:center;padding:20px;color:#94a3b8">${hint}</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="18" style="text-align:center;padding:20px;color:#94a3b8">${hint}</td></tr>`;
     document.getElementById('prod-cnt').textContent='0 รายการ';
     renderPagination();
     return;
@@ -595,7 +587,6 @@ function renderTable(){
       <td class="r">${fmt(p.max_qty)}</td>
       <td class="c"><span class="${stCls}">${stLabel}</span></td>
       <td class="r b">${fmt(p.lost_score)}</td>
-      <td class="c">${buySourceHtml(p)}</td>
       ${decisionCellsHtml(p)}
     </tr>`;
   }).join('');
@@ -603,22 +594,11 @@ function renderTable(){
   renderPagination();
 }
 
-// ── ซื้อจาก TJ / มือหนึ่ง(MNI) — จาก fact_purchase_tj/fact_purchase_mni (build-time flag) ──
-function buySourceHtml(p){
-  if(p.buy_tj && p.buy_mni) return '<span class="badge-grp" style="background:#ede9fe;color:#6d28d9">TJ+MNI</span>';
-  if(p.buy_tj)  return '<span class="badge-grp" style="background:#dbeafe;color:#1d4ed8">TJ</span>';
-  if(p.buy_mni) return '<span class="badge-grp" style="background:#fef3c7;color:#b45309">มือหนึ่ง</span>';
-  return '<span style="color:#cbd5e1">—</span>';
-}
-
 // ── Action columns (ทดแทน/ยกเลิกขาย) — เก็บใน Google Sheets ผ่าน Apps Script ──────
 function decisionOf(parcode){ return DECISIONS[parcode]||{}; }
 function isResolved(parcode){
   const d=DECISIONS[parcode];
-  if(!d || !d.action) return false;
-  if(d.action==='ยกเลิกขาย') return true;
-  if(d.action==='ทดแทน') return !!d.replacement_parcode;
-  return false;
+  return !!(d && d.action && d.replacement_parcode && d.note);
 }
 function rowContext(parcode){
   const p=PRODUCT_BY_PARCODE.get(parcode)||{};
@@ -733,8 +713,6 @@ function resetFilter(){
   document.getElementById('f-rm').value='';
   document.getElementById('f-dm').value='';
   document.getElementById('f-store').value='';
-  document.getElementById('f-buy-tj').checked=false;
-  document.getElementById('f-buy-mni').checked=false;
   rebuildStoreOptions();
   applyAll();
 }
@@ -886,14 +864,8 @@ function analyzeTrend(prods){
 
 function openExecutiveReport() {
   if (!D) return;
-  // ตัดสินค้าที่ "จัดการแล้ว" (ยกเลิกขาย/ทดแทน) ออกก่อนคำนวณรายงาน — เหมือนตารางหลัก
-  const prods = (D.products || []).filter(p => !isResolved(p.parcode));
-  const s = {
-    active: prods.filter(p => p.status === 'ACTIVE').length,
-    stale:  prods.filter(p => p.status === 'STALE').length,
-    lost:   prods.filter(p => p.status === 'LOST').length,
-    qty_lost_peak: prods.filter(p => p.status === 'LOST').reduce((a, p) => a + (p.max_qty || 0), 0),
-  };
+  const s = D.summary || {};
+  const prods = D.products || [];
 
   // Filter for LOST products and sort by lost_score descending to get the top 10
   const lostProds = prods.filter(p => p.status === 'LOST')
