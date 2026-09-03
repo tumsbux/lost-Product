@@ -105,7 +105,9 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
   <button class="ai-btn" onclick="aiAnalyze('lowgp')">⚠️ GP ต่ำกว่าเกณฑ์</button>
   <button class="ai-btn" onclick="aiAnalyze('nocost')">❓ ไม่มีต้นทุน</button>
   <button class="ai-btn" onclick="aiAnalyze('trend')">📊 Trend GP รายเดือน</button>
-  <button class="ai-btn" style="background:linear-gradient(135deg,#e11d48,#be123c);margin-left:auto;" onclick="openExecutiveReport()">📋 Executive Report</button>
+  <button class="ai-btn" style="background:linear-gradient(135deg,#e11d48,#be123c);" onclick="switchTab('festival')">🎪 วิกฤตเทศกาล (-7.09 pp)</button>
+  <button class="ai-btn" style="background:linear-gradient(135deg,#d97706,#b45309);" onclick="switchTab('minimart')">🛒 โครงสร้าง Minimart (-3.69 pp)</button>
+  <button class="ai-btn" style="background:linear-gradient(135deg,#475569,#334155);margin-left:auto;" onclick="openExecutiveReport()">📋 Executive Report</button>
 </div>
 
 <div class="kpi-row">
@@ -120,6 +122,8 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
   <div class="tab active" data-tab="store">🏪 Store</div>
   <div class="tab" data-tab="product">📦 Product</div>
   <div class="tab" data-tab="trend">📈 Trend</div>
+  <div class="tab" data-tab="festival" style="color:#e11d48;font-weight:600;">🎪 วิกฤตสินค้าเทศกาล (-7.09 pp)</div>
+  <div class="tab" data-tab="minimart" style="color:#d97706;font-weight:600;">🛒 โครงสร้าง Minimart (-3.69 pp)</div>
 </div>
 
 <!-- STORE TAB -->
@@ -141,7 +145,7 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
       <th data-col="dm">DM</th>
       <th data-col="rm">RM</th>
       <th data-col="sales" class="r">Sales MTD</th>
-      <th data-col="disc" class="r">ส่วนลด</th>
+      <th data-col="disc" class="r" title="ส่วนลดรวม = ส่วนลดรายการ (sku) + ส่วนลดท้ายบิล (bill)">ส่วนลดรวม</th>
       <th data-col="cost" class="r">Cost</th>
       <th data-col="gp" class="r">GP</th>
       <th data-col="gp_pct" class="r sort-asc">GP %</th>
@@ -170,7 +174,9 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
       <th data-col="type_name">ประเภท</th>
       <th data-col="group_name">กลุ่ม</th>
       <th data-col="sales" class="r">Sales MTD</th>
-      <th data-col="disc" class="r">ส่วนลด</th>
+      <th data-col="disc" class="r" title="ส่วนลดรวม = ลดรายการ + ลดท้ายบิล">ส่วนลดรวม</th>
+      <th data-col="sku_disc" class="r" title="ส่วนลดรายการ = soqty × sopricdisc (หักก่อนเป็น solineamt)">ลดรายการ</th>
+      <th data-col="bill_disc" class="r" title="ส่วนลดท้ายบิล = prorated_discount จาก sodisc">ลดท้ายบิล</th>
       <th data-col="cost" class="r">Cost</th>
       <th data-col="gp" class="r">GP</th>
       <th data-col="gp_pct" class="r sort-asc">GP %</th>
@@ -189,7 +195,7 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
     <thead><tr>
       <th>เดือน</th>
       <th class="r">Net Sales</th>
-      <th class="r">ส่วนลด</th>
+      <th class="r" title="ส่วนลดรวม (sku + bill)">ส่วนลดรวม</th>
       <th class="r">Cost</th>
       <th class="r">GP</th>
       <th class="r">GP %</th>
@@ -197,6 +203,193 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
     </tr></thead>
     <tbody id="trend-tbody"></tbody>
   </table>
+</div>
+
+<!-- ==================== FESTIVAL TAB ==================== -->
+<div class="tab-panel" id="panel-festival">
+  <!-- Executive Overview Cards -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+      <h2 style="font-size:17px;font-weight:700;color:#dc2626;margin:0;">🎪 ปัจจัยที่ 1: วิกฤตกลุ่ม "สินค้าเทศกาล" (Category 22)</h2>
+      <span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;">ฉุด GP รวม -7.09 pp | คิดเป็น 81.6% ของกำไรที่ขาดหายไป</span>
+    </div>
+    <p style="font-size:13.5px;color:var(--text);line-height:1.6;margin-bottom:14px;">
+      <b>สาเหตุหลัก:</b> เกิดจากการทำรายการ <b>"ตัดสต๊อกชำรุด / ล้างสต๊อกของขวัญปีก่อน" ผิดช่องทาง</b> โดยหน้าร้านยิงขายด้วยส่วนลดระดับ SKU สูงถึง <b>99.5% – 100%</b> (หรือขาย 0 บาท) ผ่านหน้าจอขาย POS แทนการทำเอกสารตัดจำหน่ายผ่านระบบคลัง ส่งผลให้มูลค่าต้นทุนสินค้าที่ตัดจำหน่ายถูกบันทึกเข้ามาใน <b>"ต้นทุนขาย (COGS)"</b> สูงถึง ฿751,550 จากยอดขายเพียง ฿15,991 ทำให้กลุ่มนี้ติดลบถึง <b>-฿735,559 (GP% = -4,599.7%)</b>
+    </p>
+    
+    <!-- KPI Grid -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;margin-bottom:14px;">
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;">
+        <div style="font-size:12px;color:#991b1b;font-weight:600;">ยอดขายสุทธิ MTD</div>
+        <div style="font-size:19px;font-weight:700;color:#991b1b;" id="fest-sales">฿15,991</div>
+        <div style="font-size:11px;color:var(--muted);">0.15% ของทั้งบริษัท</div>
+      </div>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;">
+        <div style="font-size:12px;color:#991b1b;font-weight:600;">ต้นทุนสินค้าที่ตัดจ่าย</div>
+        <div style="font-size:19px;font-weight:700;color:#991b1b;" id="fest-cost">฿751,550</div>
+        <div style="font-size:11px;color:var(--muted);">9.3% ของต้นทุนทั้งบริษัท</div>
+      </div>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;">
+        <div style="font-size:12px;color:#991b1b;font-weight:600;">ส่วนลดที่ถูกยิงสะสม</div>
+        <div style="font-size:19px;font-weight:700;color:#991b1b;" id="fest-disc">฿1,368,957</div>
+        <div style="font-size:11px;color:#dc2626;font-weight:700;">79.1% ของส่วนลดบริษัท!</div>
+      </div>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;">
+        <div style="font-size:12px;color:#991b1b;font-weight:600;">ผลขาดทุน GP สุทธิ</div>
+        <div style="font-size:19px;font-weight:700;color:#dc2626;" id="fest-gp">-฿735,559</div>
+        <div style="font-size:11px;color:#dc2626;font-weight:700;">GP% = -4,599.7%</div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;">
+        <div style="font-size:12px;color:#166534;font-weight:600;">GP บริษัทหากคลีนเคสนี้</div>
+        <div style="font-size:19px;font-weight:700;color:#16a34a;">29.88%</div>
+        <div style="font-size:11px;color:#16a34a;">ฟื้นทันที +7.09 pp</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5-Month History Table for Festival -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+    <h3 style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;">📅 ประวัติย้อนหลัง 5 เดือนของกลุ่มสินค้าเทศกาล (หลักฐานเชิงประจักษ์)</h3>
+    <table style="width:100%;font-size:13px;border-collapse:collapse;">
+      <thead>
+        <tr style="background:#f8fafc;border-bottom:2px solid var(--border);">
+          <th style="padding:8px 10px;">เดือน</th>
+          <th class="r" style="padding:8px 10px;">Net Sales</th>
+          <th class="r" style="padding:8px 10px;">Cost</th>
+          <th class="r" style="padding:8px 10px;">ส่วนลด</th>
+          <th class="r" style="padding:8px 10px;">% ส่วนลด</th>
+          <th class="r" style="padding:8px 10px;">GP (บาท)</th>
+          <th class="r" style="padding:8px 10px;">GP %</th>
+          <th style="padding:8px 10px;">สถานะ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>พ.ค. 69 (31 วัน)</td><td class="r">฿265,591</td><td class="r">฿154,505</td><td class="r">฿3,888</td><td class="r">1.5%</td><td class="r">+฿111,086</td><td class="r" style="color:#16a34a;font-weight:700;">41.8%</td><td><span class="gp-badge gp-high">ปกติ / กำไรสูง</span></td></tr>
+        <tr><td>มิ.ย. 69 (30 วัน)</td><td class="r">฿180,196</td><td class="r">฿108,211</td><td class="r">฿8,704</td><td class="r">4.8%</td><td class="r">+฿71,985</td><td class="r" style="color:#16a34a;font-weight:700;">39.9%</td><td><span class="gp-badge gp-high">ปกติ / กำไรสูง</span></td></tr>
+        <tr><td>ก.ค. 69 (31 วัน)</td><td class="r">฿181,249</td><td class="r">฿107,072</td><td class="r">฿2,536</td><td class="r">1.4%</td><td class="r">+฿74,177</td><td class="r" style="color:#16a34a;font-weight:700;">40.9%</td><td><span class="gp-badge gp-high">ปกติ / กำไรสูง</span></td></tr>
+        <tr><td>ส.ค. 69 (31 วัน)</td><td class="r">฿186,273</td><td class="r">฿113,359</td><td class="r">฿10,614</td><td class="r">5.7%</td><td class="r">+฿72,915</td><td class="r" style="color:#16a34a;font-weight:700;">39.1%</td><td><span class="gp-badge gp-high">ปกติ / กำไรสูง</span></td></tr>
+        <tr style="background:#fef2f2;font-weight:700;">
+          <td style="color:#dc2626;">ก.ย. 69 (2 วันแรก) 🚨</td>
+          <td class="r">฿14,452</td>
+          <td class="r" style="color:#dc2626;">฿750,723</td>
+          <td class="r" style="color:#dc2626;">฿1,368,889</td>
+          <td class="r" style="color:#dc2626;">9,471.7%</td>
+          <td class="r" style="color:#dc2626;">-฿736,271</td>
+          <td class="r" style="color:#dc2626;">-5,094.5%</td>
+          <td><span class="gp-badge gp-low">ผิดปกติรุนแรง</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Top Anomaly Items Table -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <h3 style="font-size:14px;font-weight:700;color:var(--text);margin:0;">📦 13 รายการสินค้าเทศกาลที่สร้างผลขาดทุน (คลิกแถวเพื่อดูสาขาที่บันทึก)</h3>
+        <span style="font-size:12px;color:var(--muted);">รวมผลขาดทุน -฿740,390 จากยอดขายเพียง ฿4,128</span>
+      </div>
+      <button class="btn btn-xlsx" onclick="exportFestivalCSV()">⬇ XLSX</button>
+    </div>
+    <table id="fest-tbl">
+      <thead><tr>
+        <th>Parcode</th>
+        <th>ชื่อสินค้า</th>
+        <th class="r">Sales MTD</th>
+        <th class="r" style="color:var(--red);">ส่วนลดที่ยิง</th>
+        <th class="r" style="color:var(--red);">% ส่วนลด</th>
+        <th class="r">Cost</th>
+        <th class="r">GP ขาดทุน</th>
+        <th class="r">GP %</th>
+      </tr></thead>
+      <tbody id="fest-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== MINIMART TAB ==================== -->
+<div class="tab-panel" id="panel-minimart">
+  <!-- Executive Overview Cards -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+      <h2 style="font-size:17px;font-weight:700;color:#d97706;margin:0;">🛒 ปัจจัยที่ 2: โครงสร้างมาร์จิ้นต่ำของกลุ่ม "Minimart" (Category 02)</h2>
+      <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;">ฉุด GP รวม -3.69 pp | คิดเป็น 42.4% ของกำไรที่ขาดหายไป</span>
+    </div>
+    <p style="font-size:13.5px;color:var(--text);line-height:1.6;margin-bottom:14px;">
+      <b>สาเหตุหลัก:</b> กลุ่ม Minimart มียอดขายสูงสุดอันดับ 1 ของบริษัท (23.9% ของยอดขายรวม) แต่อัตรากำไรขั้นต้นเฉลี่ยทำได้เพียง <b>16.06%</b> (ต้นทุนกินไป 83.94%) ต่ำกว่ามาตรฐานบริษัทที่ 31.48% ถึง -15.42 pp โดยกว่า <b>65.8% ของยอดขายกลุ่มนี้มี GP ต่ำกว่า 15%</b> และมีสินค้าจำเป็นหลายตัวถูกตั้งราคาขายหรือจัดโปรโมชั่นจนต่ำกว่าต้นทุน (เช่น ข้าวสารตราพนมรุ้ง GP -2.7% ถึง 3.2%)
+    </p>
+    
+    <!-- KPI Grid -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;margin-bottom:14px;">
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;">
+        <div style="font-size:12px;color:#92400e;font-weight:600;">ยอดขาย Minimart MTD</div>
+        <div style="font-size:19px;font-weight:700;color:#92400e;" id="mini-sales">฿2,498,271</div>
+        <div style="font-size:11px;color:var(--muted);">สัดส่วน 23.9% (อันดับ 1)</div>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;">
+        <div style="font-size:12px;color:#92400e;font-weight:600;">ต้นทุนสินค้า COGS</div>
+        <div style="font-size:19px;font-weight:700;color:#92400e;" id="mini-cost">฿2,097,113</div>
+        <div style="font-size:11px;color:#dc2626;font-weight:600;">83.94% ของยอดขาย</div>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;">
+        <div style="font-size:12px;color:#92400e;font-weight:600;">กำไรขั้นต้น (GP)</div>
+        <div style="font-size:19px;font-weight:700;color:#92400e;" id="mini-gp">฿401,157</div>
+        <div style="font-size:11px;color:var(--muted);">GP% = 16.06%</div>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;">
+        <div style="font-size:12px;color:#92400e;font-weight:600;">ต่ำกว่าเกณฑ์เฉลี่ยบริษัท</div>
+        <div style="font-size:19px;font-weight:700;color:#dc2626;">-฿385,291</div>
+        <div style="font-size:11px;color:#dc2626;">ฉุด GP รวม -3.69 pp</div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;">
+        <div style="font-size:12px;color:#166534;font-weight:600;">GP บริษัทหากไม่รวม Minimart</div>
+        <div style="font-size:19px;font-weight:700;color:#16a34a;">24.90%</div>
+        <div style="font-size:11px;color:#16a34a;">เพิ่มขึ้นทันที +2.12 pp</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subgroups Breakdown Table -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+    <h3 style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;">🏷️ โครงสร้างกำไรแยกตามกลุ่มสินค้าย่อยใน Minimart (Subgroup Performance)</h3>
+    <table id="mini-subgrp-tbl">
+      <thead><tr>
+        <th>รหัสกลุ่ม</th>
+        <th>กลุ่มสินค้าย่อย</th>
+        <th class="r">จำนวน SKU</th>
+        <th class="r">Sales MTD</th>
+        <th class="r">สัดส่วน %</th>
+        <th class="r">Cost</th>
+        <th class="r">GP (บาท)</th>
+        <th class="r">GP %</th>
+      </tr></thead>
+      <tbody id="mini-subgrp-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Negative & Critical GP Items Table -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <h3 style="font-size:14px;font-weight:700;color:var(--text);margin:0;">⚠️ สินค้า Minimart ที่ขายติดลบ หรือมาร์จิ้นต่ำวิกฤต (คลิกแถวเพื่อดูสาขา)</h3>
+        <span style="font-size:12px;color:var(--muted);">(สินค้าที่ GP < 5% หรือขายต่ำกว่าทุน)</span>
+      </div>
+      <button class="btn btn-xlsx" onclick="exportMinimartCSV()">⬇ XLSX</button>
+    </div>
+    <table id="mini-crit-tbl">
+      <thead><tr>
+        <th>Parcode</th>
+        <th>ชื่อสินค้า</th>
+        <th>กลุ่ม</th>
+        <th class="r">Sales MTD</th>
+        <th class="r">ส่วนลด</th>
+        <th class="r">Cost</th>
+        <th class="r">GP</th>
+        <th class="r">GP %</th>
+      </tr></thead>
+      <tbody id="mini-crit-tbody"></tbody>
+    </table>
+  </div>
 </div>
 
 <div class="ai-modal" id="ai-modal" onclick="if(event.target.id==='ai-modal')closeAi()">
@@ -354,12 +547,12 @@ function renderProds(){
     return S.dir*(av<bv?-1:av>bv?1:0);
   });
   var shown=PROD_FILTERED.slice(0,3000);
-  document.getElementById('prod-tbody').innerHTML=shown.map(function(p){return '<tr class="prod-row" onclick="toggleProdDetail(this,\''+p.iprod+'\')"><td>'+p.iprod+'</td><td>'+(p.name||'—')+'</td><td>'+(p.type_name||'—')+'</td><td>'+(p.group_name||p.group||'—')+'</td><td class="r">'+fmt(p.sales)+'</td><td class="r">'+fmt(p.disc||0)+'</td><td class="r">'+fmt(p.cost)+'</td><td class="r">'+fmt(p.gp)+'</td><td class="r">'+gpBadge(p.gp_pct,p.cost)+'</td></tr>'}).join('');
+  document.getElementById('prod-tbody').innerHTML=shown.map(function(p){return '<tr class="prod-row" onclick="toggleProdDetail(this,\''+p.iprod+'\')"><td>'+p.iprod+'</td><td>'+(p.name||'—')+'</td><td>'+(p.type_name||'—')+'</td><td>'+(p.group_name||p.group||'—')+'</td><td class="r">'+fmt(p.sales)+'</td><td class="r">'+fmt(p.disc||0)+'</td><td class="r">'+fmt(p.sku_disc||0)+'</td><td class="r">'+fmt(p.bill_disc||0)+'</td><td class="r">'+fmt(p.cost)+'</td><td class="r">'+fmt(p.gp)+'</td><td class="r">'+gpBadge(p.gp_pct,p.cost)+'</td></tr>'}).join('');
   var totS=PROD_FILTERED.reduce(function(a,p){return a+p.sales},0);
   var totC=PROD_FILTERED.reduce(function(a,p){return a+p.cost},0);
   var totG=totS-totC;
   var totPD=PROD_FILTERED.reduce(function(a,p){return a+(p.disc||0)},0);
-  document.getElementById('prod-tfoot').innerHTML='<tr><td colspan="4" style="color:var(--muted);font-size:11px">'+PROD_FILTERED.length.toLocaleString()+' รายการ'+(PROD_FILTERED.length>3000?' (แสดง 3,000 แรก)':'')+'</td><td class="r">'+fmt(totS)+'</td><td class="r">'+fmt(totPD)+'</td><td class="r">'+fmt(totC)+'</td><td class="r">'+fmt(totG)+'</td><td class="r">'+gpBadge(totS?totG/totS*100:0,totC)+'</td></tr>';
+  document.getElementById('prod-tfoot').innerHTML='<tr><td colspan="4" style="color:var(--muted);font-size:11px">'+PROD_FILTERED.length.toLocaleString()+' รายการ'+(PROD_FILTERED.length>3000?' (แสดง 3,000 แรก)':'')+'</td><td class="r">'+fmt(totS)+'</td><td class="r">'+fmt(totPD)+'</td><td class="r">'+fmt(PROD_FILTERED.reduce(function(a,p){return a+(p.sku_disc||0)},0))+'</td><td class="r">'+fmt(PROD_FILTERED.reduce(function(a,p){return a+(p.bill_disc||0)},0))+'</td><td class="r">'+fmt(totC)+'</td><td class="r">'+fmt(totG)+'</td><td class="r">'+gpBadge(totS?totG/totS*100:0,totC)+'</td></tr>';
 }
 
 function applyProdFilters(){
@@ -430,13 +623,13 @@ function exportCSV(headers,dataRows,filename){
   a.download=filename;a.click();
 }
 function exportStoreCSV(){
-  exportCSV(['รหัส','ร้าน','DM','RM','Sales','ส่วนลด','Cost','GP','GP%'],
+  exportCSV(['รหัส','ร้าน','DM','RM','Sales','ส่วนลดรวม','Cost','GP','GP%'],
     STORE_FILTERED.map(function(s){return[s.code,s.name,s.dm,s.rm,s.sales,s.disc||0,s.cost,s.gp,s.gp_pct]}),
     'gp_store_'+new Date().toISOString().slice(0,10)+'.csv');
 }
 function exportProdCSV(){
-  exportCSV(['Parcode','ชื่อสินค้า','ประเภท','กลุ่ม','Sales','ส่วนลด','Cost','GP','GP%'],
-    PROD_FILTERED.map(function(p){return[p.iprod,p.name||'',p.type_name||'',p.group_name||'',p.sales,p.disc||0,p.cost,p.gp,p.gp_pct]}),
+  exportCSV(['Parcode','ชื่อสินค้า','ประเภท','กลุ่ม','Sales','ส่วนลดรวม','ลดรายการ','ลดท้ายบิล','Cost','GP','GP%'],
+    PROD_FILTERED.map(function(p){return[p.iprod,p.name||'',p.type_name||'',p.group_name||'',p.sales,p.disc||0,p.sku_disc||0,p.bill_disc||0,p.cost,p.gp,p.gp_pct]}),
     'gp_product_'+new Date().toISOString().slice(0,10)+'.csv');
 }
 
@@ -513,6 +706,8 @@ fetch('./gp_analysis_data.json')
     renderStores();
     renderProds();
     renderTrend(data.monthly||[]);
+    renderFestivalTab();
+    renderMinimartTab();
     document.getElementById('loading').style.display='none';
   })
   .catch(function(e){
@@ -644,6 +839,118 @@ function openExecutiveReport() {
     '</div>';
     
   openAi(title, html);
+}
+
+function switchTab(tabId){
+  var t=document.querySelector('.tab[data-tab="'+tabId+'"]');
+  if(t)t.click();
+}
+
+function renderFestivalTab() {
+  var prods = PRODS_ALL || [];
+  var festProds = prods.filter(function(p){ return p.type_code === '22'; });
+  festProds.sort(function(a,b){ return a.gp - b.gp; });
+  
+  var shown = festProds.filter(function(p){ return p.gp < 0 || p.disc > 1000; });
+  var tbody = document.getElementById('fest-tbody');
+  if(!tbody) return;
+  
+  tbody.innerHTML = shown.map(function(p){
+    var discRate = (p.sales + (p.disc||0)) > 0 ? ((p.disc||0) / (p.sales + (p.disc||0)) * 100) : 0;
+    return '<tr class="prod-row" onclick="toggleProdDetail(this,\''+p.iprod+'\')">' +
+      '<td>'+p.iprod+'</td>' +
+      '<td>'+(p.name||'—')+'</td>' +
+      '<td class="r">'+fmt(p.sales)+'</td>' +
+      '<td class="r" style="color:var(--red);font-weight:600;">'+fmt(p.disc||0)+'</td>' +
+      '<td class="r" style="color:var(--red);font-weight:600;">'+discRate.toFixed(1)+'%</td>' +
+      '<td class="r">'+fmt(p.cost)+'</td>' +
+      '<td class="r" style="color:var(--red);font-weight:700;">'+fmt(p.gp)+'</td>' +
+      '<td class="r">'+gpBadge(p.gp_pct, p.cost)+'</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderMinimartTab() {
+  var prods = PRODS_ALL || [];
+  var miniProds = prods.filter(function(p){ return p.type_code === '02'; });
+  
+  // 1. Group by subgroup
+  var subgrpMap = {};
+  miniProds.forEach(function(p){
+    var grp = p.group || '02999';
+    var name = p.group_name || grp;
+    if(!subgrpMap[grp]){
+      subgrpMap[grp] = { name: name, count: 0, sales: 0, cost: 0, disc: 0, gp: 0 };
+    }
+    subgrpMap[grp].count++;
+    subgrpMap[grp].sales += p.sales;
+    subgrpMap[grp].cost += p.cost;
+    subgrpMap[grp].disc += (p.disc||0);
+    subgrpMap[grp].gp += p.gp;
+  });
+  
+  var totMiniSales = miniProds.reduce(function(a,p){ return a + p.sales; }, 0);
+  var subgrps = Object.keys(subgrpMap).map(function(k){
+    var v = subgrpMap[k];
+    v.grp = k;
+    v.gp_pct = v.sales ? (v.gp / v.sales * 100) : 0;
+    v.share = totMiniSales ? (v.sales / totMiniSales * 100) : 0;
+    return v;
+  });
+  subgrps.sort(function(a,b){ return b.sales - a.sales; });
+  
+  var tbodySub = document.getElementById('mini-subgrp-tbody');
+  if(tbodySub) {
+    tbodySub.innerHTML = subgrps.map(function(s){
+      var rowStyle = s.gp_pct < 5 ? 'style="background:#fef2f2;"' : (s.gp_pct < 15 ? 'style="background:#fffbeb;"' : '');
+      return '<tr '+rowStyle+'>' +
+        '<td>'+s.grp+'</td>' +
+        '<td><b>'+s.name+'</b></td>' +
+        '<td class="r">'+s.count+'</td>' +
+        '<td class="r">'+fmt(s.sales)+'</td>' +
+        '<td class="r">'+s.share.toFixed(1)+'%</td>' +
+        '<td class="r">'+fmt(s.cost)+'</td>' +
+        '<td class="r">'+fmt(s.gp)+'</td>' +
+        '<td class="r">'+gpBadge(s.gp_pct, s.cost)+'</td>' +
+      '</tr>';
+    }).join('');
+  }
+  
+  // 2. Critical & Negative GP items in Minimart
+  var critProds = miniProds.filter(function(p){
+    return p.gp < 0 || (p.gp_pct < 8 && p.sales > 5000);
+  });
+  critProds.sort(function(a,b){ return a.gp - b.gp; });
+  
+  var tbodyCrit = document.getElementById('mini-crit-tbody');
+  if(tbodyCrit) {
+    tbodyCrit.innerHTML = critProds.slice(0, 50).map(function(p){
+      return '<tr class="prod-row" onclick="toggleProdDetail(this,\''+p.iprod+'\')">' +
+        '<td>'+p.iprod+'</td>' +
+        '<td>'+(p.name||'—')+'</td>' +
+        '<td>'+(p.group_name||p.group||'—')+'</td>' +
+        '<td class="r">'+fmt(p.sales)+'</td>' +
+        '<td class="r">'+fmt(p.disc||0)+'</td>' +
+        '<td class="r">'+fmt(p.cost)+'</td>' +
+        '<td class="r" style="color:'+(p.gp<0?'var(--red)':'var(--text)')+';font-weight:600;">'+fmt(p.gp)+'</td>' +
+        '<td class="r">'+gpBadge(p.gp_pct, p.cost)+'</td>' +
+      '</tr>';
+    }).join('');
+  }
+}
+
+function exportFestivalCSV(){
+  var prods = (PRODS_ALL || []).filter(function(p){ return p.type_code === '22'; });
+  exportCSV(['Parcode','ชื่อสินค้า','Sales','ส่วนลด','Cost','GP','GP%'],
+    prods.map(function(p){ return [p.iprod, p.name||'', p.sales, p.disc||0, p.cost, p.gp, p.gp_pct]; }),
+    'gp_festival_crisis_'+new Date().toISOString().slice(0,10)+'.csv');
+}
+
+function exportMinimartCSV(){
+  var prods = (PRODS_ALL || []).filter(function(p){ return p.type_code === '02'; });
+  exportCSV(['Parcode','ชื่อสินค้า','กลุ่ม','Sales','ส่วนลด','Cost','GP','GP%'],
+    prods.map(function(p){ return [p.iprod, p.name||'', p.group_name||p.group||'', p.sales, p.disc||0, p.cost, p.gp, p.gp_pct]; }),
+    'gp_minimart_analysis_'+new Date().toISOString().slice(0,10)+'.csv');
 }
 </script>
 </body>
