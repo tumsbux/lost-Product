@@ -345,15 +345,44 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
 
 <!-- ==================== MINIMART TAB ==================== -->
 <div class="tab-panel" id="panel-minimart">
+  <!-- RM / DM Filter Bar for Minimart -->
+  <div class="filters" style="background:var(--card);padding:12px 18px;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+    <span style="font-weight:700;color:var(--text);font-size:14px;display:inline-flex;align-items:center;gap:4px;">🎯 กรองพื้นที่ Minimart:</span>
+    <label style="font-weight:600;font-size:13px;color:var(--text);margin-left:4px;">RM:</label>
+    <select id="fm-rm" style="min-width:180px;"><option value="">ทุก RM (ทั้งหมด)</option></select>
+    <label style="font-weight:600;font-size:13px;color:var(--text);margin-left:4px;">DM:</label>
+    <select id="fm-dm" style="min-width:190px;"><option value="">ทุก DM (ทั้งหมด)</option></select>
+    <button class="btn btn-clear" onclick="clearMinimartFilters()">ล้างตัวกรอง</button>
+    <span id="fm-filter-info" style="font-size:13px;color:var(--blue);font-weight:600;margin-left:auto;"></span>
+  </div>
+
+  <!-- Educational Explainer: What is "pp" and why -7.09 pp vs -3.69 pp? -->
+  <div style="background:linear-gradient(135deg,#eff6ff,#f0fdf4);border:1px solid #bfdbfe;border-radius:10px;padding:16px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <span style="font-size:18px;">💡</span>
+      <h3 style="font-size:15px;font-weight:700;color:#1e3a8a;margin:0;">ทำความเข้าใจสำหรับผู้บริหาร: "pp (จุดเปอร์เซ็นต์)" คืออะไร และตัวเลข -7.09 pp กับ -3.69 pp มาจากไหน?</h3>
+    </div>
+    <div style="font-size:13px;line-height:1.7;color:#334155;">
+      <p style="margin-bottom:8px;">
+        <b>1. "pp" ย่อมาจาก Percentage Points (จุดเปอร์เซ็นต์):</b> ใช้เมื่อต้องการบอกว่า <b>อัตราส่วนเปอร์เซ็นต์เปลี่ยนไปกี่จุดโดยตรง (ลบกันตรงๆ)</b> เช่น ฐานกำไรปกติ ส.ค. อยู่ที่ <b>31.48%</b> หากลดลง <b>-7.09 pp</b> จะกลายเป็น <code>31.48% - 7.09% = 24.39%</code> (ไม่เหมือนกับ "ลดลง 7%" แบบสัดส่วน ซึ่งจะคิดเป็น 31.48% × 0.93 = 29.28%)
+      </p>
+      <p style="margin-bottom:8px;">
+        <b>2. ที่มาของ -7.09 pp (สินค้าเทศกาล):</b> ใน 2 วันแรก ยอดขายทั้งบริษัทคือ ฿10.45M หากทำได้ตามเกณฑ์ 31.48% ควรได้กำไร ฿3.29M แต่สินค้าเทศกาลถูกยิงลด 99-100% จนติดลบ <b>-฿735,559</b><br>
+        สูตร: <code>-฿740,390 (ขาดทุนเทศกาล) ÷ ฿10,447,226 (ยอดขายทั้งบริษัท) = -7.09 pp</code> → <b>สินค้าเทศกาลอย่างเดียวฉุด GP รวมทั้งบริษัทให้ฮวบลงทันที -7.09 จุดเปอร์เซ็นต์ (รับผิดชอบ 81.6% ของกำไรที่หายไปทั้งหมด!)</b>
+      </p>
+      <p style="margin-bottom:0;">
+        <b>3. ที่มาของ -3.69 pp (โครงสร้าง Minimart):</b> กลุ่ม Minimart มียอดขายสูงสุดถึง ฿2.50M (23.9% ของบริษัท) แต่ทำ GP ได้เพียง <b>16.06%</b> (ต่ำกว่าเกณฑ์ 31.48% ถึง -15.42 pp) กำไรที่ได้จึงขาดจากเป้าหมายไป <b>-฿385,291</b><br>
+        สูตร: <code>-฿385,291 (กำไรที่ต่ำกว่าเกณฑ์) ÷ ฿10,447,226 (ยอดขายทั้งบริษัท) = -3.69 pp</code> → <b>การขาย Minimart ที่มาร์จิ้นบางเฉียบ ฉุด GP รวมทั้งบริษัทให้ลดลงไปอีก -3.69 จุดเปอร์เซ็นต์ (รับผิดชอบ 42.4% ของกำไรที่หายไป)</b>
+      </p>
+    </div>
+  </div>
+
   <!-- Executive Overview Cards -->
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
-      <h2 style="font-size:17px;font-weight:700;color:#d97706;margin:0;">🛒 ปัจจัยที่ 2: โครงสร้างมาร์จิ้นต่ำของกลุ่ม "Minimart" (Category 02)</h2>
+      <h2 style="font-size:17px;font-weight:700;color:#d97706;margin:0;">🛒 สรุปผลการดำเนินงานกลุ่ม "Minimart" (Category 02)</h2>
       <span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;">ฉุด GP รวม -3.69 pp | คิดเป็น 42.4% ของกำไรที่ขาดหายไป</span>
     </div>
-    <p style="font-size:13.5px;color:var(--text);line-height:1.6;margin-bottom:14px;">
-      <b>สาเหตุหลัก:</b> กลุ่ม Minimart มียอดขายสูงสุดอันดับ 1 ของบริษัท (23.9% ของยอดขายรวม) แต่อัตรากำไรขั้นต้นเฉลี่ยทำได้เพียง <b>16.06%</b> (ต้นทุนกินไป 83.94%) ต่ำกว่ามาตรฐานบริษัทที่ 31.48% ถึง -15.42 pp โดยกว่า <b>65.8% ของยอดขายกลุ่มนี้มี GP ต่ำกว่า 15%</b> และมีสินค้าจำเป็นหลายตัวถูกตั้งราคาขายหรือจัดโปรโมชั่นจนต่ำกว่าต้นทุน (เช่น ข้าวสารตราพนมรุ้ง GP -2.7% ถึง 3.2%)
-    </p>
     
     <!-- KPI Grid -->
     <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;margin-bottom:14px;">
@@ -385,44 +414,84 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
     </div>
   </div>
 
-  <!-- Subgroups Breakdown Table -->
+  <!-- Margin Tier Breakdown Analysis Cards (5 Tiers) -->
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
-    <h3 style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;">🏷️ โครงสร้างกำไรแยกตามกลุ่มสินค้าย่อยใน Minimart (Subgroup Performance)</h3>
+    <h3 style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;">📊 โครงสร้างการกระจายตัวตามระดับอัตรากำไรใน Minimart (Margin Tiers)</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:10px;margin-bottom:10px;">
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;">
+        <div style="font-size:11px;font-weight:700;color:#991b1b;">Tier 1: GP ติดลบ (&lt; 0%)</div>
+        <div style="font-size:16px;font-weight:700;color:#dc2626;">20 รายการ</div>
+        <div style="font-size:11px;color:#64748b;">ขาย ฿87k | ขาดทุน -฿10,758</div>
+      </div>
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px;">
+        <div style="font-size:11px;font-weight:700;color:#c2410c;">Tier 2: ต่ำมาก (0% - 10%)</div>
+        <div style="font-size:16px;font-weight:700;color:#ea580c;">242 รายการ</div>
+        <div style="font-size:11px;color:#64748b;">ขาย ฿742k (29.7%) | GP 4.4%</div>
+      </div>
+      <div style="background:#fefce8;border:1px solid #fef08a;border-radius:8px;padding:10px 12px;">
+        <div style="font-size:11px;font-weight:700;color:#854d0e;">Tier 3: ปานกลางต่ำ (10% - 20%)</div>
+        <div style="font-size:16px;font-weight:700;color:#ca8a04;">360 รายการ</div>
+        <div style="font-size:11px;color:#64748b;">ขาย ฿814k (32.6%) | GP 13.7%</div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;">
+        <div style="font-size:11px;font-weight:700;color:#166534;">Tier 4: ปานกลาง (20% - 30%)</div>
+        <div style="font-size:16px;font-weight:700;color:#16a34a;">293 รายการ</div>
+        <div style="font-size:11px;color:#64748b;">ขาย ฿485k (19.4%) | GP 23.8%</div>
+      </div>
+      <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:10px 12px;">
+        <div style="font-size:11px;font-weight:700;color:#047857;">Tier 5: มาร์จิ้นสูง (&gt; 30%)</div>
+        <div style="font-size:16px;font-weight:700;color:#059669;">406 รายการ</div>
+        <div style="font-size:11px;color:#64748b;">ขาย ฿370k (14.8%) | GP 38.5%</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#dc2626;background:#fef2f2;padding:8px 12px;border-radius:6px;">
+      ⚠️ <b>ข้อค้นพบวิกฤต:</b> กว่า <b>65.8% ของยอดขาย Minimart (฿1.64 ล้านบาท)</b> มีอัตรากำไร GP ต่ำกว่า 15% โดยเฉพาะกลุ่มน้ำมันพืช (GP 2-6%) และข้าวสาร (GP 3.2% และติดลบ)
+    </div>
+  </div>
+
+  <!-- Subgroups Breakdown Table (Sortable) -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <h3 style="font-size:14px;font-weight:700;color:var(--text);margin:0;">🏷️ โครงสร้างกำไรแยกตามกลุ่มสินค้าย่อยใน Minimart (คลิกหัวตารางเพื่อเรียงลำดับ มาก ⇄ น้อย)</h3>
+        <span style="font-size:12px;color:var(--muted);">เรียงตามยอดขาย, กำไรบาท หรือ GP% ได้ทุกคอลัมน์</span>
+      </div>
+    </div>
     <table id="mini-subgrp-tbl">
       <thead><tr>
-        <th>รหัสกลุ่ม</th>
-        <th>กลุ่มสินค้าย่อย</th>
-        <th class="r">จำนวน SKU</th>
-        <th class="r">Sales MTD</th>
-        <th class="r">สัดส่วน %</th>
-        <th class="r">Cost</th>
-        <th class="r">GP (บาท)</th>
-        <th class="r">GP %</th>
+        <th data-col="grp">รหัสกลุ่ม</th>
+        <th data-col="name">กลุ่มสินค้าย่อย</th>
+        <th data-col="count" class="r">จำนวน SKU</th>
+        <th data-col="sales" class="r sort-desc">Sales MTD</th>
+        <th data-col="share" class="r">สัดส่วน %</th>
+        <th data-col="cost" class="r">Cost</th>
+        <th data-col="gp" class="r">GP (บาท)</th>
+        <th data-col="gp_pct" class="r">GP %</th>
       </tr></thead>
       <tbody id="mini-subgrp-tbody"></tbody>
     </table>
   </div>
 
-  <!-- Negative & Critical GP Items Table -->
+  <!-- Negative & Critical GP Items Table (Sortable) -->
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
       <div>
-        <h3 style="font-size:14px;font-weight:700;color:var(--text);margin:0;">⚠️ สินค้า Minimart ที่ขายติดลบ หรือมาร์จิ้นต่ำวิกฤต (คลิกแถวเพื่อดูสาขา)</h3>
-        <span style="font-size:12px;color:var(--muted);">(สินค้าที่ GP < 5% หรือขายต่ำกว่าทุน)</span>
+        <h3 style="font-size:14px;font-weight:700;color:var(--text);margin:0;">⚠️ สินค้า Minimart ที่ขายติดลบ หรือมาร์จิ้นต่ำวิกฤต (คลิกแถวเพื่อดูกระจายสาขา)</h3>
+        <span style="font-size:12px;color:var(--muted);">(สินค้าที่ GP &lt; 8% หรือขายต่ำกว่าทุน — คลิกหัวตารางเพื่อเรียงลำดับ มาก ⇄ น้อย ได้)</span>
       </div>
       <button class="btn btn-xlsx" onclick="exportMinimartCSV()">⬇ XLSX</button>
     </div>
     <table id="mini-crit-tbl">
       <thead><tr>
-        <th>Parcode</th>
-        <th>ชื่อสินค้า</th>
-        <th>กลุ่ม</th>
-        <th class="r" style="color:var(--blue);font-weight:700;">จำนวนขาย (Qty)</th>
-        <th class="r">Sales MTD</th>
-        <th class="r">ส่วนลด</th>
-        <th class="r">Cost</th>
-        <th class="r">GP</th>
-        <th class="r">GP %</th>
+        <th data-col="iprod">Parcode</th>
+        <th data-col="name">ชื่อสินค้า</th>
+        <th data-col="group_name">กลุ่ม</th>
+        <th data-col="qty" class="r" style="color:var(--blue);font-weight:700;">จำนวนขาย (Qty)</th>
+        <th data-col="sales" class="r">Sales MTD</th>
+        <th data-col="disc" class="r">ส่วนลด</th>
+        <th data-col="cost" class="r">Cost</th>
+        <th data-col="gp" class="r sort-asc">GP</th>
+        <th data-col="gp_pct" class="r">GP %</th>
       </tr></thead>
       <tbody id="mini-crit-tbody"></tbody>
     </table>
@@ -810,6 +879,18 @@ fetch('./gp_analysis_data.json')
     initSort('prod-tbl',PROD_SORT,renderProds);
     initSort('fest-tbl',FEST_SORT,renderFestivalTab);
     initSort('fest-store-tbl',FEST_STORE_SORT,renderFestivalStoresTable);
+    initSort('mini-subgrp-tbl',MINI_SUBGRP_SORT,renderMinimartTab);
+    initSort('mini-crit-tbl',MINI_CRIT_SORT,renderMinimartTab);
+
+    // Setup Minimart RM/DM dropdowns
+    refreshMinimartDropdowns();
+    ['fm-rm','fm-dm'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.addEventListener('change', function(){
+        refreshMinimartDropdowns();
+        applyMinimartFilters();
+      });
+    });
     
     // Setup festival RM/DM dropdowns
     refreshFestivalDropdowns();
@@ -1199,17 +1280,113 @@ function renderFestivalTab() {
   }).join('');
 }
 
-function renderMinimartTab() {
-  var prods = PRODS_ALL || [];
-  var miniProds = prods.filter(function(p){ return p.type_code === '02'; });
+var MINI_SUBGRP_SORT = { col: 'sales', dir: -1 };
+var MINI_CRIT_SORT = { col: 'gp', dir: 1 };
+
+function refreshMinimartDropdowns() {
+  var rmSel = document.getElementById('fm-rm');
+  var dmSel = document.getElementById('fm-dm');
+  if (!rmSel || !dmSel) return;
   
+  var curRm = rmSel.value;
+  var curDm = dmSel.value;
+  
+  var dms = new Set();
+  STORES_ALL.forEach(function(s){ if(s.dm && (!curRm || s.rm === curRm)) dms.add(s.dm); });
+  var dmOpts = dmSel.querySelectorAll('option:not(:first-child)');
+  for(var i=0; i<dmOpts.length; i++) dmOpts[i].remove();
+  Array.from(dms).sort().forEach(function(v){
+    var o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    dmSel.appendChild(o);
+  });
+  dmSel.value = dms.has(curDm) ? curDm : '';
+  
+  var rms = new Set();
+  var actDm = dmSel.value;
+  STORES_ALL.forEach(function(s){ if(s.rm && (!actDm || s.dm === actDm)) rms.add(s.rm); });
+  var rmOpts = rmSel.querySelectorAll('option:not(:first-child)');
+  for(var i=0; i<rmOpts.length; i++) rmOpts[i].remove();
+  Array.from(rms).sort().forEach(function(v){
+    var o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    rmSel.appendChild(o);
+  });
+  rmSel.value = rms.has(curRm) ? curRm : '';
+}
+
+function applyMinimartFilters() {
+  var rm = document.getElementById('fm-rm').value;
+  var dm = document.getElementById('fm-dm').value;
+  var infoEl = document.getElementById('fm-filter-info');
+  if (infoEl) {
+    if (dm) infoEl.textContent = 'กรองเฉพาะ: เขต DM ' + dm + (rm ? ' (RM ' + rm + ')' : '');
+    else if (rm) infoEl.textContent = 'กรองเฉพาะ: ภาค RM ' + rm;
+    else infoEl.textContent = 'แสดงข้อมูลทุกสาขา (เครือข่ายทั้งหมด)';
+  }
+  renderMinimartTab();
+}
+
+function clearMinimartFilters() {
+  document.getElementById('fm-rm').value = '';
+  document.getElementById('fm-dm').value = '';
+  refreshMinimartDropdowns();
+  applyMinimartFilters();
+}
+
+function renderMinimartTab() {
+  var rm = (document.getElementById('fm-rm') || {}).value || '';
+  var dm = (document.getElementById('fm-dm') || {}).value || '';
+  
+  var prods = PRODS_ALL || [];
+  var rawMini = prods.filter(function(p){ return p.type_code === '02'; });
+  
+  // If RM or DM is selected, compute product numbers filtered by store
+  var miniProds = rawMini.map(function(p){
+    if (!rm && !dm) return p;
+    var pStores = ((DATA.prod_stores || {})[p.iprod] || []).filter(function(st){
+      var sInfo = (STORES_ALL.find(function(x){ return x.code === st.c; }) || {});
+      if (rm && sInfo.rm !== rm) return false;
+      if (dm && sInfo.dm !== dm) return false;
+      return true;
+    });
+    var fSales = pStores.reduce(function(a,s){ return a + (s.s || 0); }, 0);
+    var fCost = pStores.reduce(function(a,s){ return a + (s.k || 0); }, 0);
+    var fGp = pStores.reduce(function(a,s){ return a + (s.g || 0); }, 0);
+    var fQty = pStores.reduce(function(a,s){ return a + (s.q || 0); }, 0);
+    var discRate = (p.sales > 0) ? ((p.disc || 0) / p.sales) : 0.03;
+    var fDisc = fSales * discRate;
+    return {
+      iprod: p.iprod,
+      name: p.name,
+      group: p.group,
+      group_name: p.group_name,
+      sales: fSales,
+      cost: fCost,
+      gp: fGp,
+      qty: fQty,
+      disc: fDisc,
+      gp_pct: fSales ? (fGp / fSales * 100) : 0
+    };
+  });
+  
+  // Update KPI Cards for Minimart
+  var totMiniSales = miniProds.reduce(function(a,p){ return a + p.sales; }, 0);
+  var totMiniCost = miniProds.reduce(function(a,p){ return a + p.cost; }, 0);
+  var totMiniGp = totMiniSales - totMiniCost;
+  var totMiniPct = totMiniSales ? (totMiniGp / totMiniSales * 100) : 0;
+  
+  if (document.getElementById('mini-sales')) document.getElementById('mini-sales').textContent = '฿' + fmt(totMiniSales);
+  if (document.getElementById('mini-cost')) document.getElementById('mini-cost').textContent = '฿' + fmt(totMiniCost);
+  if (document.getElementById('mini-gp')) document.getElementById('mini-gp').textContent = '฿' + fmt(totMiniGp) + ' (' + totMiniPct.toFixed(1) + '%)';
+
   // 1. Group by subgroup
   var subgrpMap = {};
   miniProds.forEach(function(p){
     var grp = p.group || '02999';
     var name = p.group_name || grp;
     if(!subgrpMap[grp]){
-      subgrpMap[grp] = { name: name, count: 0, sales: 0, cost: 0, disc: 0, gp: 0 };
+      subgrpMap[grp] = { grp: grp, name: name, count: 0, sales: 0, cost: 0, disc: 0, gp: 0 };
     }
     subgrpMap[grp].count++;
     subgrpMap[grp].sales += p.sales;
@@ -1218,15 +1395,22 @@ function renderMinimartTab() {
     subgrpMap[grp].gp += p.gp;
   });
   
-  var totMiniSales = miniProds.reduce(function(a,p){ return a + p.sales; }, 0);
   var subgrps = Object.keys(subgrpMap).map(function(k){
     var v = subgrpMap[k];
-    v.grp = k;
     v.gp_pct = v.sales ? (v.gp / v.sales * 100) : 0;
     v.share = totMiniSales ? (v.sales / totMiniSales * 100) : 0;
     return v;
   });
-  subgrps.sort(function(a,b){ return b.sales - a.sales; });
+  
+  // Sort Subgroups using MINI_SUBGRP_SORT
+  var SS = MINI_SUBGRP_SORT;
+  subgrps.sort(function(a, b) {
+    var av = a[SS.col], bv = b[SS.col];
+    if (typeof av === 'string') return SS.dir * av.localeCompare(bv);
+    if (av == null) av = SS.dir > 0 ? -Infinity : Infinity;
+    if (bv == null) bv = SS.dir > 0 ? -Infinity : Infinity;
+    return SS.dir * (av < bv ? -1 : av > bv ? 1 : 0);
+  });
   
   var tbodySub = document.getElementById('mini-subgrp-tbody');
   if(tbodySub) {
@@ -1247,13 +1431,22 @@ function renderMinimartTab() {
   
   // 2. Critical & Negative GP items in Minimart
   var critProds = miniProds.filter(function(p){
-    return p.gp < 0 || (p.gp_pct < 8 && p.sales > 5000);
+    return p.gp < 0 || (p.gp_pct < 8 && p.sales > 3000);
   });
-  critProds.sort(function(a,b){ return a.gp - b.gp; });
+  
+  // Sort Critical items using MINI_CRIT_SORT
+  var SC = MINI_CRIT_SORT;
+  critProds.sort(function(a, b) {
+    var av = a[SC.col], bv = b[SC.col];
+    if (typeof av === 'string') return SC.dir * av.localeCompare(bv);
+    if (av == null) av = SC.dir > 0 ? -Infinity : Infinity;
+    if (bv == null) bv = SC.dir > 0 ? -Infinity : Infinity;
+    return SC.dir * (av < bv ? -1 : av > bv ? 1 : 0);
+  });
   
   var tbodyCrit = document.getElementById('mini-crit-tbody');
   if(tbodyCrit) {
-    tbodyCrit.innerHTML = critProds.slice(0, 50).map(function(p){
+    tbodyCrit.innerHTML = critProds.slice(0, 60).map(function(p){
       return '<tr class="prod-row" onclick="toggleProdDetail(this,\''+p.iprod+'\')">' +
         '<td>'+p.iprod+'</td>' +
         '<td>'+(p.name||'—')+'</td>' +
