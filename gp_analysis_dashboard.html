@@ -77,8 +77,11 @@ tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px soli
 .prod-detail{background:var(--card-bg);border-left:3px solid var(--blue)}
 .prod-detail td{padding:4px 10px;font-size:12px}
 .prod-detail-tbl{width:100%;border-collapse:collapse;margin:4px 0}
-.prod-detail-tbl th{background:var(--bg);font-size:11px;padding:3px 8px;text-align:left;color:var(--muted)}
-.prod-detail-tbl td{padding:3px 8px;font-size:12px;border-bottom:1px solid var(--border)}
+.prod-detail-tbl th{background:#334155;font-size:12px;padding:6px 10px;text-align:left;color:#f8fafc;cursor:pointer;user-select:none;transition:background .15s}
+.prod-detail-tbl th:hover{background:#475569}
+.prod-detail-tbl th.sort-asc::after{content:' ▲';color:#38bdf8}
+.prod-detail-tbl th.sort-desc::after{content:' ▼';color:#38bdf8}
+.prod-detail-tbl td{padding:5px 10px;font-size:12.5px;border-bottom:1px solid var(--border)}
 .prod-detail-tbl .r{text-align:right}
 tr.prod-row{cursor:pointer}
 tr.prod-row:hover{background:rgba(59,130,246,0.08)}
@@ -294,15 +297,15 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
     </div>
     <table id="fest-tbl">
       <thead><tr>
-        <th>Parcode</th>
-        <th>ชื่อสินค้า</th>
-        <th class="r" style="color:var(--blue);font-weight:700;">จำนวนขาย (Qty)</th>
-        <th class="r">Sales MTD</th>
-        <th class="r" style="color:var(--red);">ส่วนลดที่ยิง</th>
-        <th class="r" style="color:var(--red);">% ส่วนลด</th>
-        <th class="r">Cost</th>
-        <th class="r">GP ขาดทุน</th>
-        <th class="r">GP %</th>
+        <th data-col="iprod">Parcode</th>
+        <th data-col="name">ชื่อสินค้า</th>
+        <th data-col="qty" class="r" style="color:var(--blue);font-weight:700;">จำนวนขาย (Qty)</th>
+        <th data-col="sales" class="r">Sales MTD</th>
+        <th data-col="disc" class="r" style="color:var(--red);">ส่วนลดที่ยิง</th>
+        <th data-col="disc_pct" class="r" style="color:var(--red);">% ส่วนลด</th>
+        <th data-col="cost" class="r">Cost</th>
+        <th data-col="gp" class="r sort-asc">GP ขาดทุน</th>
+        <th data-col="gp_pct" class="r">GP %</th>
       </tr></thead>
       <tbody id="fest-tbody"></tbody>
     </table>
@@ -531,13 +534,72 @@ function toggleProdDetail(tr,iprod){
   document.querySelectorAll('.prod-detail').forEach(function(r){r.remove()});
   var ps=(DATA.prod_stores||{})[iprod]||[];
   if(!ps.length){return;}
-  var h='<td colspan="10"><table class="prod-detail-tbl"><tr><th>รหัส</th><th>ร้าน</th><th class="r">จำนวนขาย (Qty)</th><th class="r">Sales</th><th class="r">Cost</th><th class="r">GP</th><th class="r">GP%</th></tr>';
-  ps.forEach(function(s){h+='<tr><td>'+s.c+'</td><td>'+s.n+'</td><td class="r" style="font-weight:700;color:var(--primary);">'+fmt(s.q||0)+'</td><td class="r">'+fmt(s.s)+'</td><td class="r">'+fmt(s.k)+'</td><td class="r">'+fmt(s.g)+'</td><td class="r">'+gpBadge(s.p,s.k)+'</td></tr>'});
-  h+='</table></td>';
+  
+  var h='<td colspan="10">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;font-size:12.5px;background:#f8fafc;border-radius:6px 6px 0 0;border:1px solid var(--border);border-bottom:none;">' +
+      '<span>🏪 รายละเอียดแยกรายสาขา ('+ps.length+' สาขา) — <b style="color:var(--blue);">คลิกที่หัวตารางเพื่อเรียงลำดับ มาก ⇄ น้อย</b></span>' +
+      '<span style="font-size:11px;color:var(--muted);">(คลิกซ้ำเพื่อสลับ น้อย ⇄ มาก)</span>' +
+    '</div>' +
+    '<table class="prod-detail-tbl" data-iprod="'+iprod+'" data-sort-col="s" data-sort-dir="-1">' +
+      '<thead><tr>' +
+        '<th data-col="c" onclick="sortDetailTable(this,\'c\')">รหัส</th>' +
+        '<th data-col="n" onclick="sortDetailTable(this,\'n\')">ร้าน</th>' +
+        '<th data-col="q" class="r" onclick="sortDetailTable(this,\'q\')">จำนวนขาย (Qty)</th>' +
+        '<th data-col="s" class="r sort-desc" onclick="sortDetailTable(this,\'s\')">Sales</th>' +
+        '<th data-col="k" class="r" onclick="sortDetailTable(this,\'k\')">Cost</th>' +
+        '<th data-col="g" class="r" onclick="sortDetailTable(this,\'g\')">GP</th>' +
+        '<th data-col="p" class="r" onclick="sortDetailTable(this,\'p\')">GP%</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+      ps.map(function(s){
+        return '<tr><td>'+s.c+'</td><td>'+s.n+'</td><td class="r" style="font-weight:700;color:var(--blue);">'+fmt(s.q||0)+'</td><td class="r">'+fmt(s.s)+'</td><td class="r">'+fmt(s.k)+'</td><td class="r">'+fmt(s.g)+'</td><td class="r">'+gpBadge(s.p,s.k)+'</td></tr>';
+      }).join('') +
+      '</tbody>' +
+    '</table>' +
+  '</td>';
+
   var dr=document.createElement('tr');
   dr.className='prod-detail';
   dr.innerHTML=h;
   tr.parentNode.insertBefore(dr,tr.nextSibling);
+}
+
+function sortDetailTable(th, col) {
+  var tbl = th.closest('table');
+  var tbody = tbl.querySelector('tbody');
+  var iprod = tbl.dataset.iprod;
+  var ps = (DATA.prod_stores || {})[iprod] || [];
+  if (!ps.length) return;
+
+  var curCol = tbl.dataset.sortCol || 's';
+  var curDir = parseInt(tbl.dataset.sortDir || '-1', 10);
+
+  if (curCol === col) {
+    curDir = -curDir;
+  } else {
+    curCol = col;
+    curDir = (col === 'c' || col === 'n') ? 1 : -1; // text default asc, numbers default desc (มากไปน้อย)
+  }
+
+  tbl.dataset.sortCol = curCol;
+  tbl.dataset.sortDir = curDir;
+
+  tbl.querySelectorAll('thead th').forEach(function(h) {
+    h.classList.remove('sort-asc', 'sort-desc');
+  });
+  th.classList.add(curDir === 1 ? 'sort-asc' : 'sort-desc');
+
+  var sorted = ps.slice().sort(function(a, b) {
+    var av = a[col], bv = b[col];
+    if (typeof av === 'string') return curDir * av.localeCompare(bv);
+    if (av == null) av = curDir > 0 ? -Infinity : Infinity;
+    if (bv == null) bv = curDir > 0 ? -Infinity : Infinity;
+    return curDir * (av < bv ? -1 : av > bv ? 1 : 0);
+  });
+
+  tbody.innerHTML = sorted.map(function(s) {
+    return '<tr><td>' + s.c + '</td><td>' + s.n + '</td><td class="r" style="font-weight:700;color:var(--blue);">' + fmt(s.q || 0) + '</td><td class="r">' + fmt(s.s) + '</td><td class="r">' + fmt(s.k) + '</td><td class="r">' + fmt(s.g) + '</td><td class="r">' + gpBadge(s.p, s.k) + '</td></tr>';
+  }).join('');
 }
 
 function renderProds(){
@@ -706,6 +768,7 @@ fetch('./gp_analysis_data.json')
     PROD_FILTERED=PRODS_ALL.slice();
     initSort('store-tbl',STORE_SORT,renderStores);
     initSort('prod-tbl',PROD_SORT,renderProds);
+    initSort('fest-tbl',FEST_SORT,renderFestivalTab);
     renderStores();
     renderProds();
     renderTrend(data.monthly||[]);
@@ -849,10 +912,24 @@ function switchTab(tabId){
   if(t)t.click();
 }
 
+var FEST_SORT = { col: 'gp', dir: 1 };
+
 function renderFestivalTab() {
   var prods = PRODS_ALL || [];
   var festProds = prods.filter(function(p){ return p.type_code === '22'; });
-  festProds.sort(function(a,b){ return a.gp - b.gp; });
+  
+  var S = FEST_SORT;
+  festProds.sort(function(a, b) {
+    var av = a[S.col], bv = b[S.col];
+    if (S.col === 'disc_pct') {
+      av = (a.sales + (a.disc || 0)) > 0 ? ((a.disc || 0) / (a.sales + (a.disc || 0)) * 100) : 0;
+      bv = (b.sales + (b.disc || 0)) > 0 ? ((b.disc || 0) / (b.sales + (b.disc || 0)) * 100) : 0;
+    }
+    if (typeof av === 'string') return S.dir * av.localeCompare(bv);
+    if (av == null) av = S.dir > 0 ? -Infinity : Infinity;
+    if (bv == null) bv = S.dir > 0 ? -Infinity : Infinity;
+    return S.dir * (av < bv ? -1 : av > bv ? 1 : 0);
+  });
   
   var shown = festProds.filter(function(p){ return p.gp < 0 || p.disc > 1000; });
   var tbody = document.getElementById('fest-tbody');
