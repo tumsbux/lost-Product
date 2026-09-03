@@ -298,6 +298,18 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
           <td><span class="gp-badge gp-low">ผิดปกติรุนแรง</span></td>
         </tr>
       </tbody>
+      <tfoot style="background:#e2e8f0;font-weight:700;border-top:2px solid #94a3b8;font-size:13px;">
+        <tr>
+          <td style="padding:10px;"><b>รวมทั้งสิ้น 5 เดือน (Grand Total)</b></td>
+          <td class="r" style="padding:10px;">฿827,761</td>
+          <td class="r" style="padding:10px;">฿1,233,870</td>
+          <td class="r" style="padding:10px;color:var(--red);">฿1,394,631</td>
+          <td class="r" style="padding:10px;color:var(--red);">168.5%</td>
+          <td class="r" style="padding:10px;color:var(--red);font-size:14px;">-฿406,109</td>
+          <td class="r" style="padding:10px;color:var(--red);">-49.1%</td>
+          <td style="padding:10px;"><span class="gp-badge gp-low">วิกฤตสะสม</span></td>
+        </tr>
+      </tfoot>
     </table>
   </div>
 
@@ -352,6 +364,7 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
         <th data-col="gp_pct" class="r">GP %</th>
       </tr></thead>
       <tbody id="fest-tbody"></tbody>
+      <tfoot id="fest-tfoot"></tfoot>
     </table>
 
     <!-- Store View Table -->
@@ -639,6 +652,11 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
       <div>
         <h3 style="font-size:15px;font-weight:700;color:var(--text);margin:0;">📊 การจัดสรร "งบส่งเสริมการขายและการตลาดระดับสาขา" (Branch Marketing Budget Allocation)</h3>
         <span style="font-size:12px;color:var(--muted);">ตารางสรุปเมื่อย้ายต้นทุนของแจก ฿750,723 มาเป็นค่าใช้จ่ายการตลาด แยกตามสายบังคับบัญชา (1. RM ➔ 2. DM ➔ 3. สาขา)</span>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="btn" style="padding:4px 10px;font-size:12px;background:#fff;border:1px solid var(--border);" onclick="expandAllSimTree()">➕ ขยายทั้งหมด</button>
+        <button class="btn" style="padding:4px 10px;font-size:12px;background:#fff;border:1px solid var(--border);" onclick="collapseAllSimTree()">➖ หุบทั้งหมด</button>
+        <button class="btn btn-xlsx" onclick="exportSimulationCSV()">⬇ XLSX</button>
       </div>
     </div>
     
@@ -1473,6 +1491,43 @@ function renderSimulationTab() {
   renderSimulationBudgetTable();
 }
 
+
+function expandAllSimTree() {
+  document.querySelectorAll('#sim-budget-tbody tr').forEach(function(r){
+    if (r.classList.contains('sim-rm-row') || r.classList.contains('sim-dm-row')) {
+      var m = r.getAttribute('onclick') ? r.getAttribute('onclick').match(/'([^']+)'/) : null;
+      if (m) TREE_EXPANDED[m[1]] = true;
+    }
+    r.style.display = '';
+  });
+  document.querySelectorAll('#sim-budget-tbody span[id^="icon_sim_"]').forEach(function(icon){
+    icon.textContent = '▼';
+  });
+}
+
+function collapseAllSimTree() {
+  document.querySelectorAll('#sim-budget-tbody tr').forEach(function(r){
+    if (r.classList.contains('sim-rm-row') || r.classList.contains('sim-dm-row')) {
+      var m = r.getAttribute('onclick') ? r.getAttribute('onclick').match(/'([^']+)'/) : null;
+      if (m) TREE_EXPANDED[m[1]] = false;
+    }
+    if (r.classList.contains('sim-dm-row') || r.classList.contains('sim-store-row')) {
+      r.style.display = 'none';
+    }
+  });
+  document.querySelectorAll('#sim-budget-tbody span[id^="icon_sim_"]').forEach(function(icon){
+    icon.textContent = '▶';
+  });
+}
+
+function exportSimulationCSV() {
+  var stores = getFestivalStoresList();
+  var rows = stores.map(function(s){
+    return [s.code, s.name, s.dm || '', s.rm || '', s.qty || 0, s.cost || 0];
+  });
+  exportCSV(['รหัสสาขา', 'ชื่อสาขา', 'DM', 'RM', 'จำนวนของแจก (ชิ้น)', 'งบการตลาดที่จัดสรร (บาท)'], rows, 'sim_marketing_budget_' + new Date().toISOString().slice(0,10) + '.csv');
+}
+
 function renderSimulationBudgetTable() {
   var stores = getFestivalStoresList();
   if (!stores.length) return;
@@ -1502,11 +1557,12 @@ function renderSimulationBudgetTable() {
   var html = '';
   rmList.forEach(function(r, rIdx){
     var rId = 'sim_rm_' + rIdx;
+    var rOpen = (TREE_EXPANDED[rId] !== false);
     var share = totalCost ? (r.cost / totalCost * 100) : 0;
     var avgStore = r.storeCount ? (r.cost / r.storeCount) : 0;
 
-    html += '<tr style="background:#f1f5f9;border-top:2px solid #cbd5e1;font-weight:700;cursor:pointer;" onclick="toggleTreeRow(\'' + rId + '\')">' +
-      '<td style="padding:9px 12px;"><span id="icon_' + rId + '" style="display:inline-block;width:18px;color:#059669;">▼</span> ภาค [RM] ' + r.rm + ' <span style="font-size:12px;color:var(--muted);font-weight:normal;">(' + r.storeCount + ' สาขา)</span></td>' +
+    html += '<tr class="sim-rm-row" style="background:#f1f5f9;border-top:2px solid #cbd5e1;font-weight:700;cursor:pointer;" onclick="toggleTreeRow(\'' + rId + '\')">' +
+      '<td style="padding:9px 12px;"><span id="icon_' + rId + '" style="display:inline-block;width:18px;color:#059669;">' + (rOpen ? '▼' : '▶') + '</span> ภาค [RM] ' + r.rm + ' <span style="font-size:12px;color:var(--muted);font-weight:normal;">(' + r.storeCount + ' สาขา)</span></td>' +
       '<td class="r" style="font-weight:700;color:var(--blue);">' + fmt(r.qty) + ' ชิ้น</td>' +
       '<td class="r" style="font-weight:700;color:#059669;font-size:14px;">฿' + fmt(r.cost) + '</td>' +
       '<td class="r" style="font-weight:600;">' + share.toFixed(1) + '%</td>' +
@@ -1518,11 +1574,13 @@ function renderSimulationBudgetTable() {
 
     dmList.forEach(function(d, dIdx){
       var dId = rId + '_dm_' + dIdx;
+      var dOpen = (TREE_EXPANDED[dId] !== false);
       var dShare = totalCost ? (d.cost / totalCost * 100) : 0;
       var dAvgStore = d.storeCount ? (d.cost / d.storeCount) : 0;
+      var dRowStyle = rOpen ? '' : 'display:none;';
 
-      html += '<tr class="child-of_' + rId + '" style="background:#ffffff;border-left:4px solid #059669;font-weight:600;cursor:pointer;" onclick="toggleTreeRow(\'' + dId + '\')">' +
-        '<td style="padding:8px 12px 8px 30px;"><span id="icon_' + dId + '" style="display:inline-block;width:18px;color:#059669;">▼</span> 📁 เขต [DM] ' + d.dm + ' <span style="font-size:11.5px;color:var(--muted);font-weight:normal;">(' + d.storeCount + ' สาขา)</span></td>' +
+      html += '<tr class="sim-dm-row child-of_' + rId + '" style="background:#ffffff;border-left:4px solid #059669;font-weight:600;cursor:pointer;' + dRowStyle + '" onclick="toggleTreeRow(\'' + dId + '\')">' +
+        '<td style="padding:8px 12px 8px 30px;"><span id="icon_' + dId + '" style="display:inline-block;width:18px;color:#059669;">' + (dOpen ? '▼' : '▶') + '</span> 📁 เขต [DM] ' + d.dm + ' <span style="font-size:11.5px;color:var(--muted);font-weight:normal;">(' + d.storeCount + ' สาขา)</span></td>' +
         '<td class="r" style="font-weight:700;color:var(--blue);">' + fmt(d.qty) + ' ชิ้น</td>' +
         '<td class="r" style="font-weight:700;color:#059669;">฿' + fmt(d.cost) + '</td>' +
         '<td class="r">' + dShare.toFixed(1) + '%</td>' +
@@ -1531,7 +1589,8 @@ function renderSimulationBudgetTable() {
 
       d.stores.sort(function(a,b){ return (b.cost || 0) - (a.cost || 0); }).forEach(function(s){
         var sShare = totalCost ? ((s.cost || 0) / totalCost * 100) : 0;
-        html += '<tr class="child-of_' + rId + ' child-of_' + dId + '" style="background:#fafafa;font-size:12.5px;">' +
+        var sRowStyle = (rOpen && dOpen) ? '' : 'display:none;';
+        html += '<tr class="sim-store-row child-of_' + rId + ' child-of_' + dId + '" style="background:#fafafa;font-size:12.5px;' + sRowStyle + '">' +
           '<td style="padding:6px 12px 6px 56px;">🏪 [' + s.code + '] <b>' + s.name + '</b></td>' +
           '<td class="r" style="font-weight:700;color:var(--blue);">' + fmt(s.qty || 0) + ' ชิ้น</td>' +
           '<td class="r" style="color:#059669;font-weight:600;">฿' + fmt(s.cost || 0) + '</td>' +
@@ -1772,7 +1831,7 @@ function toggleTreeRow(id) {
       el.style.display = 'none';
     } else {
       // If it's a store row under a DM, check if the DM is also open
-      if (el.classList.contains('tree-store-row')) {
+      if (el.classList.contains('tree-store-row') || el.classList.contains('sim-store-row')) {
         var isDmOpen = true;
         el.className.split(' ').forEach(function(cls){
           if (cls.startsWith('child-of_') && cls.includes('_dm_')) {
@@ -2012,6 +2071,30 @@ function renderFestivalTab() {
       '<td class="r">'+gpBadge(p.gp_pct, p.cost)+'</td>' +
     '</tr>';
   }).join('');
+
+  // Grand Total for Festival Product Table
+  var totFestQ = shown.reduce(function(a,p){ return a + (p.qty || 0); }, 0);
+  var totFestS = shown.reduce(function(a,p){ return a + (p.sales || 0); }, 0);
+  var totFestD = shown.reduce(function(a,p){ return a + (p.disc || 0); }, 0);
+  var totFestC = shown.reduce(function(a,p){ return a + (p.cost || 0); }, 0);
+  var totFestG = shown.reduce(function(a,p){ return a + (p.gp || 0); }, 0);
+  var totFestPct = totFestS ? (totFestG / totFestS * 100) : 0;
+  var totDiscRate = (totFestS + totFestD) > 0 ? (totFestD / (totFestS + totFestD) * 100) : 0;
+
+  var tfootFest = document.getElementById('fest-tfoot');
+  if (tfootFest) {
+    tfootFest.innerHTML = '<tr style="background:#e2e8f0;font-weight:700;font-size:13px;border-top:2px solid #cbd5e1;">' +
+      '<td colspan="2" style="padding:10px 12px;">รวมทั้งหมด (' + shown.length + ' รายการ)</td>' +
+      '<td class="r" style="color:var(--blue);font-size:14px;">' + fmt(totFestQ) + ' ชิ้น</td>' +
+      '<td class="r">' + fmt(totFestS) + '</td>' +
+      '<td class="r" style="color:var(--red);font-weight:700;">' + fmt(totFestD) + '</td>' +
+      '<td class="r" style="color:var(--red);font-weight:700;">' + totDiscRate.toFixed(1) + '%</td>' +
+      '<td class="r">' + fmt(totFestC) + '</td>' +
+      '<td class="r" style="color:var(--red);font-size:14px;">' + fmt(totFestG) + '</td>' +
+      '<td class="r">' + gpBadge(totFestPct, totFestC) + '</td>' +
+    '</tr>';
+  }
+
   if (FEST_VIEW === 'tree') renderFestivalTreeTable();
 }
 
