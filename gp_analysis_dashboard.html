@@ -110,6 +110,7 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
   <button class="ai-btn" onclick="aiAnalyze('trend')">📊 Trend GP รายเดือน</button>
   <button class="ai-btn" style="background:linear-gradient(135deg,#e11d48,#be123c);" onclick="switchTab('festival')">🎪 วิกฤตเทศกาล (-7.09 pp)</button>
   <button class="ai-btn" style="background:linear-gradient(135deg,#d97706,#b45309);" onclick="switchTab('minimart')">🛒 โครงสร้าง Minimart (-3.69 pp)</button>
+  <button class="ai-btn" style="background:linear-gradient(135deg,#059669,#047857);" onclick="switchTab('simulation')">💡 จำลอง Pro-Forma GP (รออนุมัติ)</button>
   <button class="ai-btn" style="background:linear-gradient(135deg,#475569,#334155);margin-left:auto;" onclick="openExecutiveReport()">📋 Executive Report</button>
 </div>
 
@@ -127,6 +128,7 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
   <div class="tab" data-tab="trend">📈 Trend</div>
   <div class="tab" data-tab="festival" style="color:#e11d48;font-weight:600;">🎪 วิกฤตสินค้าเทศกาล (-7.09 pp)</div>
   <div class="tab" data-tab="minimart" style="color:#d97706;font-weight:600;">🛒 โครงสร้าง Minimart (-3.69 pp)</div>
+  <div class="tab" data-tab="simulation" style="color:#059669;font-weight:700;">💡 จำลอง Pro-Forma GP (รออนุมัติ)</div>
 </div>
 
 <!-- STORE TAB -->
@@ -524,6 +526,161 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
     </table>
   </div>
 </div>
+<!-- ==================== SIMULATION TAB (PRO-FORMA GP) ==================== -->
+<div class="tab-panel" id="panel-simulation">
+  <!-- Header Banner -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <h2 style="font-size:18px;font-weight:700;color:#047857;margin:0;">💡 แบบจำลองโครงสร้าง GP ใหม่ (Pro-Forma GP Simulation)</h2>
+        <span style="background:#d1fae5;color:#065f46;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;">📝 ข้อเสนอเชิงนโยบาย: อยู่ระหว่างรออนุมัติผู้บริหาร</span>
+      </div>
+      <button class="btn" style="background:#1e293b;color:#fff;font-size:13px;" onclick="window.print()">🖨️ พิมพ์เอกสารข้อเสนอ</button>
+    </div>
+    <p style="font-size:13.5px;color:var(--text);line-height:1.6;margin-bottom:0;">
+      <b>หลักการและเหตุผล:</b> จากปัญหาความผิดปกติในเดือน ก.ย. 69 ที่สินค้าสมนาคุณ/ของแถม (Category 22) ถูกยิงลด 100% ผ่าน POS จนมูลค่าต้นทุนสินค้าที่ตัดแจก <b>฿750,723</b> ถูกบันทึกปะปนใน <b>"ต้นทุนขาย (COGS)"</b> ส่งผลให้ GP รวมทั้งบริษัทตกฮวบจาก 29.88% เหลือเพียง <b>22.79% (-7.09 pp)</b> ทั้งที่ยอดขายสินค้าทั่วไปยังทำกำไรได้ดี แบบจำลองนี้จึงจัดทำขึ้นเพื่อแสดงผลเปรียบเทียบหาก <b>"แยกต้นทุนของแจกออกเป็นค่าใช้จ่ายส่งเสริมการขายและการตลาด (Branch Marketing OPEX)"</b> ตามมาตรฐานบัญชีสากล (TFRS 15) เพื่อนำเสนอต่อคณะกรรมการบริหาร
+    </p>
+  </div>
+
+  <!-- Side-by-Side Comparison Cards (As-Is vs Pro-Forma) -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:16px;margin-bottom:16px;">
+    <!-- As-Is Current -->
+    <div style="background:#fff;border:2px solid #fecaca;border-radius:10px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h4 style="margin:0;font-size:15px;color:#991b1b;font-weight:700;">❌ 1. งบปัจจุบัน (As-Is Current System)</h4>
+        <span style="font-size:11px;background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:8px;font-weight:600;">รวมของแจกใน COGS</span>
+      </div>
+      <div style="font-size:13px;line-height:2.2;color:#334155;">
+        <div style="display:flex;justify-content:space-between;"><span>ยอดขายสุทธิ (Net Sales):</span> <b>฿10,447,226</b></div>
+        <div style="display:flex;justify-content:space-between;color:#dc2626;"><span>ต้นทุนขายรวม (COGS):</span> <b>฿8,066,450</b> (รวมของแจก ฿750k)</div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid #fee2e2;padding-top:4px;"><span>กำไรขั้นต้น (Gross Profit):</span> <b>฿2,380,775</b></div>
+        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:#dc2626;background:#fef2f2;padding:8px 12px;border-radius:6px;margin-top:8px;">
+          <span>อัตรากำไรขั้นต้น (GP %):</span> <span>22.79% 🚨</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-top:6px;">
+          <span>งบการตลาดสาขา (แฝงใน COGS):</span> <span>฿0 (มองไม่เห็นค่าใช้จ่ายจริง)</span>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:8px 10px;background:#fff5f5;border-radius:6px;font-size:11.5px;color:#b91c1c;">
+        ⚠️ <b>ผลกระทบ:</b> บอร์ดบริหารเข้าใจผิดว่าประสิทธิภาพการขายหน้าร้านแย่ลง ทั้งที่เกิดจากของแจก
+      </div>
+    </div>
+
+    <!-- Pro-Forma Proposed -->
+    <div style="background:#fff;border:2px solid #a7f3d0;border-radius:10px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h4 style="margin:0;font-size:15px;color:#065f46;font-weight:700;">✅ 2. ข้อเสนอนโยบายใหม่ (Pro-Forma Proposed)</h4>
+        <span style="background:#d1fae5;color:#065f46;font-size:11px;padding:2px 8px;border-radius:8px;font-weight:700;">แยกของแจกเป็น Marketing OPEX</span>
+      </div>
+      <div style="font-size:13px;line-height:2.2;color:#334155;">
+        <div style="display:flex;justify-content:space-between;"><span>ยอดขายเชิงพาณิชย์ (Commercial Sales):</span> <b>฿10,432,774</b></div>
+        <div style="display:flex;justify-content:space-between;color:#059669;"><span>ต้นทุนขายจริง (Trading COGS):</span> <b>฿7,315,727</b> (ลดลง -฿750k)</div>
+        <div style="display:flex;justify-content:space-between;border-top:1px solid #d1fae5;padding-top:4px;"><span>กำไรขั้นต้นจากการค้า (Gross Profit):</span> <b>฿3,117,047</b> (+฿736k)</div>
+        <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:#059669;background:#ecfdf5;padding:8px 12px;border-radius:6px;margin-top:8px;">
+          <span>อัตรากำไรขั้นต้น (GP %):</span> <span>29.88% 🟢 (+7.09 pp)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;color:#2563eb;font-size:12px;font-weight:700;margin-top:6px;">
+          <span>งบส่งเสริมการขายสาขา (Marketing OPEX):</span> <span>฿750,723 (โปร่งใส ตรวจสอบได้)</span>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:8px 10px;background:#f0fdf4;border-radius:6px;font-size:11.5px;color:#166534;">
+        ✨ <b>ประโยชน์:</b> สะท้อน GP ขายจริงถูกต้อง และเห็นงบการตลาดรายสาขาเพื่อใช้ควบคุม KPI ได้
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive What-If Simulator -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px;">
+    <h3 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:10px;">🎛️ เครื่องมือจำลองสถานการณ์ผลตอบแทนรวม (What-If Interactive Simulator)</h3>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:14px;">ทดลองเลือกเปิด/ปิด มาตรการฟื้นฟู GP เพื่อดูผลกระทบต่ออัตรากำไรขั้นต้นของทั้งบริษัทแบบเรียลไทม์:</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:14px;align-items:center;">
+      <div style="background:#f8fafc;padding:14px;border-radius:8px;border:1px solid var(--border);">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:10px;">
+          <input type="checkbox" id="sim-m1" checked onchange="updateSimulation()" style="margin-top:3px;transform:scale(1.2);">
+          <div>
+            <b style="color:#059669;">มาตรการที่ 1: แยกสินค้าสมนาคุณ (Cat 22) เป็นงบการตลาด</b>
+            <div style="font-size:12px;color:var(--muted);">ย้ายต้นทุน ฿750,723 ออกจาก COGS ➔ <b>ดัน GP +7.09 pp</b></div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:10px;">
+          <input type="checkbox" id="sim-m2" onchange="updateSimulation()" style="margin-top:3px;transform:scale(1.2);">
+          <div>
+            <b style="color:#d97706;">มาตรการที่ 2: ตั้งราคาขั้นต่ำ Minimart (Floor Margin 5%)</b>
+            <div style="font-size:12px;color:var(--muted);">หยุดขายต่ำกว่าทุนในกลุ่มข้าวสาร/เครื่องดื่ม ➔ <b>ดัน GP +0.55 pp</b></div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+          <input type="checkbox" id="sim-m3" onchange="updateSimulation()" style="margin-top:3px;transform:scale(1.2);">
+          <div>
+            <b style="color:#2563eb;">มาตรการที่ 3: ดันสัดส่วน House Brand เตือนใจ แทนแบรนด์ตลาด</b>
+            <div style="font-size:12px;color:var(--muted);">เพิ่มสัดส่วนสินค้าเตือนใจที่มี GP 22-40% ➔ <b>ดัน GP +1.20 pp</b></div>
+          </div>
+        </label>
+      </div>
+
+      <!-- Simulation Output KPI Card -->
+      <div style="background:linear-gradient(135deg,#064e3b,#047857);color:#fff;padding:20px;border-radius:10px;text-align:center;">
+        <div style="font-size:13px;opacity:.9;margin-bottom:4px;">อัตรากำไรขั้นต้นคาดการณ์ (Simulated GP %)</div>
+        <div style="font-size:36px;font-weight:800;color:#34d399;" id="sim-res-gp">29.88%</div>
+        <div style="font-size:13px;margin-top:4px;" id="sim-res-diff">เพิ่มขึ้นทันที +7.09 pp (เทียบกับปัจจุบัน 22.79%)</div>
+        <div style="font-size:12px;opacity:.85;margin-top:8px;border-top:1px solid rgba(255,255,255,.2);padding-top:8px;" id="sim-res-amt">
+          กำไรขั้นต้นจะเพิ่มขึ้น +฿736,271 บาท
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Branch Marketing Spend Allocation Table -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <h3 style="font-size:15px;font-weight:700;color:var(--text);margin:0;">📊 การจัดสรร "งบส่งเสริมการขายและการตลาดระดับสาขา" (Branch Marketing Budget Allocation)</h3>
+        <span style="font-size:12px;color:var(--muted);">ตารางสรุปเมื่อย้ายต้นทุนของแจก ฿750,723 มาเป็นค่าใช้จ่ายการตลาด แยกตามสายบังคับบัญชา (1. RM ➔ 2. DM ➔ 3. สาขา)</span>
+      </div>
+    </div>
+    
+    <table style="width:100%;border-collapse:collapse;" id="sim-budget-tbl">
+      <thead><tr>
+        <th style="width:340px;">ลำดับสายบังคับบัญชา (RM ➔ DM ➔ สาขา)</th>
+        <th class="r" style="color:var(--blue);font-weight:700;">จำนวนของแจก (Qty)</th>
+        <th class="r" style="color:#059669;font-weight:700;">งบการตลาดที่จัดสรร (บาท)</th>
+        <th class="r">สัดส่วน % งบ</th>
+        <th class="r">เฉลี่ยต่องบสาขา</th>
+      </tr></thead>
+      <tbody id="sim-budget-tbody"></tbody>
+      <tfoot id="sim-budget-tfoot"></tfoot>
+    </table>
+  </div>
+
+  <!-- 3 Strategic Systemic Fixes for Executive Approval -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px;">
+    <h3 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">📑 3 ข้อเสนอเชิงระบบและนโยบาย เพื่อเสนอขออนุมัติจากคณะกรรมการบริหาร (Action Plan)</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:14px;">
+      <div style="background:#f8fafc;padding:14px;border-radius:8px;border-left:4px solid #059669;">
+        <h4 style="font-size:13.5px;color:#059669;margin:0 0 6px;">1. ปรับผังบัญชีแยกของสมนาคุณ (Account Separation)</h4>
+        <p style="font-size:12px;color:var(--text);line-height:1.6;margin:0;">
+          ขออนุมัติเปิดรหัสบัญชี <b>52-05-01 (ค่าใช้จ่ายสินค้าสมนาคุณสาขา)</b> เพื่อบันทึกการตัดจ่ายของขวัญ/ของแจกลูกค้าเข้า Cost Center ของสาขาโดยตรง แทนการยิงขาย 100% ผ่าน POS เพื่อไม่ให้กระทบ COGS
+        </p>
+      </div>
+
+      <div style="background:#f8fafc;padding:14px;border-radius:8px;border-left:4px solid #2563eb;">
+        <h4 style="font-size:13.5px;color:#2563eb;margin:0 0 6px;">2. อัปเกรด Promotion Engine ในระบบ POS</h4>
+        <p style="font-size:12px;color:var(--text);line-height:1.6;margin:0;">
+          พัฒนาฟังก์ชันโปรโมชั่นที่ยืดหยุ่น: <i>"ซื้อครบ X บาท แถม Y ฟรี"</i>, <i>"คูปองแลกซื้อ"</i>, และ <i>"จับคู่เซ็ต Bundle"</i> พร้อมระงับสิทธิ์การใช้ Price Override 100% ที่หน้าร้านเพื่อป้องกันข้อมูลเพี้ยน
+        </p>
+      </div>
+
+      <div style="background:#f8fafc;padding:14px;border-radius:8px;border-left:4px solid #d97706;">
+        <h4 style="font-size:13.5px;color:#d97706;margin:0 0 6px;">3. ระบบแก้ไขปรับปรุงต้นทุน (ERP Cost Adjustment)</h4>
+        <p style="font-size:12px;color:var(--text);line-height:1.6;margin:0;">
+          กำหนดขั้นตอนและสิทธิ์ให้ฝ่ายบัญชีสินค้าสามารถทำ <b>"ใบปรับปรุงต้นทุนสินค้า (Cost Adjustment Transaction)"</b> เมื่อตรวจพบการรับสินค้าเข้าผิดพลาด แทนการปล่อยให้ค่าผิดพลาดค้างในระบบ
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <div class="ai-modal" id="ai-modal" onclick="if(event.target.id==='ai-modal')closeAi()">
   <div class="ai-modal-body">
@@ -557,6 +714,7 @@ document.querySelectorAll('.tab').forEach(function(t){
     document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active')});
     t.classList.add('active');
     document.getElementById('panel-'+t.dataset.tab).classList.add('active');
+    if(t.dataset.tab==='simulation')renderSimulationTab();
   });
 });
 
@@ -1070,6 +1228,122 @@ function openExecutiveReport() {
 function switchTab(tabId){
   var t=document.querySelector('.tab[data-tab="'+tabId+'"]');
   if(t)t.click();
+  if(tabId==='simulation') renderSimulationTab();
+}
+
+function updateSimulation() {
+  var m1 = document.getElementById('sim-m1').checked;
+  var m2 = document.getElementById('sim-m2').checked;
+  var m3 = document.getElementById('sim-m3').checked;
+
+  var baseGpPct = 22.79;
+  var addPp = 0;
+  var addAmt = 0;
+
+  if (m1) { addPp += 7.09; addAmt += 736271; }
+  if (m2) { addPp += 0.55; addAmt += 57450; }
+  if (m3) { addPp += 1.20; addAmt += 125000; }
+
+  var finalGpPct = baseGpPct + addPp;
+  
+  var elGp = document.getElementById('sim-res-gp');
+  var elDiff = document.getElementById('sim-res-diff');
+  var elAmt = document.getElementById('sim-res-amt');
+
+  if (elGp) elGp.textContent = finalGpPct.toFixed(2) + '%';
+  if (elDiff) elDiff.textContent = 'เพิ่มขึ้นทันที +' + addPp.toFixed(2) + ' pp (เทียบกับปัจจุบัน 22.79%)';
+  if (elAmt) elAmt.textContent = 'กำไรขั้นต้นจากการค้าจะเพิ่มขึ้น +฿' + fmt(addAmt) + ' บาท';
+}
+
+function renderSimulationTab() {
+  updateSimulation();
+  renderSimulationBudgetTable();
+}
+
+function renderSimulationBudgetTable() {
+  var stores = getFestivalStoresList();
+  if (!stores.length) return;
+
+  var totalCost = stores.reduce(function(a,s){ return a + (s.cost || 0); }, 0);
+  
+  // Aggregate by RM -> DM
+  var rmTree = {};
+  stores.forEach(function(s){
+    var rm = s.rm || 'ไม่ระบุ RM';
+    var dm = s.dm || 'ไม่ระบุ DM';
+    if (!rmTree[rm]) rmTree[rm] = { rm: rm, cost: 0, qty: 0, storeCount: 0, dms: {} };
+    rmTree[rm].cost += (s.cost || 0);
+    rmTree[rm].qty += (s.qty || 0);
+    rmTree[rm].storeCount++;
+
+    if (!rmTree[rm].dms[dm]) rmTree[rm].dms[dm] = { dm: dm, cost: 0, qty: 0, storeCount: 0, stores: [] };
+    rmTree[rm].dms[dm].cost += (s.cost || 0);
+    rmTree[rm].dms[dm].qty += (s.qty || 0);
+    rmTree[rm].dms[dm].storeCount++;
+    rmTree[rm].dms[dm].stores.push(s);
+  });
+
+  var rmList = Object.keys(rmTree).map(function(k){ return rmTree[k]; });
+  rmList.sort(function(a,b){ return b.cost - a.cost; });
+
+  var html = '';
+  rmList.forEach(function(r, rIdx){
+    var rId = 'sim_rm_' + rIdx;
+    var share = totalCost ? (r.cost / totalCost * 100) : 0;
+    var avgStore = r.storeCount ? (r.cost / r.storeCount) : 0;
+
+    html += '<tr style="background:#f1f5f9;border-top:2px solid #cbd5e1;font-weight:700;cursor:pointer;" onclick="toggleTreeRow(\'' + rId + '\')">' +
+      '<td style="padding:9px 12px;"><span id="icon_' + rId + '" style="display:inline-block;width:18px;color:#059669;">▼</span> ภาค [RM] ' + r.rm + ' <span style="font-size:12px;color:var(--muted);font-weight:normal;">(' + r.storeCount + ' สาขา)</span></td>' +
+      '<td class="r" style="font-weight:700;color:var(--blue);">' + fmt(r.qty) + ' ชิ้น</td>' +
+      '<td class="r" style="font-weight:700;color:#059669;font-size:14px;">฿' + fmt(r.cost) + '</td>' +
+      '<td class="r" style="font-weight:600;">' + share.toFixed(1) + '%</td>' +
+      '<td class="r" style="color:var(--muted);">฿' + fmt(avgStore) + ' / สาขา</td>' +
+    '</tr>';
+
+    var dmList = Object.keys(r.dms).map(function(k){ return r.dms[k]; });
+    dmList.sort(function(a,b){ return b.cost - a.cost; });
+
+    dmList.forEach(function(d, dIdx){
+      var dId = rId + '_dm_' + dIdx;
+      var dShare = totalCost ? (d.cost / totalCost * 100) : 0;
+      var dAvgStore = d.storeCount ? (d.cost / d.storeCount) : 0;
+
+      html += '<tr class="child-of_' + rId + '" style="background:#ffffff;border-left:4px solid #059669;font-weight:600;cursor:pointer;" onclick="toggleTreeRow(\'' + dId + '\')">' +
+        '<td style="padding:8px 12px 8px 30px;"><span id="icon_' + dId + '" style="display:inline-block;width:18px;color:#059669;">▼</span> 📁 เขต [DM] ' + d.dm + ' <span style="font-size:11.5px;color:var(--muted);font-weight:normal;">(' + d.storeCount + ' สาขา)</span></td>' +
+        '<td class="r" style="font-weight:700;color:var(--blue);">' + fmt(d.qty) + ' ชิ้น</td>' +
+        '<td class="r" style="font-weight:700;color:#059669;">฿' + fmt(d.cost) + '</td>' +
+        '<td class="r">' + dShare.toFixed(1) + '%</td>' +
+        '<td class="r" style="color:var(--muted);font-size:12px;">฿' + fmt(dAvgStore) + ' / สาขา</td>' +
+      '</tr>';
+
+      d.stores.sort(function(a,b){ return (b.cost || 0) - (a.cost || 0); }).forEach(function(s){
+        var sShare = totalCost ? ((s.cost || 0) / totalCost * 100) : 0;
+        html += '<tr class="child-of_' + rId + ' child-of_' + dId + '" style="background:#fafafa;font-size:12.5px;">' +
+          '<td style="padding:6px 12px 6px 56px;">🏪 [' + s.code + '] <b>' + s.name + '</b></td>' +
+          '<td class="r" style="font-weight:700;color:var(--blue);">' + fmt(s.qty || 0) + ' ชิ้น</td>' +
+          '<td class="r" style="color:#059669;font-weight:600;">฿' + fmt(s.cost || 0) + '</td>' +
+          '<td class="r" style="color:var(--muted);font-size:12px;">' + sShare.toFixed(2) + '%</td>' +
+          '<td class="r" style="color:var(--muted);font-size:12px;">—</td>' +
+        '</tr>';
+      });
+    });
+  });
+
+  var tbody = document.getElementById('sim-budget-tbody');
+  if (tbody) tbody.innerHTML = html;
+
+  var tfoot = document.getElementById('sim-budget-tfoot');
+  if (tfoot) {
+    var totQ = stores.reduce(function(a,s){ return a + (s.qty || 0); }, 0);
+    var avgAll = stores.length ? (totalCost / stores.length) : 0;
+    tfoot.innerHTML = '<tr style="background:#e2e8f0;font-weight:700;font-size:13px;">' +
+      '<td style="padding:10px 12px;">รวมงบการตลาดส่งเสริมการขายทั้งบริษัท (' + stores.length + ' สาขา)</td>' +
+      '<td class="r" style="color:var(--blue);font-size:14px;">' + fmt(totQ) + ' ชิ้น</td>' +
+      '<td class="r" style="color:#059669;font-size:15px;">฿' + fmt(totalCost) + '</td>' +
+      '<td class="r">100.0%</td>' +
+      '<td class="r">฿' + fmt(avgAll) + ' / สาขา</td>' +
+    '</tr>';
+  }
 }
 
 var FEST_SORT = { col: 'gp', dir: 1 };
