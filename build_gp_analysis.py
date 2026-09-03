@@ -54,7 +54,8 @@ def query_gp_data(cfg, start_date):
                SUM(net_sales_amt) as sales,
                SUM(total_cost) as cost,
                SUM(soqty * sopricdisc) as sku_disc,
-               SUM(solineamt - net_sales_amt) as bill_disc
+               SUM(solineamt - net_sales_amt) as bill_disc,
+               SUM(soqty) as qty
         FROM `data-lake`.fact_sales FORCE INDEX (idx_optimize_sales_report)
         WHERE sodate >= %s
           AND solinetype NOT IN ('C','R')
@@ -63,7 +64,7 @@ def query_gp_data(cfg, start_date):
         GROUP BY sotowhs, iprod, mo
     """, (start_date.isoformat(),))
     rows = []
-    for sotowhs, iprod, mo, sales, cost, sku_disc, bill_disc in cur:
+    for sotowhs, iprod, mo, sales, cost, sku_disc, bill_disc, qty in cur:
         mo_str = mo.decode() if isinstance(mo, (bytes, bytearray)) else str(mo)
         rows.append((
             str(sotowhs).zfill(3),
@@ -73,6 +74,7 @@ def query_gp_data(cfg, start_date):
             float(cost)  if cost  else 0.0,
             float(sku_disc) if sku_disc else 0.0,
             float(bill_disc) if bill_disc else 0.0,
+            float(qty) if qty else 0.0,
         ))
     cur.close(); conn.close()
     print(f'  {len(rows):,} aggregated rows loaded')
@@ -133,7 +135,7 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
     resolved_rows = []
     barcode_resolved = 0
     excluded_type = 0
-    for whs, iprod, mo, sales, cost, sd, bd in rows:
+    for whs, iprod, mo, sales, cost, sd, bd, qty in rows:
         # resolve barcode to master product code
         master = iprod
         if iprod not in prods and iprod in barcodes:
@@ -145,13 +147,13 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
         if ty in EXCLUDED_ITY:
             excluded_type += 1
             continue
-        resolved_rows.append((whs, master, mo, sales, cost, sd, bd))
+        resolved_rows.append((whs, master, mo, sales, cost, sd, bd, qty))
     print(f'  barcode->master resolved: {barcode_resolved:,}, excluded types: {excluded_type:,}, kept: {len(resolved_rows):,}')
     rows = resolved_rows
 
     # ── monthly totals ────────────────────────────────────────────────────────
     monthly = defaultdict(lambda: {'sales': 0, 'cost': 0, 'disc': 0})
-    for whs, iprod, mo, sales, cost, sd, bd in rows:
+    for whs, iprod, mo, sales, cost, sd, bd, qty in rows:
         monthly[mo]['sales'] += sales
         monthly[mo]['cost']  += cost
         monthly[mo]['disc']  += sd + bd
@@ -173,7 +175,7 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
     # ── store aggregation (current month only for MTD view) ───────────────────
     store_agg = defaultdict(lambda: {'sales': 0, 'cost': 0, 'disc': 0})
     store_all = defaultdict(lambda: defaultdict(lambda: {'sales': 0, 'cost': 0}))
-    for whs, iprod, mo, sales, cost, sd, bd in rows:
+    for whs, iprod, mo, sales, cost, sd, bd, qty in rows:
         store_all[whs][mo]['sales'] += sales
         store_all[whs][mo]['cost']  += cost
         if mo == current_month:
@@ -213,13 +215,14 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
     store_list.sort(key=lambda x: x['gp_pct'])  # worst GP% first
 
     # ── product aggregation (current month MTD) ──────────────────────────────
-    prod_agg = defaultdict(lambda: {'sales': 0, 'cost': 0, 'sku_disc': 0, 'bill_disc': 0})
-    for whs, iprod, mo, sales, cost, sd, bd in rows:
+    prod_agg = defaultdict(lambda: {'sales': 0, 'cost': 0, 'sku_disc': 0, 'bill_disc': 0, 'qty': 0})
+    for whs, iprod, mo, sales, cost, sd, bd, qty in rows:
         if mo == current_month:
             prod_agg[iprod]['sales']     += sales
             prod_agg[iprod]['cost']      += cost
             prod_agg[iprod]['sku_disc']  += sd
             prod_agg[iprod]['bill_disc'] += bd
+            prod_agg[iprod]['qty']       += qty
 
     prod_list = []
     for iprod in sorted(prod_agg.keys(), key=lambda k: prod_agg[k]['sales'] - prod_agg[k]['cost']):
@@ -236,6 +239,7 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
             'group_name': groups.get(gr_code, ''),
             'type_code':  ty_code,
             'type_name':  types.get(ty_code, ''),
+            'qty':        round(p['qty'], 0),
             'sales':      round(p['sales'], 2),
             'cost':       round(p['cost'],  2),
             'disc':       round(disc, 2),
@@ -248,11 +252,12 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
     prod_list.sort(key=lambda x: x['gp_pct'])
 
     # ── product × store breakdown (current month MTD) ────────────────────────
-    ps_agg = defaultdict(lambda: defaultdict(lambda: {'sales': 0, 'cost': 0}))
-    for whs, iprod, mo, sales, cost, sd, bd in rows:
+    ps_agg = defaultdict(lambda: defaultdict(lambda: {'sales': 0, 'cost': 0, 'qty': 0}))
+    for whs, iprod, mo, sales, cost, sd, bd, qty in rows:
         if mo == current_month:
             ps_agg[iprod][whs]['sales'] += sales
             ps_agg[iprod][whs]['cost']  += cost
+            ps_agg[iprod][whs]['qty']   += qty
 
     prod_stores = {}
     for iprod, stores_data in ps_agg.items():
@@ -273,6 +278,7 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
                 'k': round(v['cost'], 2),
                 'g': round(gp, 2),
                 'p': round(gp / v['sales'] * 100, 1) if v['sales'] else 0,
+                'q': round(v['qty'], 0),
             })
         detail.sort(key=lambda x: x['s'], reverse=True)
         prod_stores[iprod] = detail
@@ -307,8 +313,56 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
         'prod_stores': prod_stores,
     }
 
+    # ── build festival_stores for hierarchical RM -> DM -> Branch view ──────
+    fest_store_map = defaultdict(lambda: {'qty': 0, 'sales': 0, 'cost': 0, 'disc': 0, 'gp': 0, 'skus': 0})
+    for iprod, stores_data in ps_agg.items():
+        pi = prods.get(iprod, {})
+        gr = pi.get('group', '')
+        if gr[:2] != '22':  # Category 22: Festival Goods
+            continue
+        pa = prod_agg.get(iprod, {})
+        p_cost = pa.get('cost', 0)
+        p_disc = pa.get('sku_disc', 0) + pa.get('bill_disc', 0)
+        disc_ratio = (p_disc / p_cost) if p_cost > 0 else 1.82
+
+        for whs, v in stores_data.items():
+            st = fest_store_map[whs]
+            st['qty']   += v['qty']
+            st['sales'] += v['sales']
+            st['cost']  += v['cost']
+            st['gp']    += (v['sales'] - v['cost'])
+            st['disc']  += (v['cost'] * disc_ratio)
+            st['skus']  += 1
+
+    fest_store_list = []
+    for whs, v in fest_store_map.items():
+        si = stores.get(whs, {})
+        fest_store_list.append({
+            'code':  whs,
+            'name':  si.get('name', ''),
+            'dm':    si.get('dm', ''),
+            'rm':    si.get('rm', ''),
+            'qty':   round(v['qty'], 0),
+            'sales': round(v['sales'], 2),
+            'cost':  round(v['cost'], 2),
+            'disc':  round(v['disc'], 2),
+            'gp':    round(v['gp'], 2),
+            'skus':  v['skus'],
+        })
+    fest_store_list.sort(key=lambda x: x['gp'])
+    payload['festival_stores'] = fest_store_list
+    print(f'  festival_stores: {len(fest_store_list)} stores aggregated for Category 22')
+
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
+
+    # Sync to F:\facebook\gp_data.json
+    fb_copy = r'F:\facebook\gp_data.json'
+    try:
+        with open(fb_copy, 'w', encoding='utf-8') as f:
+            json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
+    except Exception:
+        pass
 
     size_mb = os.path.getsize(OUTPUT_FILE) / 1024 / 1024
     print(f'  Wrote {len(store_list):,} stores + {len(prod_list):,} products -> {OUTPUT_FILE} ({size_mb:.1f} MB)')
