@@ -300,15 +300,42 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
   <!-- Anomaly Items & Stores Table with View Switcher -->
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button id="btn-fest-prod" class="btn" style="background:var(--blue);color:#fff;font-weight:600;" onclick="setFestivalView('prod')">📦 ดูตามสินค้า (13 รายการ)</button>
-        <button id="btn-fest-store" class="btn" style="background:#ecf0f1;color:var(--text);font-weight:600;" onclick="setFestivalView('store')">🏪 ดูตามรายสาขาที่แจก</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button id="btn-fest-tree" class="btn" style="background:var(--blue);color:#fff;font-weight:700;" onclick="setFestivalView('tree')">🌳 ลำดับชั้น (1. RM ➔ 2. DM ➔ 3. สาขา)</button>
+        <button id="btn-fest-prod" class="btn" style="background:#ecf0f1;color:var(--text);font-weight:600;" onclick="setFestivalView('prod')">📦 ดูตามสินค้า (13 รายการ)</button>
+        <button id="btn-fest-store" class="btn" style="background:#ecf0f1;color:var(--text);font-weight:600;" onclick="setFestivalView('store')">🏪 เรียงรายสาขาทั้งหมด</button>
       </div>
       <button class="btn btn-xlsx" onclick="exportFestivalCSV()">⬇ XLSX</button>
     </div>
 
+    <!-- Hierarchical Tree Table View (RM -> DM -> Branch) -->
+    <div id="fest-tree-wrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;background:#f8fafc;padding:8px 12px;border-radius:6px;border:1px solid var(--border);">
+        <span style="font-size:13px;color:var(--text);font-weight:600;">
+          📌 โครงสร้างสายบังคับบัญชา: คลิกที่แถว <b>RM</b> เพื่อดูกลุ่ม <b>DM</b> และคลิกที่ <b>DM</b> เพื่อดูรายชื่อ <b>สาขา</b>
+        </span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn" style="padding:4px 10px;font-size:12px;background:#fff;border:1px solid var(--border);" onclick="expandAllTree()">➕ ขยายทั้งหมด</button>
+          <button class="btn" style="padding:4px 10px;font-size:12px;background:#fff;border:1px solid var(--border);" onclick="collapseAllTree()">➖ หุบทั้งหมด</button>
+        </div>
+      </div>
+      <table id="fest-tree-tbl" style="width:100%;border-collapse:collapse;margin-bottom:12px;">
+        <thead><tr>
+          <th style="width:340px;">ลำดับชั้น (1. ภาค RM ➔ 2. เขต DM ➔ 3. สาขา)</th>
+          <th class="r" style="color:var(--blue);font-weight:700;">จำนวนแจก (Qty)</th>
+          <th class="r">Sales MTD</th>
+          <th class="r" style="color:var(--red);">ส่วนลดที่แจก</th>
+          <th class="r">ต้นทุนที่ตัดจ่าย</th>
+          <th class="r" style="color:var(--red);">GP ขาดทุน</th>
+          <th class="r">GP %</th>
+        </tr></thead>
+        <tbody id="fest-tree-tbody"></tbody>
+        <tfoot id="fest-tree-tfoot"></tfoot>
+      </table>
+    </div>
+
     <!-- Product View Table -->
-    <table id="fest-tbl">
+    <table id="fest-tbl" style="display:none;">
       <thead><tr>
         <th data-col="iprod">Parcode</th>
         <th data-col="name">ชื่อสินค้า</th>
@@ -1047,32 +1074,210 @@ function switchTab(tabId){
 
 var FEST_SORT = { col: 'gp', dir: 1 };
 var FEST_STORE_SORT = { col: 'gp', dir: 1 };
-var FEST_VIEW = 'prod';
+var FEST_VIEW = 'tree';
 var FEST_STORES_FILTERED = [];
+var TREE_EXPANDED = {};
 
 function setFestivalView(view) {
   FEST_VIEW = view;
+  var btnTree = document.getElementById('btn-fest-tree');
   var btnProd = document.getElementById('btn-fest-prod');
   var btnStore = document.getElementById('btn-fest-store');
+  var wrapTree = document.getElementById('fest-tree-wrap');
   var tblProd = document.getElementById('fest-tbl');
   var tblStore = document.getElementById('fest-store-tbl');
   
-  if (view === 'prod') {
-    btnProd.style.background = 'var(--blue)';
-    btnProd.style.color = '#fff';
-    btnStore.style.background = '#ecf0f1';
-    btnStore.style.color = 'var(--text)';
-    tblProd.style.display = '';
-    tblStore.style.display = 'none';
-  } else {
-    btnStore.style.background = 'var(--blue)';
-    btnStore.style.color = '#fff';
-    btnProd.style.background = '#ecf0f1';
-    btnProd.style.color = 'var(--text)';
-    tblStore.style.display = '';
-    tblProd.style.display = 'none';
+  [btnTree, btnProd, btnStore].forEach(function(b){ if(b){ b.style.background='#ecf0f1'; b.style.color='var(--text)'; b.style.fontWeight='600'; } });
+  if(wrapTree) wrapTree.style.display = 'none';
+  if(tblProd) tblProd.style.display = 'none';
+  if(tblStore) tblStore.style.display = 'none';
+  
+  if (view === 'tree') {
+    if(btnTree){ btnTree.style.background='var(--blue)'; btnTree.style.color='#fff'; btnTree.style.fontWeight='700'; }
+    if(wrapTree) wrapTree.style.display = '';
+    renderFestivalTreeTable();
+  } else if (view === 'prod') {
+    if(btnProd){ btnProd.style.background='var(--blue)'; btnProd.style.color='#fff'; btnProd.style.fontWeight='700'; }
+    if(tblProd) tblProd.style.display = '';
+  } else if (view === 'store') {
+    if(btnStore){ btnStore.style.background='var(--blue)'; btnStore.style.color='#fff'; btnStore.style.fontWeight='700'; }
+    if(tblStore) tblStore.style.display = '';
     renderFestivalStoresTable();
   }
+}
+
+function renderFestivalTreeTable() {
+  var rm = (document.getElementById('ff-rm') || {}).value || '';
+  var dm = (document.getElementById('ff-dm') || {}).value || '';
+  
+  var stores = (DATA.festival_stores || []).filter(function(s){
+    if (rm && s.rm !== rm) return false;
+    if (dm && s.dm !== dm) return false;
+    return true;
+  });
+
+  // Build hierarchy
+  var tree = {};
+  stores.forEach(function(s){
+    var sRm = s.rm || 'ไม่ระบุ RM';
+    var sDm = s.dm || 'ไม่ระบุ DM';
+    if (!tree[sRm]) {
+      tree[sRm] = { rm: sRm, qty: 0, sales: 0, cost: 0, disc: 0, gp: 0, store_count: 0, dms: {} };
+    }
+    var rObj = tree[sRm];
+    rObj.qty += (s.qty || 0);
+    rObj.sales += (s.sales || 0);
+    rObj.cost += (s.cost || 0);
+    rObj.disc += (s.disc || 0);
+    rObj.gp += (s.gp || 0);
+    rObj.store_count++;
+
+    if (!rObj.dms[sDm]) {
+      rObj.dms[sDm] = { dm: sDm, rm: sRm, qty: 0, sales: 0, cost: 0, disc: 0, gp: 0, store_count: 0, stores: [] };
+    }
+    var dObj = rObj.dms[sDm];
+    dObj.qty += (s.qty || 0);
+    dObj.sales += (s.sales || 0);
+    dObj.cost += (s.cost || 0);
+    dObj.disc += (s.disc || 0);
+    dObj.gp += (s.gp || 0);
+    dObj.store_count++;
+    dObj.stores.push(s);
+  });
+
+  var rList = Object.keys(tree).map(function(k){ return tree[k]; });
+  rList.sort(function(a,b){ return a.gp - b.gp; }); // Most negative loss first
+
+  var html = '';
+  rList.forEach(function(r, rIdx){
+    var rId = 'rm_' + rIdx;
+    var rOpen = (TREE_EXPANDED[rId] !== false); // Default expanded
+    var rGpPct = r.sales ? (r.gp / r.sales * 100) : 0;
+    
+    // Level 1: RM Row
+    html += '<tr class="tree-rm-row" onclick="toggleTreeRow(\'' + rId + '\')" style="background:#f1f5f9;cursor:pointer;border-top:2px solid #cbd5e1;font-weight:700;">' +
+      '<td style="padding:9px 12px;"><span id="icon_' + rId + '" style="display:inline-block;width:18px;color:var(--blue);">' + (rOpen ? '▼' : '▶') + '</span> <span style="color:#0f172a;font-size:14px;">ภาค [RM] ' + r.rm + '</span> <span style="font-size:12px;color:var(--muted);font-weight:500;">(' + r.store_count + ' สาขา)</span></td>' +
+      '<td class="r" style="font-weight:700;color:var(--blue);font-size:13.5px;">' + fmt(r.qty) + ' ชิ้น</td>' +
+      '<td class="r">' + fmt(r.sales) + '</td>' +
+      '<td class="r" style="color:var(--red);font-weight:700;">' + fmt(r.disc) + '</td>' +
+      '<td class="r">' + fmt(r.cost) + '</td>' +
+      '<td class="r" style="color:var(--red);font-weight:700;font-size:13.5px;">' + fmt(r.gp) + '</td>' +
+      '<td class="r">' + gpBadge(rGpPct, r.cost) + '</td>' +
+    '</tr>';
+
+    // Level 2: DMs under RM
+    var dList = Object.keys(r.dms).map(function(k){ return r.dms[k]; });
+    dList.sort(function(a,b){ return a.gp - b.gp; }); // Most negative loss first
+
+    dList.forEach(function(d, dIdx){
+      var dId = rId + '_dm_' + dIdx;
+      var dOpen = (TREE_EXPANDED[dId] !== false); // Default expanded
+      var dGpPct = d.sales ? (d.gp / d.sales * 100) : 0;
+      var dRowStyle = rOpen ? '' : 'display:none;';
+
+      html += '<tr class="tree-dm-row child-of_' + rId + '" onclick="toggleTreeRow(\'' + dId + '\')" style="background:#ffffff;cursor:pointer;border-left:4px solid var(--blue);font-weight:600;' + dRowStyle + '">' +
+        '<td style="padding:8px 12px 8px 30px;"><span id="icon_' + dId + '" style="display:inline-block;width:18px;color:var(--primary);">' + (dOpen ? '▼' : '▶') + '</span> 📁 <span style="color:#1e293b;font-size:13px;">เขต [DM] ' + d.dm + '</span> <span style="font-size:11.5px;color:var(--muted);font-weight:normal;">(' + d.store_count + ' สาขา)</span></td>' +
+        '<td class="r" style="font-weight:700;color:var(--blue);">' + fmt(d.qty) + ' ชิ้น</td>' +
+        '<td class="r">' + fmt(d.sales) + '</td>' +
+        '<td class="r" style="color:var(--red);font-weight:600;">' + fmt(d.disc) + '</td>' +
+        '<td class="r">' + fmt(d.cost) + '</td>' +
+        '<td class="r" style="color:var(--red);font-weight:700;">' + fmt(d.gp) + '</td>' +
+        '<td class="r">' + gpBadge(dGpPct, d.cost) + '</td>' +
+      '</tr>';
+
+      // Level 3: Stores under DM
+      var sList = d.stores.slice();
+      sList.sort(function(a,b){ return a.gp - b.gp; }); // Most negative loss first
+
+      sList.forEach(function(s){
+        var sGpPct = s.sales ? (s.gp / s.sales * 100) : 0;
+        var sRowStyle = (rOpen && dOpen) ? '' : 'display:none;';
+
+        html += '<tr class="tree-store-row child-of_' + rId + ' child-of_' + dId + '" style="background:#fafafa;font-size:12.5px;' + sRowStyle + '">' +
+          '<td style="padding:6px 12px 6px 56px;"><span style="color:var(--muted);margin-right:4px;">🏪</span> [' + s.code + '] <b>' + s.name + '</b></td>' +
+          '<td class="r" style="font-weight:700;color:var(--blue);">' + fmt(s.qty || 0) + ' ชิ้น</td>' +
+          '<td class="r">' + fmt(s.sales) + '</td>' +
+          '<td class="r" style="color:var(--red);">' + fmt(s.disc || 0) + '</td>' +
+          '<td class="r">' + fmt(s.cost) + '</td>' +
+          '<td class="r" style="color:var(--red);font-weight:600;">' + fmt(s.gp) + '</td>' +
+          '<td class="r">' + gpBadge(sGpPct, s.cost) + '</td>' +
+        '</tr>';
+      });
+    });
+  });
+
+  var tbody = document.getElementById('fest-tree-tbody');
+  if (tbody) tbody.innerHTML = html;
+
+  // Footer Totals
+  var totQ = stores.reduce(function(a,s){ return a + (s.qty || 0); }, 0);
+  var totS = stores.reduce(function(a,s){ return a + (s.sales || 0); }, 0);
+  var totD = stores.reduce(function(a,s){ return a + (s.disc || 0); }, 0);
+  var totC = stores.reduce(function(a,s){ return a + (s.cost || 0); }, 0);
+  var totG = stores.reduce(function(a,s){ return a + (s.gp || 0); }, 0);
+  var totPct = totS ? (totG / totS * 100) : 0;
+
+  var tfoot = document.getElementById('fest-tree-tfoot');
+  if (tfoot) {
+    tfoot.innerHTML = '<tr style="background:#e2e8f0;font-weight:700;font-size:13px;">' +
+      '<td style="padding:10px 12px;">รวมทั้งหมด (' + rList.length + ' RM | ' + stores.length + ' สาขา)</td>' +
+      '<td class="r" style="color:var(--blue);font-size:14px;">' + fmt(totQ) + ' ชิ้น</td>' +
+      '<td class="r">' + fmt(totS) + '</td>' +
+      '<td class="r" style="color:var(--red);">' + fmt(totD) + '</td>' +
+      '<td class="r">' + fmt(totC) + '</td>' +
+      '<td class="r" style="color:var(--red);font-size:14px;">' + fmt(totG) + '</td>' +
+      '<td class="r">' + gpBadge(totPct, totC) + '</td>' +
+    '</tr>';
+  }
+}
+
+function toggleTreeRow(id) {
+  var curOpen = (TREE_EXPANDED[id] !== false);
+  var newOpen = !curOpen;
+  TREE_EXPANDED[id] = newOpen;
+
+  var icon = document.getElementById('icon_' + id);
+  if (icon) icon.textContent = newOpen ? '▼' : '▶';
+
+  // Toggle child rows
+  var children = document.querySelectorAll('.child-of_' + id);
+  children.forEach(function(el){
+    if (!newOpen) {
+      el.style.display = 'none';
+    } else {
+      // If it's a store row under a DM, check if the DM is also open
+      if (el.classList.contains('tree-store-row')) {
+        var isDmOpen = true;
+        el.className.split(' ').forEach(function(cls){
+          if (cls.startsWith('child-of_') && cls.includes('_dm_')) {
+            var dmKey = cls.replace('child-of_', '');
+            if (TREE_EXPANDED[dmKey] === false) isDmOpen = false;
+          }
+        });
+        if (isDmOpen) el.style.display = '';
+      } else {
+        el.style.display = '';
+      }
+    }
+  });
+}
+
+function expandAllTree() {
+  TREE_EXPANDED = {};
+  renderFestivalTreeTable();
+}
+
+function collapseAllTree() {
+  document.querySelectorAll('#fest-tree-tbody tr').forEach(function(r){
+    if (r.classList.contains('tree-rm-row')) {
+      var id = r.getAttribute('onclick').match(/'([^']+)'/)[1];
+      TREE_EXPANDED[id] = false;
+      var icon = document.getElementById('icon_' + id);
+      if (icon) icon.textContent = '▶';
+    } else {
+      r.style.display = 'none';
+    }
+  });
 }
 
 function refreshFestivalDropdowns() {
@@ -1122,6 +1327,7 @@ function applyFestivalFilters() {
   }
   
   renderFestivalTab();
+  if (FEST_VIEW === 'tree') renderFestivalTreeTable();
   if (FEST_VIEW === 'store') renderFestivalStoresTable();
 }
 
@@ -1278,6 +1484,7 @@ function renderFestivalTab() {
       '<td class="r">'+gpBadge(p.gp_pct, p.cost)+'</td>' +
     '</tr>';
   }).join('');
+  if (FEST_VIEW === 'tree') renderFestivalTreeTable();
 }
 
 var MINI_SUBGRP_SORT = { col: 'sales', dir: -1 };
