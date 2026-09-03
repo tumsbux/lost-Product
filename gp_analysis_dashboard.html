@@ -1106,11 +1106,50 @@ function setFestivalView(view) {
   }
 }
 
+function getFestivalStoresList() {
+  if (DATA.festival_stores && DATA.festival_stores.length > 0) {
+    return DATA.festival_stores;
+  }
+  // Resilient fallback: compute on-the-fly from DATA.prod_stores & Category 22 products
+  var festStoreMap = {};
+  var prods = (PRODS_ALL || []).filter(function(p){ return p.type_code === '22'; });
+  prods.forEach(function(p) {
+    var pStores = (DATA.prod_stores || {})[p.iprod] || [];
+    var discRatio = (p.cost > 0) ? (p.disc / p.cost) : 1.82;
+    pStores.forEach(function(st) {
+      var sInfo = (STORES_ALL.find(function(x){ return x.code === st.c; }) || {});
+      if (!festStoreMap[st.c]) {
+        festStoreMap[st.c] = {
+          code: st.c,
+          name: st.n || sInfo.name || st.c,
+          dm: sInfo.dm || '',
+          rm: sInfo.rm || '',
+          qty: 0,
+          sales: 0,
+          cost: 0,
+          disc: 0,
+          gp: 0
+        };
+      }
+      festStoreMap[st.c].qty += (st.q || 0);
+      festStoreMap[st.c].sales += (st.s || 0);
+      festStoreMap[st.c].cost += (st.k || 0);
+      festStoreMap[st.c].gp += (st.g || 0);
+      festStoreMap[st.c].disc += ((st.k || 0) * discRatio);
+    });
+  });
+  var list = Object.keys(festStoreMap).map(function(k){ return festStoreMap[k]; });
+  list.sort(function(a,b){ return a.gp - b.gp; });
+  DATA.festival_stores = list;
+  return list;
+}
+
 function renderFestivalTreeTable() {
   var rm = (document.getElementById('ff-rm') || {}).value || '';
   var dm = (document.getElementById('ff-dm') || {}).value || '';
   
-  var stores = (DATA.festival_stores || []).filter(function(s){
+  var allFestStores = getFestivalStoresList();
+  var stores = allFestStores.filter(function(s){
     if (rm && s.rm !== rm) return false;
     if (dm && s.dm !== dm) return false;
     return true;
@@ -1341,7 +1380,8 @@ function clearFestivalFilters() {
 function renderFestivalStoresTable() {
   var rm = (document.getElementById('ff-rm') || {}).value || '';
   var dm = (document.getElementById('ff-dm') || {}).value || '';
-  var stores = (DATA.festival_stores || []).filter(function(s){
+  var allFestStores = getFestivalStoresList();
+  var stores = allFestStores.filter(function(s){
     if (rm && s.rm !== rm) return false;
     if (dm && s.dm !== dm) return false;
     return true;
@@ -1406,7 +1446,8 @@ function renderFestivalTab() {
   var dm = (document.getElementById('ff-dm') || {}).value || '';
   
   // 1. Filter festival_stores to update KPI cards
-  var festStores = (DATA.festival_stores || []).filter(function(s){
+  var allFestStores = getFestivalStoresList();
+  var festStores = allFestStores.filter(function(s){
     if (rm && s.rm !== rm) return false;
     if (dm && s.dm !== dm) return false;
     return true;
