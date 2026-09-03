@@ -173,6 +173,7 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
       <th data-col="name">ชื่อสินค้า</th>
       <th data-col="type_name">ประเภท</th>
       <th data-col="group_name">กลุ่ม</th>
+      <th data-col="qty" class="r">จำนวนขาย</th>
       <th data-col="sales" class="r">Sales MTD</th>
       <th data-col="disc" class="r" title="ส่วนลดรวม = ลดรายการ + ลดท้ายบิล">ส่วนลดรวม</th>
       <th data-col="sku_disc" class="r" title="ส่วนลดรายการ = soqty × sopricdisc (หักก่อนเป็น solineamt)">ลดรายการ</th>
@@ -295,6 +296,7 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
       <thead><tr>
         <th>Parcode</th>
         <th>ชื่อสินค้า</th>
+        <th class="r" style="color:var(--blue);font-weight:700;">จำนวนขาย (Qty)</th>
         <th class="r">Sales MTD</th>
         <th class="r" style="color:var(--red);">ส่วนลดที่ยิง</th>
         <th class="r" style="color:var(--red);">% ส่วนลด</th>
@@ -381,6 +383,7 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
         <th>Parcode</th>
         <th>ชื่อสินค้า</th>
         <th>กลุ่ม</th>
+        <th class="r" style="color:var(--blue);font-weight:700;">จำนวนขาย (Qty)</th>
         <th class="r">Sales MTD</th>
         <th class="r">ส่วนลด</th>
         <th class="r">Cost</th>
@@ -528,8 +531,8 @@ function toggleProdDetail(tr,iprod){
   document.querySelectorAll('.prod-detail').forEach(function(r){r.remove()});
   var ps=(DATA.prod_stores||{})[iprod]||[];
   if(!ps.length){return;}
-  var h='<td colspan="9"><table class="prod-detail-tbl"><tr><th>รหัส</th><th>ร้าน</th><th class="r">Sales</th><th class="r">Cost</th><th class="r">GP</th><th class="r">GP%</th></tr>';
-  ps.forEach(function(s){h+='<tr><td>'+s.c+'</td><td>'+s.n+'</td><td class="r">'+fmt(s.s)+'</td><td class="r">'+fmt(s.k)+'</td><td class="r">'+fmt(s.g)+'</td><td class="r">'+gpBadge(s.p,s.k)+'</td></tr>'});
+  var h='<td colspan="10"><table class="prod-detail-tbl"><tr><th>รหัส</th><th>ร้าน</th><th class="r">จำนวนขาย (Qty)</th><th class="r">Sales</th><th class="r">Cost</th><th class="r">GP</th><th class="r">GP%</th></tr>';
+  ps.forEach(function(s){h+='<tr><td>'+s.c+'</td><td>'+s.n+'</td><td class="r" style="font-weight:700;color:var(--primary);">'+fmt(s.q||0)+'</td><td class="r">'+fmt(s.s)+'</td><td class="r">'+fmt(s.k)+'</td><td class="r">'+fmt(s.g)+'</td><td class="r">'+gpBadge(s.p,s.k)+'</td></tr>'});
   h+='</table></td>';
   var dr=document.createElement('tr');
   dr.className='prod-detail';
@@ -547,7 +550,7 @@ function renderProds(){
     return S.dir*(av<bv?-1:av>bv?1:0);
   });
   var shown=PROD_FILTERED.slice(0,3000);
-  document.getElementById('prod-tbody').innerHTML=shown.map(function(p){return '<tr class="prod-row" onclick="toggleProdDetail(this,\''+p.iprod+'\')"><td>'+p.iprod+'</td><td>'+(p.name||'—')+'</td><td>'+(p.type_name||'—')+'</td><td>'+(p.group_name||p.group||'—')+'</td><td class="r">'+fmt(p.sales)+'</td><td class="r">'+fmt(p.disc||0)+'</td><td class="r">'+fmt(p.sku_disc||0)+'</td><td class="r">'+fmt(p.bill_disc||0)+'</td><td class="r">'+fmt(p.cost)+'</td><td class="r">'+fmt(p.gp)+'</td><td class="r">'+gpBadge(p.gp_pct,p.cost)+'</td></tr>'}).join('');
+  document.getElementById('prod-tbody').innerHTML=shown.map(function(p){return '<tr class="prod-row" onclick="toggleProdDetail(this,\''+p.iprod+'\')"><td>'+p.iprod+'</td><td>'+(p.name||'—')+'</td><td>'+(p.type_name||'—')+'</td><td>'+(p.group_name||p.group||'—')+'</td><td class="r" style="font-weight:600;">'+fmt(p.qty||0)+'</td><td class="r">'+fmt(p.sales)+'</td><td class="r">'+fmt(p.disc||0)+'</td><td class="r">'+fmt(p.sku_disc||0)+'</td><td class="r">'+fmt(p.bill_disc||0)+'</td><td class="r">'+fmt(p.cost)+'</td><td class="r">'+fmt(p.gp)+'</td><td class="r">'+gpBadge(p.gp_pct,p.cost)+'</td></tr>'}).join('');
   var totS=PROD_FILTERED.reduce(function(a,p){return a+p.sales},0);
   var totC=PROD_FILTERED.reduce(function(a,p){return a+p.cost},0);
   var totG=totS-totC;
@@ -860,6 +863,7 @@ function renderFestivalTab() {
     return '<tr class="prod-row" onclick="toggleProdDetail(this,\''+p.iprod+'\')">' +
       '<td>'+p.iprod+'</td>' +
       '<td>'+(p.name||'—')+'</td>' +
+      '<td class="r" style="font-weight:700;color:var(--blue);">'+fmt(p.qty||0)+' ชิ้น</td>' +
       '<td class="r">'+fmt(p.sales)+'</td>' +
       '<td class="r" style="color:var(--red);font-weight:600;">'+fmt(p.disc||0)+'</td>' +
       '<td class="r" style="color:var(--red);font-weight:600;">'+discRate.toFixed(1)+'%</td>' +
@@ -929,6 +933,7 @@ function renderMinimartTab() {
         '<td>'+p.iprod+'</td>' +
         '<td>'+(p.name||'—')+'</td>' +
         '<td>'+(p.group_name||p.group||'—')+'</td>' +
+        '<td class="r" style="font-weight:700;color:var(--blue);">'+fmt(p.qty||0)+'</td>' +
         '<td class="r">'+fmt(p.sales)+'</td>' +
         '<td class="r">'+fmt(p.disc||0)+'</td>' +
         '<td class="r">'+fmt(p.cost)+'</td>' +
