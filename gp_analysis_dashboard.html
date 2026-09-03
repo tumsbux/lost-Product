@@ -211,6 +211,17 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
 
 <!-- ==================== FESTIVAL TAB ==================== -->
 <div class="tab-panel" id="panel-festival">
+  <!-- RM / DM Filter Bar -->
+  <div class="filters" style="background:var(--card);padding:12px 18px;border-radius:10px;border:1px solid var(--border);margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+    <span style="font-weight:700;color:var(--text);font-size:14px;display:inline-flex;align-items:center;gap:4px;">🎯 กรองพื้นที่:</span>
+    <label style="font-weight:600;font-size:13px;color:var(--text);margin-left:4px;">RM:</label>
+    <select id="ff-rm" style="min-width:180px;"><option value="">ทุก RM (ทั้งหมด)</option></select>
+    <label style="font-weight:600;font-size:13px;color:var(--text);margin-left:4px;">DM:</label>
+    <select id="ff-dm" style="min-width:190px;"><option value="">ทุก DM (ทั้งหมด)</option></select>
+    <button class="btn btn-clear" onclick="clearFestivalFilters()">ล้างตัวกรอง</button>
+    <span id="ff-filter-info" style="font-size:13px;color:var(--blue);font-weight:600;margin-left:auto;"></span>
+  </div>
+
   <!-- Executive Overview Cards -->
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
@@ -286,15 +297,17 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
     </table>
   </div>
 
-  <!-- Top Anomaly Items Table -->
+  <!-- Anomaly Items & Stores Table with View Switcher -->
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-      <div>
-        <h3 style="font-size:14px;font-weight:700;color:var(--text);margin:0;">📦 13 รายการสินค้าเทศกาลที่สร้างผลขาดทุน (คลิกแถวเพื่อดูสาขาที่บันทึก)</h3>
-        <span style="font-size:12px;color:var(--muted);">รวมผลขาดทุน -฿740,390 จากยอดขายเพียง ฿4,128</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="btn-fest-prod" class="btn" style="background:var(--blue);color:#fff;font-weight:600;" onclick="setFestivalView('prod')">📦 ดูตามสินค้า (13 รายการ)</button>
+        <button id="btn-fest-store" class="btn" style="background:#ecf0f1;color:var(--text);font-weight:600;" onclick="setFestivalView('store')">🏪 ดูตามรายสาขาที่แจก</button>
       </div>
       <button class="btn btn-xlsx" onclick="exportFestivalCSV()">⬇ XLSX</button>
     </div>
+
+    <!-- Product View Table -->
     <table id="fest-tbl">
       <thead><tr>
         <th data-col="iprod">Parcode</th>
@@ -308,6 +321,24 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
         <th data-col="gp_pct" class="r">GP %</th>
       </tr></thead>
       <tbody id="fest-tbody"></tbody>
+    </table>
+
+    <!-- Store View Table -->
+    <table id="fest-store-tbl" style="display:none;">
+      <thead><tr>
+        <th data-col="code">รหัส</th>
+        <th data-col="name">ชื่อสาขา</th>
+        <th data-col="dm">DM ผู้ดูแล</th>
+        <th data-col="rm">RM ภาค</th>
+        <th data-col="qty" class="r" style="color:var(--blue);font-weight:700;">จำนวนแจก (Qty)</th>
+        <th data-col="sales" class="r">Sales MTD</th>
+        <th data-col="disc" class="r" style="color:var(--red);">ส่วนลดที่แจก</th>
+        <th data-col="cost" class="r">ต้นทุนที่ตัดจ่าย</th>
+        <th data-col="gp" class="r sort-asc">GP ขาดทุน</th>
+        <th data-col="gp_pct" class="r">GP %</th>
+      </tr></thead>
+      <tbody id="fest-store-tbody"></tbody>
+      <tfoot id="fest-store-tfoot"></tfoot>
     </table>
   </div>
 </div>
@@ -532,8 +563,17 @@ function toggleProdDetail(tr,iprod){
   if(next&&next.classList.contains('prod-detail')){next.remove();return;}
   /* close any other open detail */
   document.querySelectorAll('.prod-detail').forEach(function(r){r.remove()});
-  var ps=(DATA.prod_stores||{})[iprod]||[];
-  if(!ps.length){return;}
+  var rm = (document.getElementById('ff-rm') || {}).value || '';
+  var dm = (document.getElementById('ff-dm') || {}).value || '';
+  var allPs = (DATA.prod_stores||{})[iprod]||[];
+  var ps = allPs.filter(function(st){
+    if (!rm && !dm) return true;
+    var sInfo = (STORES_ALL.find(function(x){ return x.code === st.c; }) || {});
+    if (rm && sInfo.rm !== rm) return false;
+    if (dm && sInfo.dm !== dm) return false;
+    return true;
+  });
+  if(!ps.length){ return; }
   
   var h='<td colspan="10">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 12px;font-size:12.5px;background:#f8fafc;border-radius:6px 6px 0 0;border:1px solid var(--border);border-bottom:none;">' +
@@ -769,6 +809,18 @@ fetch('./gp_analysis_data.json')
     initSort('store-tbl',STORE_SORT,renderStores);
     initSort('prod-tbl',PROD_SORT,renderProds);
     initSort('fest-tbl',FEST_SORT,renderFestivalTab);
+    initSort('fest-store-tbl',FEST_STORE_SORT,renderFestivalStoresTable);
+    
+    // Setup festival RM/DM dropdowns
+    refreshFestivalDropdowns();
+    ['ff-rm','ff-dm'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.addEventListener('change', function(){
+        refreshFestivalDropdowns();
+        applyFestivalFilters();
+      });
+    });
+    
     renderStores();
     renderProds();
     renderTrend(data.monthly||[]);
@@ -913,10 +965,206 @@ function switchTab(tabId){
 }
 
 var FEST_SORT = { col: 'gp', dir: 1 };
+var FEST_STORE_SORT = { col: 'gp', dir: 1 };
+var FEST_VIEW = 'prod';
+var FEST_STORES_FILTERED = [];
+
+function setFestivalView(view) {
+  FEST_VIEW = view;
+  var btnProd = document.getElementById('btn-fest-prod');
+  var btnStore = document.getElementById('btn-fest-store');
+  var tblProd = document.getElementById('fest-tbl');
+  var tblStore = document.getElementById('fest-store-tbl');
+  
+  if (view === 'prod') {
+    btnProd.style.background = 'var(--blue)';
+    btnProd.style.color = '#fff';
+    btnStore.style.background = '#ecf0f1';
+    btnStore.style.color = 'var(--text)';
+    tblProd.style.display = '';
+    tblStore.style.display = 'none';
+  } else {
+    btnStore.style.background = 'var(--blue)';
+    btnStore.style.color = '#fff';
+    btnProd.style.background = '#ecf0f1';
+    btnProd.style.color = 'var(--text)';
+    tblStore.style.display = '';
+    tblProd.style.display = 'none';
+    renderFestivalStoresTable();
+  }
+}
+
+function refreshFestivalDropdowns() {
+  var rmSel = document.getElementById('ff-rm');
+  var dmSel = document.getElementById('ff-dm');
+  if (!rmSel || !dmSel) return;
+  
+  var curRm = rmSel.value;
+  var curDm = dmSel.value;
+  
+  // Rebuild DM options based on selected RM
+  var dms = new Set();
+  STORES_ALL.forEach(function(s){ if(s.dm && (!curRm || s.rm === curRm)) dms.add(s.dm); });
+  var dmOpts = dmSel.querySelectorAll('option:not(:first-child)');
+  for(var i=0; i<dmOpts.length; i++) dmOpts[i].remove();
+  Array.from(dms).sort().forEach(function(v){
+    var o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    dmSel.appendChild(o);
+  });
+  dmSel.value = dms.has(curDm) ? curDm : '';
+  
+  // Rebuild RM options based on selected DM
+  var rms = new Set();
+  var actDm = dmSel.value;
+  STORES_ALL.forEach(function(s){ if(s.rm && (!actDm || s.dm === actDm)) rms.add(s.rm); });
+  var rmOpts = rmSel.querySelectorAll('option:not(:first-child)');
+  for(var i=0; i<rmOpts.length; i++) rmOpts[i].remove();
+  Array.from(rms).sort().forEach(function(v){
+    var o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    rmSel.appendChild(o);
+  });
+  rmSel.value = rms.has(curRm) ? curRm : '';
+}
+
+function applyFestivalFilters() {
+  var rm = document.getElementById('ff-rm').value;
+  var dm = document.getElementById('ff-dm').value;
+  
+  // Update info badge
+  var infoEl = document.getElementById('ff-filter-info');
+  if (infoEl) {
+    if (dm) infoEl.textContent = 'กรองเฉพาะ: เขต DM ' + dm + (rm ? ' (RM ' + rm + ')' : '');
+    else if (rm) infoEl.textContent = 'กรองเฉพาะ: ภาค RM ' + rm;
+    else infoEl.textContent = 'แสดงข้อมูลทุกสาขา (เครือข่ายทั้งหมด)';
+  }
+  
+  renderFestivalTab();
+  if (FEST_VIEW === 'store') renderFestivalStoresTable();
+}
+
+function clearFestivalFilters() {
+  document.getElementById('ff-rm').value = '';
+  document.getElementById('ff-dm').value = '';
+  refreshFestivalDropdowns();
+  applyFestivalFilters();
+}
+
+function renderFestivalStoresTable() {
+  var rm = (document.getElementById('ff-rm') || {}).value || '';
+  var dm = (document.getElementById('ff-dm') || {}).value || '';
+  var stores = (DATA.festival_stores || []).filter(function(s){
+    if (rm && s.rm !== rm) return false;
+    if (dm && s.dm !== dm) return false;
+    return true;
+  });
+  
+  var S = FEST_STORE_SORT;
+  stores.sort(function(a, b) {
+    var av = a[S.col], bv = b[S.col];
+    if (S.col === 'gp_pct') {
+      av = a.sales ? (a.gp / a.sales * 100) : 0;
+      bv = b.sales ? (b.gp / b.sales * 100) : 0;
+    }
+    if (typeof av === 'string') return S.dir * av.localeCompare(bv);
+    if (av == null) av = S.dir > 0 ? -Infinity : Infinity;
+    if (bv == null) bv = S.dir > 0 ? -Infinity : Infinity;
+    return S.dir * (av < bv ? -1 : av > bv ? 1 : 0);
+  });
+  
+  var tbody = document.getElementById('fest-store-tbody');
+  if (!tbody) return;
+  
+  tbody.innerHTML = stores.map(function(s){
+    var gpPct = s.sales ? (s.gp / s.sales * 100) : 0;
+    return '<tr>' +
+      '<td>' + s.code + '</td>' +
+      '<td><b>' + s.name + '</b></td>' +
+      '<td>' + (s.dm || '—') + '</td>' +
+      '<td>' + (s.rm || '—') + '</td>' +
+      '<td class="r" style="font-weight:700;color:var(--blue);">' + fmt(s.qty || 0) + ' ชิ้น</td>' +
+      '<td class="r">' + fmt(s.sales) + '</td>' +
+      '<td class="r" style="color:var(--red);font-weight:600;">' + fmt(s.disc || 0) + '</td>' +
+      '<td class="r">' + fmt(s.cost) + '</td>' +
+      '<td class="r" style="color:var(--red);font-weight:700;">' + fmt(s.gp) + '</td>' +
+      '<td class="r">' + gpBadge(gpPct, s.cost) + '</td>' +
+    '</tr>';
+  }).join('');
+  
+  // Footer totals
+  var totQ = stores.reduce(function(a,s){ return a + (s.qty || 0); }, 0);
+  var totS = stores.reduce(function(a,s){ return a + (s.sales || 0); }, 0);
+  var totD = stores.reduce(function(a,s){ return a + (s.disc || 0); }, 0);
+  var totC = stores.reduce(function(a,s){ return a + (s.cost || 0); }, 0);
+  var totG = stores.reduce(function(a,s){ return a + (s.gp || 0); }, 0);
+  var totPct = totS ? (totG / totS * 100) : 0;
+  
+  var tfoot = document.getElementById('fest-store-tfoot');
+  if (tfoot) {
+    tfoot.innerHTML = '<tr>' +
+      '<td colspan="4" style="color:var(--muted);font-size:12px;">รวม ' + stores.length + ' สาขา</td>' +
+      '<td class="r" style="font-weight:700;color:var(--blue);">' + fmt(totQ) + ' ชิ้น</td>' +
+      '<td class="r">' + fmt(totS) + '</td>' +
+      '<td class="r" style="color:var(--red);font-weight:700;">' + fmt(totD) + '</td>' +
+      '<td class="r">' + fmt(totC) + '</td>' +
+      '<td class="r" style="color:var(--red);font-weight:700;">' + fmt(totG) + '</td>' +
+      '<td class="r">' + gpBadge(totPct, totC) + '</td>' +
+    '</tr>';
+  }
+}
 
 function renderFestivalTab() {
+  var rm = (document.getElementById('ff-rm') || {}).value || '';
+  var dm = (document.getElementById('ff-dm') || {}).value || '';
+  
+  // 1. Filter festival_stores to update KPI cards
+  var festStores = (DATA.festival_stores || []).filter(function(s){
+    if (rm && s.rm !== rm) return false;
+    if (dm && s.dm !== dm) return false;
+    return true;
+  });
+  
+  var kSales = festStores.reduce(function(a,s){ return a + s.sales; }, 0);
+  var kCost = festStores.reduce(function(a,s){ return a + s.cost; }, 0);
+  var kDisc = festStores.reduce(function(a,s){ return a + s.disc; }, 0);
+  var kGp = festStores.reduce(function(a,s){ return a + s.gp; }, 0);
+  
+  if (document.getElementById('fest-sales')) document.getElementById('fest-sales').textContent = '฿' + fmt(kSales);
+  if (document.getElementById('fest-cost')) document.getElementById('fest-cost').textContent = '฿' + fmt(kCost);
+  if (document.getElementById('fest-disc')) document.getElementById('fest-disc').textContent = '฿' + fmt(kDisc);
+  if (document.getElementById('fest-gp')) document.getElementById('fest-gp').textContent = '฿' + fmt(kGp);
+
+  // 2. Filter products and recalculate if rm/dm is selected
   var prods = PRODS_ALL || [];
-  var festProds = prods.filter(function(p){ return p.type_code === '22'; });
+  var festProds = prods.filter(function(p){ return p.type_code === '22'; }).map(function(p){
+    if (!rm && !dm) return p;
+    // Calculate filtered stats for this product under selected RM/DM
+    var pStores = ((DATA.prod_stores || {})[p.iprod] || []).filter(function(st){
+      var sInfo = (STORES_ALL.find(function(x){ return x.code === st.c; }) || {});
+      if (rm && sInfo.rm !== rm) return false;
+      if (dm && sInfo.dm !== dm) return false;
+      return true;
+    });
+    var fSales = pStores.reduce(function(a,s){ return a + (s.s || 0); }, 0);
+    var fCost = pStores.reduce(function(a,s){ return a + (s.k || 0); }, 0);
+    var fGp = pStores.reduce(function(a,s){ return a + (s.g || 0); }, 0);
+    var fQty = pStores.reduce(function(a,s){ return a + (s.q || 0); }, 0);
+    // Estimated discount proportion
+    var discRate = (p.cost > 0) ? (p.disc / p.cost) : 1.8;
+    var fDisc = fCost * discRate;
+    return {
+      iprod: p.iprod,
+      name: p.name,
+      sales: fSales,
+      cost: fCost,
+      gp: fGp,
+      qty: fQty,
+      disc: fDisc,
+      gp_pct: fSales ? (fGp / fSales * 100) : 0,
+      store_count: pStores.length
+    };
+  });
   
   var S = FEST_SORT;
   festProds.sort(function(a, b) {
@@ -931,7 +1179,7 @@ function renderFestivalTab() {
     return S.dir * (av < bv ? -1 : av > bv ? 1 : 0);
   });
   
-  var shown = festProds.filter(function(p){ return p.gp < 0 || p.disc > 1000; });
+  var shown = festProds.filter(function(p){ return (p.cost > 0 || p.qty > 0 || p.disc > 0); });
   var tbody = document.getElementById('fest-tbody');
   if(!tbody) return;
   
