@@ -1073,6 +1073,7 @@ thead th, tbody td, tfoot td,
             <th data-col="qty" class="r" style="padding:10px 12px;white-space:nowrap;">จำนวน (soqty)</th>
             <th data-col="u_price" class="r" style="padding:10px 12px;white-space:nowrap;">ราคาป้าย/หน่วย</th>
             <th data-col="u_cost" class="r" style="padding:10px 12px;white-space:nowrap;">ทุน/หน่วย</th>
+            <th data-col="disc" class="r" style="padding:10px 12px;white-space:nowrap;color:#fb923c;">ส่วนลด (disc)</th>
             <th data-col="sales" class="r" style="padding:10px 12px;white-space:nowrap;color:#60a5fa;">ยอดขายสุทธิ (solineamt)</th>
             <th data-col="cost" class="r" style="padding:10px 12px;white-space:nowrap;">ต้นทุนรวม (cost)</th>
             <th data-col="loss" class="r sort-desc" style="padding:10px 12px;white-space:nowrap;color:#f87171;">ขาดทุน (GP)</th>
@@ -1262,6 +1263,7 @@ thead th, tbody td, tfoot td,
             <th data-col="qty" class="r" style="padding:8px 12px;">จำนวน (soqty)</th>
             <th data-col="u_price" class="r" style="padding:8px 12px;">ราคาขาย/หน่วย</th>
             <th data-col="u_cost" class="r" style="padding:8px 12px;color:#f87171;">ต้นทุน/หน่วย</th>
+            <th data-col="disc" class="r" style="padding:8px 12px;color:#fb923c;">ส่วนลด (disc)</th>
             <th data-col="sales" class="r" style="padding:8px 12px;color:#60a5fa;">ยอดขาย (solineamt)</th>
             <th data-col="cost" class="r" style="padding:8px 12px;">ต้นทุนรวม (Cost)</th>
             <th data-col="loss" class="r sort-desc" style="padding:8px 12px;color:#f87171;">ขาดทุน (GP)</th>
@@ -2859,19 +2861,21 @@ function filterAuditTxTable() {
 
   // Group RM -> DM -> Bills
   var rmGroups = {};
-  var grandQty = 0, grandSales = 0, grandCost = 0, grandLoss = 0;
+  var grandQty = 0, grandSales = 0, grandCost = 0, grandLoss = 0, grandDisc = 0;
   var allStores = new Set();
 
   filtered.forEach(function(r){
     var rm = r.rm || 'ไม่ระบุ RM';
     var dm = r.dm || 'ไม่ระบุ DM';
     var br = r.branch_code;
+    var disc = (r.disc != null) ? r.disc : Math.max(0, Math.round(((r.qty * r.u_price) - r.sales) * 100) / 100);
+    r.disc = disc;
 
     if (!rmGroups[rm]) {
       rmGroups[rm] = {
         rm: rm,
         dms: {},
-        qty: 0, sales: 0, cost: 0, loss: 0,
+        qty: 0, sales: 0, cost: 0, loss: 0, disc: 0,
         billsCount: 0,
         stores: new Set()
       };
@@ -2881,6 +2885,7 @@ function filterAuditTxTable() {
     rNode.sales += (r.sales || 0);
     rNode.cost += (r.cost || 0);
     rNode.loss += (r.loss || 0);
+    rNode.disc += disc;
     rNode.billsCount++;
     rNode.stores.add(br);
 
@@ -2889,7 +2894,7 @@ function filterAuditTxTable() {
         dm: dm,
         rm: rm,
         bills: [],
-        qty: 0, sales: 0, cost: 0, loss: 0,
+        qty: 0, sales: 0, cost: 0, loss: 0, disc: 0,
         stores: new Set()
       };
     }
@@ -2899,12 +2904,14 @@ function filterAuditTxTable() {
     dNode.sales += (r.sales || 0);
     dNode.cost += (r.cost || 0);
     dNode.loss += (r.loss || 0);
+    dNode.disc += disc;
     dNode.stores.add(br);
 
     grandQty += (r.qty || 0);
     grandSales += (r.sales || 0);
     grandCost += (r.cost || 0);
     grandLoss += (r.loss || 0);
+    grandDisc += disc;
     allStores.add(br);
   });
 
@@ -2915,6 +2922,7 @@ function filterAuditTxTable() {
     if (col === 'name') return node.rm || node.dm || node.name || '';
     if (col === 'loss') return node.loss || 0;
     if (col === 'sales') return node.sales || 0;
+    if (col === 'disc') return node.disc || 0;
     if (col === 'cost') return node.cost || 0;
     if (col === 'qty') return node.qty || 0;
     if (col === 'u_price') return node.u_price || 0;
@@ -2963,6 +2971,7 @@ function filterAuditTxTable() {
       '<td class="r" style="padding:10px 12px;font-weight:800;white-space:nowrap;">' + fmt(rData.qty) + '</td>' +
       '<td class="r" style="padding:10px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
       '<td class="r" style="padding:10px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
+      '<td class="r gt-disc" style="padding:10px 12px;font-weight:800;color:#fb923c;white-space:nowrap;">฿' + fmt(rData.disc) + '</td>' +
       '<td class="r" style="padding:10px 12px;font-weight:800;color:var(--blue);white-space:nowrap;">฿' + fmt(rData.sales) + '</td>' +
       '<td class="r" style="padding:10px 12px;font-weight:800;white-space:nowrap;">฿' + fmt(rData.cost) + '</td>' +
       '<td class="r" style="padding:10px 12px;font-weight:800;color:#dc2626;font-size:13.5px;white-space:nowrap;">-฿' + fmt(rData.loss) + '</td>' +
@@ -2997,6 +3006,7 @@ function filterAuditTxTable() {
         '<td class="r" style="padding:8px 12px;font-weight:700;white-space:nowrap;">' + fmt(dData.qty) + '</td>' +
         '<td class="r" style="padding:8px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
         '<td class="r" style="padding:8px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
+        '<td class="r gt-disc" style="padding:8px 12px;font-weight:700;color:#fb923c;white-space:nowrap;">฿' + fmt(dData.disc) + '</td>' +
         '<td class="r" style="padding:8px 12px;font-weight:700;color:var(--blue);white-space:nowrap;">฿' + fmt(dData.sales) + '</td>' +
         '<td class="r" style="padding:8px 12px;font-weight:700;white-space:nowrap;">฿' + fmt(dData.cost) + '</td>' +
         '<td class="r" style="padding:8px 12px;font-weight:800;color:#dc2626;white-space:nowrap;">-฿' + fmt(dData.loss) + '</td>' +
@@ -3027,6 +3037,7 @@ function filterAuditTxTable() {
           '<td class="r" style="padding:7px 12px;font-weight:700;white-space:nowrap;">' + fmt(r.qty) + '</td>' +
           '<td class="r" style="padding:7px 12px;white-space:nowrap;">฿' + fmt(r.u_price) + '</td>' +
           '<td class="r" style="padding:7px 12px;color:#dc2626;font-weight:600;white-space:nowrap;">฿' + fmt(r.u_cost) + '</td>' +
+          '<td class="r gt-disc" style="padding:7px 12px;font-weight:700;color:#fb923c;white-space:nowrap;">฿' + fmt(r.disc) + '</td>' +
           '<td class="r" style="padding:7px 12px;font-weight:700;color:var(--blue);white-space:nowrap;">฿' + fmt(r.sales) + '</td>' +
           '<td class="r" style="padding:7px 12px;white-space:nowrap;">฿' + fmt(r.cost) + '</td>' +
           '<td class="r" style="padding:7px 12px;color:#dc2626;font-weight:800;white-space:nowrap;">-฿' + fmt(r.loss) + '</td>' +
@@ -3046,6 +3057,7 @@ function filterAuditTxTable() {
       '<td class="r gt-qty" style="background:#0f172a !important;color:#fde047 !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">' + fmt(grandQty) + ' ชิ้น</td>' +
       '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;white-space:nowrap;">—</td>' +
       '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;white-space:nowrap;">—</td>' +
+      '<td class="r gt-disc" style="background:#0f172a !important;color:#fb923c !important;padding:12px;font-weight:800;font-size:13.5px;white-space:nowrap;">฿' + fmt(grandDisc) + '</td>' +
       '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">฿' + fmt(grandSales) + '</td>' +
       '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">฿' + fmt(grandCost) + '</td>' +
       '<td class="r gt-loss" style="background:#0f172a !important;color:#f87171 !important;font-size:14px;padding:12px;font-weight:800;white-space:nowrap;">-฿' + fmt(grandLoss) + '</td>' +
@@ -3056,6 +3068,7 @@ function filterAuditTxTable() {
   var lbl = document.getElementById('audit-tx-count-label');
   if (lbl) lbl.textContent = 'แสดง ' + sortedRMs.length + ' ภาค (' + filtered.length + ' รายการ)';
 }
+
 
 var AUDIT_MASTER_SORT = { col: 'diff', dir: -1 };
 
@@ -3205,9 +3218,10 @@ function exportAuditCSV() {
   if (AUDIT_SUBVIEW === 'tx') {
     var txList = (DATA.anomalies || {}).transactions || [];
     var rows = txList.map(function(r){
-      return [r.sono, r.sodate, r.branch_code, r.branch_name, r.dm, r.iprod, r.parcode || r.barcode, r.name, r.qty, r.u_price, r.u_cost, r.sales, r.cost, r.loss, r.reason];
+      var disc = (r.disc != null) ? r.disc : Math.max(0, Math.round(((r.qty * r.u_price) - r.sales) * 100) / 100);
+      return [r.sono, r.sodate, r.branch_code, r.branch_name, r.dm, r.iprod, r.parcode || r.barcode, r.name, r.qty, r.u_price, r.u_cost, disc, r.sales, r.cost, r.loss, r.reason];
     });
-    exportCSV(['เลขที่บิล', 'วันที่', 'รหัสสาขา', 'ชื่อสาขา', 'ผู้จัดการเขต (DM)', 'รหัสสินค้า', 'พาร์โค้ด', 'ชื่อสินค้า', 'จำนวนขาย', 'ราคาขายป้าย', 'ต้นทุนต่อหน่วย', 'ยอดขายสุทธิ', 'ต้นทุนรวม', 'ผลขาดทุน', 'สาเหตุ'], rows, 'audit_transaction_anomalies_' + new Date().toISOString().slice(0,10) + '.csv');
+    exportCSV(['เลขที่บิล', 'วันที่', 'รหัสสาขา', 'ชื่อสาขา', 'ผู้จัดการเขต (DM)', 'รหัสสินค้า', 'พาร์โค้ด', 'ชื่อสินค้า', 'จำนวนขาย', 'ราคาขายป้าย', 'ต้นทุนต่อหน่วย', 'ส่วนลด', 'ยอดขายสุทธิ', 'ต้นทุนรวม', 'ผลขาดทุน', 'สาเหตุ'], rows, 'audit_transaction_anomalies_' + new Date().toISOString().slice(0,10) + '.csv');
   } else if (AUDIT_SUBVIEW === 'master') {
     var masterList = (DATA.anomalies || {}).master_cost_over_price || [];
     var rows = masterList.map(function(r){
@@ -3231,7 +3245,7 @@ function renderAuditTab() {
   if (!DATA || !DATA.anomalies) {
     var tbody = document.getElementById('tbody-audit-tx');
     if (tbody && !tbody.innerHTML) {
-      tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:30px;color:var(--muted);">⏳ กำลังโหลดข้อมูลการตรวจสอบ...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;padding:30px;color:var(--muted);">⏳ กำลังโหลดข้อมูลการตรวจสอบ...</td></tr>';
     }
     return;
   }
@@ -3464,7 +3478,13 @@ function filterBranch901AnomTable() {
     return true;
   });
 
-    var sc = B901_ANOM_SORT.col, sdir = B901_ANOM_SORT.dir;
+  filtered.forEach(function(a){
+    if (a.disc == null) {
+      a.disc = Math.max(0, Math.round(((a.qty * a.u_price) - a.sales) * 100) / 100);
+    }
+  });
+
+  var sc = B901_ANOM_SORT.col, sdir = B901_ANOM_SORT.dir;
   filtered.sort(function(a, b){
     var va = a[sc], vb = b[sc];
     if (typeof va === 'string') return sdir * va.localeCompare(vb);
@@ -3485,6 +3505,7 @@ function filterBranch901AnomTable() {
       '<td class="r" style="font-weight:700;padding:8px 12px;">' + fmt(a.qty) + '</td>' +
       '<td class="r" style="padding:8px 12px;">฿' + fmt(a.u_price) + '</td>' +
       '<td class="r" style="color:#dc2626;font-weight:600;padding:8px 12px;">฿' + fmt(a.u_cost) + '</td>' +
+      '<td class="r gt-disc" style="font-weight:700;color:#fb923c;padding:8px 12px;">฿' + fmt(a.disc) + '</td>' +
       '<td class="r" style="font-weight:700;color:var(--blue);padding:8px 12px;">฿' + fmt(a.sales) + '</td>' +
       '<td class="r" style="padding:8px 12px;">฿' + fmt(a.cost) + '</td>' +
       '<td class="r" style="color:#dc2626;font-weight:800;font-size:13px;padding:8px 12px;">-฿' + fmt(a.loss) + '</td>' +
@@ -3499,6 +3520,7 @@ function filterBranch901AnomTable() {
   var totS = filtered.reduce(function(a, r){ return a + (r.sales || 0); }, 0);
   var totC = filtered.reduce(function(a, r){ return a + (r.cost || 0); }, 0);
   var totL = filtered.reduce(function(a, r){ return a + (r.loss || 0); }, 0);
+  var totD = filtered.reduce(function(a, r){ return a + (r.disc || 0); }, 0);
 
   var tfoot = document.getElementById('tfoot-b901-anom');
   if (tfoot) {
@@ -3507,28 +3529,12 @@ function filterBranch901AnomTable() {
       '<td class="r gt-qty" style="background:#0f172a !important;color:#fde047 !important;padding:12px;font-weight:800;font-size:13.5px;">' + fmt(totQ) + '</td>' +
       '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;">—</td>' +
       '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;">—</td>' +
+      '<td class="r gt-disc" style="background:#0f172a !important;color:#fb923c !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totD) + '</td>' +
       '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totS) + '</td>' +
       '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totC) + '</td>' +
       '<td class="r gt-loss" style="background:#0f172a !important;color:#f87171 !important;font-size:14px;padding:12px;font-weight:800;">-฿' + fmt(totL) + '</td>' +
       '<td style="background:#0f172a !important;color:#ffffff !important;padding:12px;"><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-weight:800;background:#dc2626 !important;color:#ffffff !important;font-size:12px;">ขาดทุนรวม -฿' + fmt(totL) + '</span></td>' +
     '</tr>';
-  }
-}
-
-function exportBranch901CSV() {
-  var b901 = DATA.branch_901 || {};
-  if (B901_SUBVIEW === 'prods') {
-    var prods = b901.products_mtd || [];
-    var rows = prods.map(function(p){
-      return [p.iprod, p.parcode, p.name, p.group_name, p.qty, p.sales, p.cost, p.gp, p.gp_pct];
-    });
-    exportCSV(['รหัสสินค้า', 'พาร์โค้ด', 'ชื่อสินค้า', 'หมวดหมู่', 'จำนวนขาย', 'Sales', 'Cost', 'GP', 'GP%'], rows, 'branch_901_products_' + new Date().toISOString().slice(0,10) + '.csv');
-  } else {
-    var anom = b901.anomalies || [];
-    var rows = anom.map(function(a){
-      return [a.sono, a.sodate, a.iprod, a.parcode, a.name, a.qty, a.u_price, a.u_cost, a.sales, a.cost, a.loss, a.reason];
-    });
-    exportCSV(['เลขที่บิล', 'วันที่', 'รหัสสินค้า', 'พาร์โค้ด', 'ชื่อสินค้า', 'จำนวนขาย', 'ราคาขายป้าย', 'ต้นทุนต่อหน่วย', 'ยอดขายสุทธิ', 'ต้นทุนรวม', 'ผลขาดทุน', 'สาเหตุ'], rows, 'branch_901_anomalies_' + new Date().toISOString().slice(0,10) + '.csv');
   }
 }
 
