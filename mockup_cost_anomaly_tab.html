@@ -271,6 +271,7 @@
             <th data-col="qty" class="r">จำนวน (soqty)</th>
             <th data-col="u_price" class="r">ราคาป้าย/หน่วย</th>
             <th data-col="u_cost" class="r">ทุน/หน่วย</th>
+            <th data-col="disc" class="r" style="color:#fb923c;">ส่วนลด (disc)</th>
             <th data-col="sales" class="r" style="color:#60a5fa;">ยอดขายสุทธิ (solineamt)</th>
             <th data-col="cost" class="r">ต้นทุนรวม (cost)</th>
             <th data-col="loss" class="r sort-desc" style="color:#f87171;">ขาดทุน (GP)</th>
@@ -387,28 +388,46 @@ function collapseAllTree() {
 
 function renderTxTable(list) {
   var tbody = document.getElementById('tbody-tx');
+  var sc = SORT_STATE.col, sdir = SORT_STATE.dir;
+
+  // Group RM -> DM -> Bills
   var rmGroups = {};
-  var grandQty = 0, grandSales = 0, grandCost = 0, grandLoss = 0;
+  var grandQty = 0, grandSales = 0, grandCost = 0, grandLoss = 0, grandDisc = 0;
   var allStores = new Set();
 
   list.forEach(function(r){
     var rm = r.rm || 'ไม่ระบุ RM';
     var dm = r.dm || 'ไม่ระบุ DM';
     var br = r.branch_code;
+    var disc = (r.disc != null) ? r.disc : Math.max(0, Math.round(((r.qty * r.u_price) - r.sales) * 100) / 100);
+    r.disc = disc;
 
     if (!rmGroups[rm]) {
-      rmGroups[rm] = { rm: rm, dms: {}, qty: 0, sales: 0, cost: 0, loss: 0, billsCount: 0, stores: new Set() };
+      rmGroups[rm] = {
+        rm: rm,
+        dms: {},
+        qty: 0, sales: 0, cost: 0, loss: 0, disc: 0,
+        billsCount: 0,
+        stores: new Set()
+      };
     }
     var rNode = rmGroups[rm];
     rNode.qty += (r.qty || 0);
     rNode.sales += (r.sales || 0);
     rNode.cost += (r.cost || 0);
     rNode.loss += (r.loss || 0);
+    rNode.disc += disc;
     rNode.billsCount++;
     rNode.stores.add(br);
 
     if (!rNode.dms[dm]) {
-      rNode.dms[dm] = { dm: dm, rm: rm, bills: [], qty: 0, sales: 0, cost: 0, loss: 0, stores: new Set() };
+      rNode.dms[dm] = {
+        dm: dm,
+        rm: rm,
+        bills: [],
+        qty: 0, sales: 0, cost: 0, loss: 0, disc: 0,
+        stores: new Set()
+      };
     }
     var dNode = rNode.dms[dm];
     dNode.bills.push(r);
@@ -416,20 +435,22 @@ function renderTxTable(list) {
     dNode.sales += (r.sales || 0);
     dNode.cost += (r.cost || 0);
     dNode.loss += (r.loss || 0);
+    dNode.disc += disc;
     dNode.stores.add(br);
 
     grandQty += (r.qty || 0);
     grandSales += (r.sales || 0);
     grandCost += (r.cost || 0);
     grandLoss += (r.loss || 0);
+    grandDisc += disc;
     allStores.add(br);
   });
 
-  var sc = MOCK_TX_SORT.col, sdir = MOCK_TX_SORT.dir;
   function getMockVal(node, col) {
     if (col === 'name') return node.rm || node.dm || node.name || '';
     if (col === 'loss') return node.loss || 0;
     if (col === 'sales') return node.sales || 0;
+    if (col === 'disc') return node.disc || 0;
     if (col === 'cost') return node.cost || 0;
     if (col === 'qty') return node.qty || 0;
     if (col === 'u_price') return node.u_price || 0;
@@ -444,6 +465,7 @@ function renderTxTable(list) {
     if (col === 'reason') return node.reason || '';
     return node[col] || 0;
   }
+
   var sortedRMs = Object.keys(rmGroups).sort(function(a,b){
     var va = getMockVal(rmGroups[a], sc), vb = getMockVal(rmGroups[b], sc);
     if (typeof va === 'string') return sdir * va.localeCompare(vb);
@@ -455,14 +477,14 @@ function renderTxTable(list) {
 
   sortedRMs.forEach(function(rmName, rmIdx){
     var rData = rmGroups[rmName];
-    var rmKey = 'mock_rm_' + rmIdx;
+    var rmKey = 'rm_' + rmIdx;
     if (TREE_EXPANDED[rmKey] === undefined) {
       TREE_EXPANDED[rmKey] = (rmIdx === 0);
     }
     var isRmOpen = TREE_EXPANDED[rmKey];
 
     // RM row
-    htmlRows.push('<tr class="mock-rm-row" style="background:#e2e8f0;cursor:pointer;font-weight:800;border-bottom:2px solid #94a3b8;" onclick="toggleTree(\'' + rmKey + '\')">' +
+    htmlRows.push('<tr class="mock-rm-row" style="background:#e2e8f0;cursor:pointer;font-weight:800;border-bottom:2px solid #94a3b8;border-top:2px solid #94a3b8;" onclick="toggleTree(\'' + rmKey + '\')">' +
       '<td style="padding:10px 12px;"><span id="icon_' + rmKey + '" style="display:inline-block;width:18px;color:#1e3a8a;font-weight:800;">' + (isRmOpen ? '▼' : '▶') + '</span> <b>ภาค [RM] ' + rmName + '</b> <span style="font-size:11px;color:#475569;font-weight:500;">(' + rData.stores.size + ' สาขา, ' + rData.billsCount + ' บิล)</span></td>' +
       '<td style="color:var(--muted);">—</td>' +
       '<td><b>' + rData.stores.size + ' สาขา</b></td>' +
@@ -473,6 +495,7 @@ function renderTxTable(list) {
       '<td class="r" style="font-weight:800;">' + fmt(rData.qty) + '</td>' +
       '<td class="r" style="color:var(--muted);">—</td>' +
       '<td class="r" style="color:var(--muted);">—</td>' +
+      '<td class="r gt-disc" style="font-weight:800;color:#fb923c;">฿' + fmt(rData.disc) + '</td>' +
       '<td class="r" style="font-weight:800;color:var(--blue);">฿' + fmt(rData.sales) + '</td>' +
       '<td class="r" style="font-weight:800;">฿' + fmt(rData.cost) + '</td>' +
       '<td class="r" style="font-weight:800;color:#dc2626;">-฿' + fmt(rData.loss) + '</td>' +
@@ -506,6 +529,7 @@ function renderTxTable(list) {
         '<td class="r" style="font-weight:700;">' + fmt(dData.qty) + '</td>' +
         '<td class="r" style="color:var(--muted);">—</td>' +
         '<td class="r" style="color:var(--muted);">—</td>' +
+        '<td class="r gt-disc" style="font-weight:700;color:#fb923c;">฿' + fmt(dData.disc) + '</td>' +
         '<td class="r" style="font-weight:700;color:var(--blue);">฿' + fmt(dData.sales) + '</td>' +
         '<td class="r" style="font-weight:700;">฿' + fmt(dData.cost) + '</td>' +
         '<td class="r" style="font-weight:800;color:#dc2626;">-฿' + fmt(dData.loss) + '</td>' +
@@ -535,6 +559,7 @@ function renderTxTable(list) {
           '<td class="r" style="font-weight:700;">' + fmt(r.qty) + '</td>' +
           '<td class="r">฿' + fmt(r.u_price) + '</td>' +
           '<td class="r" style="color:#dc2626;font-weight:600;">฿' + fmt(r.u_cost) + '</td>' +
+          '<td class="r gt-disc" style="font-weight:700;color:#fb923c;">฿' + fmt(r.disc) + '</td>' +
           '<td class="r" style="font-weight:700;color:var(--blue);">฿' + fmt(r.sales) + '</td>' +
           '<td class="r">฿' + fmt(r.cost) + '</td>' +
           '<td class="r" style="color:#dc2626;font-weight:800;">-฿' + fmt(r.loss) + '</td>' +
@@ -554,6 +579,7 @@ function renderTxTable(list) {
       '<td class="r gt-qty" style="background:#0f172a !important;color:#fde047 !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">' + fmt(grandQty) + ' ชิ้น</td>' +
       '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;white-space:nowrap;">—</td>' +
       '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;white-space:nowrap;">—</td>' +
+      '<td class="r gt-disc" style="background:#0f172a !important;color:#fb923c !important;padding:12px;font-weight:800;font-size:13.5px;white-space:nowrap;">฿' + fmt(grandDisc) + '</td>' +
       '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">฿' + fmt(grandSales) + '</td>' +
       '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">฿' + fmt(grandCost) + '</td>' +
       '<td class="r gt-loss" style="background:#0f172a !important;color:#f87171 !important;padding:12px;font-weight:800;font-size:14px;white-space:nowrap;">-฿' + fmt(grandLoss) + '</td>' +
@@ -563,100 +589,6 @@ function renderTxTable(list) {
   document.getElementById('tx-count-label').textContent = 'แสดง ' + sortedRMs.length + ' ภาค (' + list.length + ' รายการ)';
 }
 
-function renderMasterTable(list) {
-  var sc = MOCK_MASTER_SORT.col, sdir = MOCK_MASTER_SORT.dir;
-  var sorted = list.slice().sort(function(a, b){
-    var va = a[sc], vb = b[sc];
-    if (typeof va === 'string') return sdir * va.localeCompare(vb);
-    if (va == null) va = 0; if (vb == null) vb = 0;
-    return sdir * (va - vb);
-  });
-  var tbody = document.getElementById('tbody-master');
-  tbody.innerHTML = sorted.map(function(r){
-    var remark = 'ตั้งราคาขายต่ำกว่าต้นทุน';
-    if (r.price3 <= 1) remark = 'ของสมนาคุณ/ของแถม (ตั้งราคา ฿1 หรือ ฿0.01)';
-    else if (r.diff_pct > 50) remark = 'ต้นทุนปรับสูงขึ้นผิดปกติ หรือคีย์หน่วยผิด';
-
-    return '<tr>' +
-      '<td>' + r.iprod + '</td>' +
-      '<td style="font-family:monospace;font-weight:600;">' + (r.parcode || r.iprod) + '</td>' +
-      '<td style="font-weight:600;">' + r.name + '</td>' +
-      '<td><span style="background:#f1f5f9;color:#334155;padding:2px 6px;border-radius:4px;font-weight:600;">' + (r.group_name || r.group) + '</span></td>' +
-      '<td class="r" style="font-weight:700;">฿' + fmt(r.price3) + '</td>' +
-      '<td class="r" style="color:#dc2626;font-weight:700;">฿' + fmt(r.cost) + '</td>' +
-      '<td class="r" style="color:#dc2626;font-weight:800;">+฿' + fmt(r.diff) + '</td>' +
-      '<td class="r" style="color:#dc2626;font-weight:700;">+' + r.diff_pct.toFixed(1) + '%</td>' +
-      '<td><span class="tag ' + (r.price3 <= 1 ? 'tag-warning' : 'tag-danger') + '">' + remark + '</span></td>' +
-    '</tr>';
-  }).join('');
-  document.getElementById('master-count-label').textContent = 'แสดง ' + list.length + ' รายการ';
-  var totDiff = list.reduce(function(a, r){ return a + (r.diff || 0); }, 0);
-  var tfoot = document.getElementById('tfoot-master');
-  if (tfoot) {
-    tfoot.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;font-size:13px;border-top:3px solid #38bdf8 !important;">' +
-      '<td colspan="4" style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;font-size:13.5px;"><b>📌 Grand Total</b> (รวมสินค้าต้นทุนสูงกว่าราคาป้าย ' + list.length + ' รายการ)</td>' +
-      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;">—</td>' +
-      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;">—</td>' +
-      '<td class="r gt-loss" style="background:#0f172a !important;color:#f87171 !important;padding:12px;font-weight:800;font-size:14px;">+฿' + fmt(totDiff) + '</td>' +
-      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;">—</td>' +
-      '<td style="background:#0f172a !important;color:#ffffff !important;padding:12px;"><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-weight:800;background:#dc2626 !important;color:#ffffff !important;font-size:12px;">ส่วนต่างต้นทุนเกินราคาขาย +฿' + fmt(totDiff) + '</span></td>' +
-    '</tr>';
-  }
-}
-
-function filterTxTable() {
-  var q = (document.getElementById('tx-search').value || '').toLowerCase().trim();
-  var dm = (document.getElementById('tx-dm').value || '');
-
-  var filtered = TX_DATA.filter(function(r){
-    if (dm && r.dm !== dm) return false;
-    if (q) {
-      var match = (r.sono || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.parcode || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.iprod || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.name || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.branch_name || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.branch_code || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.dm || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.rm || '').toLowerCase().indexOf(q) !== -1;
-      if (!match) return false;
-    }
-    return true;
-  });
-  renderTxTable(filtered);
-}
-
-function filterMasterTable() {
-  var q = (document.getElementById('master-search').value || '').toLowerCase().trim();
-  var filtered = MASTER_DATA.filter(function(r){
-    if (q) {
-      var match = (r.parcode || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.iprod || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.name || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.group_name || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.group || '').toLowerCase().indexOf(q) !== -1;
-      if (!match) return false;
-    }
-    return true;
-  });
-  renderMasterTable(filtered);
-}
-
-// Initialize DM dropdown
-var dms = new Set();
-TX_DATA.forEach(function(x){ if(x.dm) dms.add(x.dm); });
-var dmSel = document.getElementById('tx-dm');
-Array.from(dms).sort().forEach(function(d){
-  var opt = document.createElement('option');
-  opt.value = d; opt.textContent = d;
-  dmSel.appendChild(opt);
-});
-
-initMockSort('tbl-tx', MOCK_TX_SORT, function(){ filterTxTable(); });
-initMockSort('tbl-master', MOCK_MASTER_SORT, function(){ filterMasterTable(); });
-
-renderTxTable(TX_DATA);
-renderMasterTable(MASTER_DATA);
 </script>
 </body>
 </html>
