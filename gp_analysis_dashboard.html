@@ -92,6 +92,30 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
   .ai-modal-body { box-shadow: none !important; max-height: none !important; overflow: visible !important; width: 100% !important; max-width: none !important; padding: 0 !important; }
   .ai-close, .ai-btn { display: none !important; }
 }
+
+/* ==================== GLOBAL SINGLE-LINE (NOWRAP) FOR ALL TABLES ==================== */
+table, .table-card, .tab-panel { overflow-x: auto !important; }
+table th, table td,
+thead th, tbody td, tfoot td,
+.prod-detail-tbl th, .prod-detail-tbl td,
+#store-tbl th, #store-tbl td,
+#prod-tbl th, #prod-tbl td,
+#fest-tbl th, #fest-tbl td,
+#fest-store-tbl th, #fest-store-tbl td,
+#sim-budget-tbl th, #sim-budget-tbl td,
+#tbl-audit-tx th, #tbl-audit-tx td,
+#tbl-audit-master th, #tbl-audit-master td,
+#tbl-audit-lowgp th, #tbl-audit-lowgp td,
+#panel-branch901 th, #panel-branch901 td {
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+#prod-tbl th:nth-child(2), #prod-tbl td:nth-child(2) {
+  max-width: none !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+}
+
 </style>
 </head>
 <body>
@@ -969,14 +993,14 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
   <div id="view-audit-tx">
     <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
       <label><b>ค้นหา:</b></label>
-      <input type="text" id="audit-tx-search" placeholder="เลขที่บิล / บาร์โค้ด / ชื่อสินค้า / สาขา..." style="width:280px;" oninput="filterAuditTxTable()">
+      <input type="text" id="audit-tx-search" placeholder="เลขที่บิล / พาร์โค้ด / ชื่อสินค้า / สาขา / DM..." style="width:280px;" oninput="filterAuditTxTable()">
       
-      <label><b>ภาค (RM):</b></label>
-      <select id="audit-tx-rm" onchange="filterAuditTxTable()">
-        <option value="">ทั้งหมด</option>
+      <label><b>ผู้จัดการเขต (DM):</b></label>
+      <select id="audit-tx-dm" onchange="filterAuditTxTable()">
+        <option value="">ทั้งหมด (ทุกเขต DM)</option>
       </select>
 
-      <label><b>ประเภทข้อผิดพลาด:</b></label>
+      <label><b>สาเหตุข้อผิดพลาด:</b></label>
       <select id="audit-tx-reason" onchange="filterAuditTxTable()">
         <option value="">ทุกประเภท</option>
         <option value="ยิงขาย 0 บาท">ยิงขาย 0 บาท (แจกฟรี 100%)</option>
@@ -985,17 +1009,21 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
         <option value="ต้นทุนต่อหน่วยสูงกว่าราคาขาย">ต้นทุนต่อหน่วยสูงกว่าราคาขาย</option>
       </select>
 
-      <span style="color:var(--muted);margin-left:auto;font-size:12px;" id="audit-tx-count-label">แสดง 0 รายการ</span>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+        <button class="btn" style="background:#475569;color:#fff;font-size:12px;padding:6px 12px;" onclick="expandAllAuditTree()">➕ ขยายทั้งหมด</button>
+        <button class="btn" style="background:#64748b;color:#fff;font-size:12px;padding:6px 12px;" onclick="collapseAllAuditTree()">➖ หุบทั้งหมด</button>
+        <span style="color:var(--muted);font-size:12px;" id="audit-tx-count-label">แสดง 0 รายการ</span>
+      </div>
     </div>
 
     <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;font-size:12.5px;" id="tbl-audit-tx">
         <thead>
           <tr style="background:#0f172a;color:#fff;">
-            <th style="padding:10px 12px;white-space:nowrap;">เลขที่บิล (sono)</th>
+            <th style="padding:10px 12px;white-space:nowrap;">ลำดับชั้น / เลขที่บิล (sono)</th>
             <th style="padding:10px 12px;white-space:nowrap;">วันที่ (sodate)</th>
             <th style="padding:10px 12px;white-space:nowrap;">สาขา (sotowhs)</th>
-            <th style="padding:10px 12px;white-space:nowrap;">DM / RM</th>
+            <th style="padding:10px 12px;white-space:nowrap;color:#38bdf8;">ผู้จัดการเขต (DM)</th>
             <th style="padding:10px 12px;white-space:nowrap;">รหัส (iprod)</th>
             <th style="padding:10px 12px;white-space:nowrap;">พาร์โค้ด (parcode)</th>
             <th style="padding:10px 12px;white-space:nowrap;">ชื่อสินค้า (idesc)</th>
@@ -1009,6 +1037,7 @@ tr.prod-row:hover{background:rgba(59,130,246,0.08)}
           </tr>
         </thead>
         <tbody id="tbody-audit-tx"></tbody>
+        <tfoot id="tfoot-audit-tx"></tfoot>
       </table>
     </div>
   </div>
@@ -2600,6 +2629,40 @@ function switchAuditSubView(v) {
   if (activeBtn) { activeBtn.style.background='#1e293b'; activeBtn.style.color='#fff'; activeBtn.style.fontWeight='700'; }
 }
 
+
+var AUDIT_TREE_EXPANDED = {};
+
+function toggleAuditTreeRow(dmKey) {
+  AUDIT_TREE_EXPANDED[dmKey] = !AUDIT_TREE_EXPANDED[dmKey];
+  var isOpen = AUDIT_TREE_EXPANDED[dmKey];
+  var rows = document.querySelectorAll('.child-of_' + dmKey);
+  rows.forEach(function(r){
+    r.style.display = isOpen ? '' : 'none';
+  });
+  var icon = document.getElementById('icon_' + dmKey);
+  if (icon) icon.textContent = isOpen ? '▼' : '▶';
+}
+
+function expandAllAuditTree() {
+  for (var k in AUDIT_TREE_EXPANDED) {
+    AUDIT_TREE_EXPANDED[k] = true;
+    var icon = document.getElementById('icon_' + k);
+    if (icon) icon.textContent = '▼';
+  }
+  var childRows = document.querySelectorAll('.audit-child-row');
+  childRows.forEach(function(r){ r.style.display = ''; });
+}
+
+function collapseAllAuditTree() {
+  for (var k in AUDIT_TREE_EXPANDED) {
+    AUDIT_TREE_EXPANDED[k] = false;
+    var icon = document.getElementById('icon_' + k);
+    if (icon) icon.textContent = '▶';
+  }
+  var childRows = document.querySelectorAll('.audit-child-row');
+  childRows.forEach(function(r){ r.style.display = 'none'; });
+}
+
 function renderAuditTab() {
   var anomalies = DATA.anomalies || {};
   var txList = anomalies.transactions || [];
@@ -2616,15 +2679,15 @@ function renderAuditTab() {
   if (document.getElementById('audit-kpi-heavy-disc')) document.getElementById('audit-kpi-heavy-disc').textContent = fmt(heavyDiscCount) + ' รายการ';
   if (document.getElementById('audit-kpi-stores-count')) document.getElementById('audit-kpi-stores-count').textContent = storeSet.size + ' สาขา';
 
-  // Populate RM filter dropdown
-  var rmSel = document.getElementById('audit-tx-rm');
-  if (rmSel && rmSel.options.length <= 1) {
-    var rms = new Set();
-    txList.forEach(function(x){ if (x.rm) rms.add(x.rm); });
-    Array.from(rms).sort().forEach(function(rm){
+  // Populate DM dropdown (DM only!)
+  var dmSel = document.getElementById('audit-tx-dm');
+  if (dmSel && dmSel.options.length <= 1) {
+    var dms = new Set();
+    txList.forEach(function(x){ if (x.dm) dms.add(x.dm); });
+    Array.from(dms).sort().forEach(function(dm){
       var opt = document.createElement('option');
-      opt.value = rm; opt.textContent = rm;
-      rmSel.appendChild(opt);
+      opt.value = dm; opt.textContent = dm;
+      dmSel.appendChild(opt);
     });
   }
 
@@ -2637,52 +2700,133 @@ function filterAuditTxTable() {
   var txList = (DATA.anomalies || {}).transactions || [];
   var q = (document.getElementById('audit-tx-search') || {}).value || '';
   q = q.toLowerCase().trim();
-  var rm = (document.getElementById('audit-tx-rm') || {}).value || '';
+  var dmFilter = (document.getElementById('audit-tx-dm') || {}).value || '';
   var reason = (document.getElementById('audit-tx-reason') || {}).value || '';
 
   var filtered = txList.filter(function(r){
-    if (rm && r.rm !== rm) return false;
+    if (dmFilter && r.dm !== dmFilter) return false;
     if (reason && (r.reason || '').indexOf(reason) === -1) return false;
     if (q) {
       var match = (r.sono || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.barcode || '').toLowerCase().indexOf(q) !== -1 ||
+                  (r.parcode || '').toLowerCase().indexOf(q) !== -1 ||
                   (r.iprod || '').toLowerCase().indexOf(q) !== -1 ||
                   (r.name || '').toLowerCase().indexOf(q) !== -1 ||
                   (r.branch_name || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.branch_code || '').toLowerCase().indexOf(q) !== -1;
+                  (r.branch_code || '').toLowerCase().indexOf(q) !== -1 ||
+                  (r.dm || '').toLowerCase().indexOf(q) !== -1;
       if (!match) return false;
     }
     return true;
   });
 
+  // Group by DM for Hierarchical Tree
+  var dmGroups = {};
+  var grandQty = 0, grandSales = 0, grandCost = 0, grandLoss = 0;
+
+  filtered.forEach(function(r){
+    var dm = r.dm || 'ไม่ระบุ DM';
+    if (!dmGroups[dm]) {
+      dmGroups[dm] = {
+        dm: dm,
+        bills: [],
+        qty: 0,
+        sales: 0,
+        cost: 0,
+        loss: 0,
+        stores: new Set()
+      };
+    }
+    dmGroups[dm].bills.push(r);
+    dmGroups[dm].qty += (r.qty || 0);
+    dmGroups[dm].sales += (r.sales || 0);
+    dmGroups[dm].cost += (r.cost || 0);
+    dmGroups[dm].loss += (r.loss || 0);
+    dmGroups[dm].stores.add(r.branch_code);
+
+    grandQty += (r.qty || 0);
+    grandSales += (r.sales || 0);
+    grandCost += (r.cost || 0);
+    grandLoss += (r.loss || 0);
+  });
+
+  var sortedDMs = Object.keys(dmGroups).sort(function(a, b){
+    return dmGroups[b].loss - dmGroups[a].loss;
+  });
+
   var tbody = document.getElementById('tbody-audit-tx');
   if (!tbody) return;
 
-  tbody.innerHTML = filtered.map(function(r){
-    var tagClass = 'background:#e0f2fe;color:#0284c7;';
-    if ((r.reason || '').indexOf('0 บาท') !== -1) tagClass = 'background:#fee2e2;color:#dc2626;';
-    else if ((r.reason || '').indexOf('>50%') !== -1) tagClass = 'background:#fef3c7;color:#d97706;';
+  var htmlRows = [];
+  sortedDMs.forEach(function(dmName, idx){
+    var g = dmGroups[dmName];
+    var dmKey = 'dm_' + idx;
+    if (AUDIT_TREE_EXPANDED[dmKey] === undefined) {
+      AUDIT_TREE_EXPANDED[dmKey] = (sortedDMs.length <= 3); // expand top 3 by default
+    }
+    var isOpen = AUDIT_TREE_EXPANDED[dmKey];
 
-    return '<tr style="border-bottom:1px solid var(--border);">' +
-      '<td style="font-family:monospace;font-weight:700;color:var(--blue);padding:8px 12px;">' + r.sono + '</td>' +
-      '<td style="white-space:nowrap;padding:8px 12px;">' + r.sodate + '</td>' +
-      '<td style="padding:8px 12px;"><b>[' + r.branch_code + ']</b> ' + r.branch_name + '</td>' +
-      '<td style="font-size:11.5px;color:var(--muted);padding:8px 12px;">' + (r.dm || '—') + '<br>' + (r.rm || '—') + '</td>' +
-      '<td style="padding:8px 12px;">' + r.iprod + '</td>' +
-      '<td style="font-family:monospace;padding:8px 12px;font-weight:600;">' + (r.parcode || r.barcode || r.iprod) + '</td>' +
-      '<td style="font-weight:600;max-width:240px;padding:8px 12px;">' + r.name + '</td>' +
-      '<td class="r" style="font-weight:700;padding:8px 12px;">' + fmt(r.qty) + '</td>' +
-      '<td class="r" style="padding:8px 12px;">฿' + fmt(r.u_price) + '</td>' +
-      '<td class="r" style="color:#dc2626;font-weight:600;padding:8px 12px;">฿' + fmt(r.u_cost) + '</td>' +
-      '<td class="r" style="font-weight:700;color:var(--blue);padding:8px 12px;">฿' + fmt(r.sales) + '</td>' +
-      '<td class="r" style="padding:8px 12px;">฿' + fmt(r.cost) + '</td>' +
-      '<td class="r" style="color:#dc2626;font-weight:800;font-size:13px;padding:8px 12px;">-฿' + fmt(r.loss) + '</td>' +
-      '<td style="padding:8px 12px;"><span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;' + tagClass + '">' + r.reason + '</span></td>' +
+    // Level 1: DM Row
+    htmlRows.push('<tr style="background:#f1f5f9;cursor:pointer;font-weight:700;border-bottom:2px solid #cbd5e1;border-top:1px solid #cbd5e1;" onclick="toggleAuditTreeRow(\'' + dmKey + '\')">' +
+      '<td style="padding:9px 12px;color:#1e293b;white-space:nowrap;"><span id="icon_' + dmKey + '" style="display:inline-block;width:18px;color:#2563eb;font-weight:800;">' + (isOpen ? '▼' : '▶') + '</span> <b>[เขต DM] ' + dmName + '</b> <span style="font-size:11px;color:var(--muted);font-weight:500;">(' + g.bills.length + ' บิลผิดปกติ)</span></td>' +
+      '<td style="padding:9px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
+      '<td style="padding:9px 12px;white-space:nowrap;"><b>' + g.stores.size + ' สาขา</b></td>' +
+      '<td style="padding:9px 12px;color:#2563eb;font-weight:700;white-space:nowrap;">' + dmName + '</td>' +
+      '<td style="padding:9px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
+      '<td style="padding:9px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
+      '<td style="padding:9px 12px;color:var(--muted);white-space:nowrap;">สรุปรวม ' + g.bills.length + ' รายการในเขต</td>' +
+      '<td class="r" style="padding:9px 12px;font-weight:700;white-space:nowrap;">' + fmt(g.qty) + '</td>' +
+      '<td class="r" style="padding:9px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
+      '<td class="r" style="padding:9px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
+      '<td class="r" style="padding:9px 12px;font-weight:700;color:var(--blue);white-space:nowrap;">฿' + fmt(g.sales) + '</td>' +
+      '<td class="r" style="padding:9px 12px;font-weight:700;white-space:nowrap;">฿' + fmt(g.cost) + '</td>' +
+      '<td class="r" style="padding:9px 12px;font-weight:800;color:#dc2626;white-space:nowrap;">-฿' + fmt(g.loss) + '</td>' +
+      '<td style="padding:9px 12px;white-space:nowrap;"><span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;background:#fee2e2;color:#dc2626;">' + g.bills.length + ' บิลขาดทุน</span></td>' +
+    '</tr>');
+
+    // Level 2: Individual Bills under this DM
+    g.bills.forEach(function(r){
+      var tagClass = 'background:#e0f2fe;color:#0284c7;';
+      if ((r.reason || '').indexOf('0 บาท') !== -1) tagClass = 'background:#fee2e2;color:#dc2626;';
+      else if ((r.reason || '').indexOf('>50%') !== -1) tagClass = 'background:#fef3c7;color:#d97706;';
+
+      htmlRows.push('<tr class="audit-child-row child-of_' + dmKey + '" style="border-bottom:1px solid var(--border);' + (isOpen ? '' : 'display:none;') + '">' +
+        '<td style="padding:7px 12px 7px 32px;font-family:monospace;font-weight:700;color:var(--blue);white-space:nowrap;">' + r.sono + '</td>' +
+        '<td style="padding:7px 12px;white-space:nowrap;">' + r.sodate + '</td>' +
+        '<td style="padding:7px 12px;white-space:nowrap;"><b>[' + r.branch_code + ']</b> ' + r.branch_name + '</td>' +
+        '<td style="padding:7px 12px;font-weight:600;color:var(--text);white-space:nowrap;">' + (r.dm || '—') + '</td>' +
+        '<td style="padding:7px 12px;white-space:nowrap;">' + r.iprod + '</td>' +
+        '<td style="padding:7px 12px;font-family:monospace;font-weight:600;white-space:nowrap;">' + (r.parcode || r.iprod) + '</td>' +
+        '<td style="padding:7px 12px;font-weight:600;white-space:nowrap;">' + r.name + '</td>' +
+        '<td class="r" style="padding:7px 12px;font-weight:700;white-space:nowrap;">' + fmt(r.qty) + '</td>' +
+        '<td class="r" style="padding:7px 12px;white-space:nowrap;">฿' + fmt(r.u_price) + '</td>' +
+        '<td class="r" style="padding:7px 12px;color:#dc2626;font-weight:600;white-space:nowrap;">฿' + fmt(r.u_cost) + '</td>' +
+        '<td class="r" style="padding:7px 12px;font-weight:700;color:var(--blue);white-space:nowrap;">฿' + fmt(r.sales) + '</td>' +
+        '<td class="r" style="padding:7px 12px;white-space:nowrap;">฿' + fmt(r.cost) + '</td>' +
+        '<td class="r" style="padding:7px 12px;color:#dc2626;font-weight:800;white-space:nowrap;">-฿' + fmt(r.loss) + '</td>' +
+        '<td style="padding:7px 12px;white-space:nowrap;"><span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;' + tagClass + '">' + r.reason + '</span></td>' +
+      '</tr>');
+    });
+  });
+
+  tbody.innerHTML = htmlRows.join('');
+
+  // Render Grand Total Footer
+  var tfoot = document.getElementById('tfoot-audit-tx');
+  if (tfoot) {
+    tfoot.innerHTML = '<tr style="background:#0f172a;color:#fff;font-weight:800;font-size:13px;border-top:3px solid #38bdf8;">' +
+      '<td colspan="7" style="padding:10px 14px;white-space:nowrap;"> Grand Total (รวมทั้งสิ้น ' + sortedDMs.length + ' เขต DM, ' + filtered.length + ' บิลผิดปกติ)</td>' +
+      '<td class="r" style="padding:10px 12px;color:#fde047;white-space:nowrap;">' + fmt(grandQty) + ' ชิ้น</td>' +
+      '<td class="r" style="padding:10px 12px;white-space:nowrap;">—</td>' +
+      '<td class="r" style="padding:10px 12px;white-space:nowrap;">—</td>' +
+      '<td class="r" style="padding:10px 12px;color:#60a5fa;white-space:nowrap;">฿' + fmt(grandSales) + '</td>' +
+      '<td class="r" style="padding:10px 12px;white-space:nowrap;">฿' + fmt(grandCost) + '</td>' +
+      '<td class="r" style="padding:10px 12px;color:#f87171;font-size:14px;white-space:nowrap;">-฿' + fmt(grandLoss) + '</td>' +
+      '<td style="padding:10px 12px;color:#fca5a5;white-space:nowrap;">ขาดทุนรวม -฿' + fmt(grandLoss) + '</td>' +
     '</tr>';
-  }).join('');
+  }
 
   var lbl = document.getElementById('audit-tx-count-label');
-  if (lbl) lbl.textContent = 'แสดง ' + filtered.length + ' รายการ';
+  if (lbl) lbl.textContent = 'แสดง ' + sortedDMs.length + ' เขต (' + filtered.length + ' รายการ)';
 }
 
 function filterAuditMasterTable() {
@@ -2774,9 +2918,9 @@ function exportAuditCSV() {
   if (AUDIT_SUBVIEW === 'tx') {
     var txList = (DATA.anomalies || {}).transactions || [];
     var rows = txList.map(function(r){
-      return [r.sono, r.sodate, r.branch_code, r.branch_name, r.dm, r.rm, r.iprod, r.parcode || r.barcode, r.name, r.qty, r.u_price, r.u_cost, r.sales, r.cost, r.loss, r.reason];
+      return [r.sono, r.sodate, r.branch_code, r.branch_name, r.dm, r.iprod, r.parcode || r.barcode, r.name, r.qty, r.u_price, r.u_cost, r.sales, r.cost, r.loss, r.reason];
     });
-    exportCSV(['เลขที่บิล', 'วันที่', 'รหัสสาขา', 'ชื่อสาขา', 'DM', 'RM', 'รหัสสินค้า', 'พาร์โค้ด', 'ชื่อสินค้า', 'จำนวนขาย', 'ราคาขายป้าย', 'ต้นทุนต่อหน่วย', 'ยอดขายสุทธิ', 'ต้นทุนรวม', 'ผลขาดทุน', 'สาเหตุ'], rows, 'audit_transaction_anomalies_' + new Date().toISOString().slice(0,10) + '.csv');
+    exportCSV(['เลขที่บิล', 'วันที่', 'รหัสสาขา', 'ชื่อสาขา', 'ผู้จัดการเขต (DM)', 'รหัสสินค้า', 'พาร์โค้ด', 'ชื่อสินค้า', 'จำนวนขาย', 'ราคาขายป้าย', 'ต้นทุนต่อหน่วย', 'ยอดขายสุทธิ', 'ต้นทุนรวม', 'ผลขาดทุน', 'สาเหตุ'], rows, 'audit_transaction_anomalies_' + new Date().toISOString().slice(0,10) + '.csv');
   } else if (AUDIT_SUBVIEW === 'master') {
     var masterList = (DATA.anomalies || {}).master_cost_over_price || [];
     var rows = masterList.map(function(r){
