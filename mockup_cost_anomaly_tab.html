@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>[MOCKUP] ⚠️ ตรวจสอบต้นทุน & รายการขายผิดปกติ (ลำดับชั้น DM & Grand Total)</title>
+<title>⚠️ ตรวจสอบต้นทุน & รายการขายผิดปกติ (สายบังคับบัญชา RM ➔ DM ➔ บิล)</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -43,9 +43,9 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.04);
   }
   .badge-proposal {
-    background: #fef2f2;
-    color: #991b1b;
-    border: 1px solid #fecaca;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
     padding: 4px 12px;
     border-radius: 20px;
     font-size: 12px;
@@ -174,15 +174,15 @@
   <div class="header-card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px;">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <h1 style="font-size:20px;font-weight:800;color:#dc2626;">⚠️ ตรวจสอบต้นทุน & รายการขายผิดปกติ (ลำดับชั้น DM & Grand Total)</h1>
-        <span class="badge-proposal">📝 บรรทัดเดียวทุกคอลัมน์ (Nowrap) + แสดงเฉพาะ DM + ปุ่มยุบ/ขยาย</span>
+        <h1 style="font-size:20px;font-weight:800;color:#dc2626;">⚠️ ตรวจสอบต้นทุน & รายการขายผิดปกติ (Cost > Price 3 & Sales Audit)</h1>
+        <span class="badge-proposal">✅ อนุมัติใช้งาน — โครงสร้างสายบังคับบัญชา ภาค RM ➔ เขต DM ➔ บิล</span>
       </div>
       <div>
         <a href="https://tumsbux.github.io/lost-Product/gp_analysis_dashboard.html" style="background:#2563eb;color:#fff;padding:8px 16px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">🔗 ไปที่ Dashboard จริง</a>
       </div>
     </div>
     <p style="color:var(--muted);font-size:13px;line-height:1.6;">
-      จัดรูปแบบให้ <b>ทุกคอลัมน์แสดงในบรรทัดเดียว (ไม่ตัดบรรทัด)</b>, แสดง <b>เฉพาะผู้จัดการเขต (DM)</b> ตามที่สั่งการ, จัดกลุ่มเป็น <b>ลำดับชั้นตามเขต DM</b> พร้อมปุ่มยุบ/ขยาย และมีแถว <b>Grand Total</b> รวมทั้งสิ้น
+      จัดรูปแบบให้ <b>ทุกคอลัมน์แสดงในบรรทัดเดียว (Nowrap)</b>, แสดงโครงสร้าง <b>ภาค RM ➔ เขต DM ➔ รายการบิล</b> พร้อมปุ่มยุบ/ขยาย และมีแถว <b>Grand Total</b> รวมทั้งสิ้น
     </p>
   </div>
 
@@ -199,7 +199,7 @@
       <div class="kpi-sub">เทียบกับราคาขายปลีกจริง Price 3 ในระบบ</div>
     </div>
     <div class="kpi-card blue">
-      <div class="kpi-label">สาขา 901 (แยกเฉพาะ)</div>
+      <div class="kpi-label">ร้าน Online (สาขา 901)</div>
       <div class="kpi-val" style="color:#2563eb;">฿1,612,787</div>
       <div class="kpi-sub">GP MTD: ฿517,076 (32.1%)</div>
     </div>
@@ -207,7 +207,7 @@
 
   <!-- Sub Navigation -->
   <div class="subnav">
-    <button class="subnav-btn active" id="btn-tab1" onclick="switchSubView('tx')">🌳 1. รายการขายผิดปกติลำดับชั้น DM (มีปุ่มยุบ/ขยาย & Grand Total)</button>
+    <button class="subnav-btn active" id="btn-tab1" onclick="switchSubView('tx')">🌳 1. ลำดับชั้นสายบังคับบัญชา (ภาค RM ➔ เขต DM ➔ บิล)</button>
     <button class="subnav-btn" id="btn-tab2" onclick="switchSubView('master')">🏷️ 2. สินค้าที่ราคาทุนสูงกว่าราคาขายป้าย (Master Cost &gt; Price 3)</button>
   </div>
 
@@ -215,7 +215,7 @@
   <div id="view-tx">
     <div class="filter-bar">
       <label><b>ค้นหา:</b></label>
-      <input type="text" id="tx-search" placeholder="เลขที่บิล / พาร์โค้ด / ชื่อสินค้า / สาขา / DM..." style="width:280px;" oninput="filterTxTable()">
+      <input type="text" id="tx-search" placeholder="เลขที่บิล / พาร์โค้ด / ชื่อสินค้า / สาขา / DM / RM..." style="width:300px;" oninput="filterTxTable()">
       
       <label><b>ผู้จัดการเขต (DM):</b></label>
       <select id="tx-dm" onchange="filterTxTable()">
@@ -229,11 +229,16 @@
       </div>
     </div>
 
+    <!-- Hierarchy Banner -->
+    <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:12.5px;color:#334155;display:flex;align-items:center;gap:8px;">
+      <span>📌 <b>โครงสร้างสายบังคับบัญชา:</b> คลิกที่แถว <b>RM</b> เพื่อดูกลุ่ม <b>DM</b> และคลิกที่ <b>DM</b> เพื่อดูรายการบิลขายผิดปกติ</span>
+    </div>
+
     <div class="table-card">
       <table id="tbl-tx">
         <thead>
           <tr>
-            <th>ลำดับชั้น / เลขที่บิล (sono)</th>
+            <th>ลำดับชั้น (1. ภาค RM ➔ 2. เขต DM ➔ 3. รายการบิล)</th>
             <th>วันที่ (sodate)</th>
             <th>สาขา (sotowhs)</th>
             <th style="color:#38bdf8;">ผู้จัดการเขต (DM)</th>
@@ -301,14 +306,37 @@ function switchSubView(v) {
   document.getElementById('btn-tab2').className = 'subnav-btn ' + (v === 'master' ? 'active' : '');
 }
 
-function toggleTree(dmKey) {
-  TREE_EXPANDED[dmKey] = !TREE_EXPANDED[dmKey];
-  var isOpen = TREE_EXPANDED[dmKey];
-  document.querySelectorAll('.child-of_' + dmKey).forEach(function(r){
-    r.style.display = isOpen ? '' : 'none';
+function toggleTree(id) {
+  var curOpen = (TREE_EXPANDED[id] === true);
+  var newOpen = !curOpen;
+  TREE_EXPANDED[id] = newOpen;
+
+  var icon = document.getElementById('icon_' + id);
+  if (icon) icon.textContent = newOpen ? '▼' : '▶';
+
+  var children = document.querySelectorAll('.child-of_' + id);
+  children.forEach(function(el){
+    if (!newOpen) {
+      el.style.display = 'none';
+      if (id.indexOf('_dm_') === -1) {
+        var dmIcons = el.querySelectorAll('span[id^="icon_mock_rm_"]');
+        dmIcons.forEach(function(ico){ ico.textContent = '▶'; });
+      }
+    } else {
+      if (el.classList.contains('mock-bill-row')) {
+        var isDmOpen = false;
+        el.className.split(' ').forEach(function(cls){
+          if (cls.startsWith('child-of_') && cls.includes('_dm_')) {
+            var dmKey = cls.replace('child-of_', '');
+            if (TREE_EXPANDED[dmKey] === true) isDmOpen = true;
+          }
+        });
+        if (isDmOpen) el.style.display = '';
+      } else {
+        el.style.display = '';
+      }
+    }
   });
-  var icon = document.getElementById('icon_' + dmKey);
-  if (icon) icon.textContent = isOpen ? '▼' : '▶';
 }
 
 function expandAllTree() {
@@ -317,7 +345,7 @@ function expandAllTree() {
     var icon = document.getElementById('icon_' + k);
     if (icon) icon.textContent = '▼';
   }
-  document.querySelectorAll('.mock-child-row').forEach(function(r){ r.style.display = ''; });
+  document.querySelectorAll('#tbody-tx tr').forEach(function(r){ r.style.display = ''; });
 }
 
 function collapseAllTree() {
@@ -326,95 +354,151 @@ function collapseAllTree() {
     var icon = document.getElementById('icon_' + k);
     if (icon) icon.textContent = '▶';
   }
-  document.querySelectorAll('.mock-child-row').forEach(function(r){ r.style.display = 'none'; });
+  document.querySelectorAll('#tbody-tx tr').forEach(function(r){
+    if (r.classList.contains('mock-dm-row') || r.classList.contains('mock-bill-row')) {
+      r.style.display = 'none';
+    }
+  });
 }
 
 function renderTxTable(list) {
   var tbody = document.getElementById('tbody-tx');
-  var dmGroups = {};
+  var rmGroups = {};
   var grandQty = 0, grandSales = 0, grandCost = 0, grandLoss = 0;
+  var allStores = new Set();
 
   list.forEach(function(r){
+    var rm = r.rm || 'ไม่ระบุ RM';
     var dm = r.dm || 'ไม่ระบุ DM';
-    if (!dmGroups[dm]) {
-      dmGroups[dm] = { dm: dm, bills: [], qty: 0, sales: 0, cost: 0, loss: 0, stores: new Set() };
+    var br = r.branch_code;
+
+    if (!rmGroups[rm]) {
+      rmGroups[rm] = { rm: rm, dms: {}, qty: 0, sales: 0, cost: 0, loss: 0, billsCount: 0, stores: new Set() };
     }
-    dmGroups[dm].bills.push(r);
-    dmGroups[dm].qty += (r.qty || 0);
-    dmGroups[dm].sales += (r.sales || 0);
-    dmGroups[dm].cost += (r.cost || 0);
-    dmGroups[dm].loss += (r.loss || 0);
-    dmGroups[dm].stores.add(r.branch_code);
+    var rNode = rmGroups[rm];
+    rNode.qty += (r.qty || 0);
+    rNode.sales += (r.sales || 0);
+    rNode.cost += (r.cost || 0);
+    rNode.loss += (r.loss || 0);
+    rNode.billsCount++;
+    rNode.stores.add(br);
+
+    if (!rNode.dms[dm]) {
+      rNode.dms[dm] = { dm: dm, rm: rm, bills: [], qty: 0, sales: 0, cost: 0, loss: 0, stores: new Set() };
+    }
+    var dNode = rNode.dms[dm];
+    dNode.bills.push(r);
+    dNode.qty += (r.qty || 0);
+    dNode.sales += (r.sales || 0);
+    dNode.cost += (r.cost || 0);
+    dNode.loss += (r.loss || 0);
+    dNode.stores.add(br);
 
     grandQty += (r.qty || 0);
     grandSales += (r.sales || 0);
     grandCost += (r.cost || 0);
     grandLoss += (r.loss || 0);
+    allStores.add(br);
   });
 
-  var sortedDMs = Object.keys(dmGroups).sort(function(a,b){
-    return dmGroups[b].loss - dmGroups[a].loss;
+  var sortedRMs = Object.keys(rmGroups).sort(function(a,b){
+    return rmGroups[b].loss - rmGroups[a].loss;
   });
 
   var htmlRows = [];
-  sortedDMs.forEach(function(dmName, idx){
-    var g = dmGroups[dmName];
-    var dmKey = 'dm_' + idx;
-    if (TREE_EXPANDED[dmKey] === undefined) {
-      TREE_EXPANDED[dmKey] = (sortedDMs.length <= 3);
-    }
-    var isOpen = TREE_EXPANDED[dmKey];
+  var totalDMs = 0;
 
-    // DM row
-    htmlRows.push('<tr style="background:#f1f5f9;cursor:pointer;font-weight:700;border-bottom:2px solid #cbd5e1;" onclick="toggleTree(\'' + dmKey + '\')">' +
-      '<td><span id="icon_' + dmKey + '" style="display:inline-block;width:18px;color:#2563eb;font-weight:800;">' + (isOpen ? '▼' : '▶') + '</span> <b>[เขต DM] ' + dmName + '</b> <span style="font-size:11px;color:var(--muted);font-weight:500;">(' + g.bills.length + ' บิล)</span></td>' +
+  sortedRMs.forEach(function(rmName, rmIdx){
+    var rData = rmGroups[rmName];
+    var rmKey = 'mock_rm_' + rmIdx;
+    if (TREE_EXPANDED[rmKey] === undefined) {
+      TREE_EXPANDED[rmKey] = (rmIdx === 0);
+    }
+    var isRmOpen = TREE_EXPANDED[rmKey];
+
+    // RM row
+    htmlRows.push('<tr class="mock-rm-row" style="background:#e2e8f0;cursor:pointer;font-weight:800;border-bottom:2px solid #94a3b8;" onclick="toggleTree(\'' + rmKey + '\')">' +
+      '<td style="padding:10px 12px;"><span id="icon_' + rmKey + '" style="display:inline-block;width:18px;color:#1e3a8a;font-weight:800;">' + (isRmOpen ? '▼' : '▶') + '</span> <b>ภาค [RM] ' + rmName + '</b> <span style="font-size:11px;color:#475569;font-weight:500;">(' + rData.stores.size + ' สาขา, ' + rData.billsCount + ' บิล)</span></td>' +
       '<td style="color:var(--muted);">—</td>' +
-      '<td><b>' + g.stores.size + ' สาขา</b></td>' +
-      '<td style="color:#2563eb;font-weight:700;">' + dmName + '</td>' +
+      '<td><b>' + rData.stores.size + ' สาขา</b></td>' +
+      '<td style="color:#1e3a8a;font-weight:700;">' + Object.keys(rData.dms).length + ' เขต DM</td>' +
       '<td style="color:var(--muted);">—</td>' +
       '<td style="color:var(--muted);">—</td>' +
-      '<td style="color:var(--muted);">สรุปรวม ' + g.bills.length + ' รายการในเขต</td>' +
-      '<td class="r" style="font-weight:700;">' + fmt(g.qty) + '</td>' +
+      '<td style="color:#334155;">สรุปรวมภาค ' + rmName + ' (' + rData.billsCount + ' บิล)</td>' +
+      '<td class="r" style="font-weight:800;">' + fmt(rData.qty) + '</td>' +
       '<td class="r" style="color:var(--muted);">—</td>' +
       '<td class="r" style="color:var(--muted);">—</td>' +
-      '<td class="r" style="font-weight:700;color:var(--blue);">฿' + fmt(g.sales) + '</td>' +
-      '<td class="r" style="font-weight:700;">฿' + fmt(g.cost) + '</td>' +
-      '<td class="r" style="font-weight:800;color:#dc2626;">-฿' + fmt(g.loss) + '</td>' +
-      '<td><span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;background:#fee2e2;color:#dc2626;">' + g.bills.length + ' บิลขาดทุน</span></td>' +
+      '<td class="r" style="font-weight:800;color:var(--blue);">฿' + fmt(rData.sales) + '</td>' +
+      '<td class="r" style="font-weight:800;">฿' + fmt(rData.cost) + '</td>' +
+      '<td class="r" style="font-weight:800;color:#dc2626;">-฿' + fmt(rData.loss) + '</td>' +
+      '<td><span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:800;background:#fee2e2;color:#dc2626;">' + rData.billsCount + ' บิลขาดทุน</span></td>' +
     '</tr>');
 
-    // Child rows
-    g.bills.forEach(function(r){
-      var tagClass = 'tag-info';
-      if ((r.reason || '').indexOf('0 บาท') !== -1) tagClass = 'tag-danger';
-      else if ((r.reason || '').indexOf('>50%') !== -1) tagClass = 'tag-warning';
+    var sortedDMs = Object.keys(rData.dms).sort(function(a,b){
+      return rData.dms[b].loss - rData.dms[a].loss;
+    });
+    totalDMs += sortedDMs.length;
 
-      htmlRows.push('<tr class="mock-child-row child-of_' + dmKey + '" style="border-bottom:1px solid var(--border);' + (isOpen ? '' : 'display:none;') + '">' +
-        '<td style="padding-left:32px;"><a href="#" class="sono-link">' + r.sono + '</a></td>' +
-        '<td>' + r.sodate + '</td>' +
-        '<td><b>[' + r.branch_code + ']</b> ' + r.branch_name + '</td>' +
-        '<td style="font-weight:600;">' + (r.dm || '—') + '</td>' +
-        '<td>' + r.iprod + '</td>' +
-        '<td style="font-family:monospace;font-weight:600;">' + (r.parcode || r.iprod) + '</td>' +
-        '<td style="font-weight:600;">' + r.name + '</td>' +
-        '<td class="r" style="font-weight:700;">' + fmt(r.qty) + '</td>' +
-        '<td class="r">฿' + fmt(r.u_price) + '</td>' +
-        '<td class="r" style="color:#dc2626;font-weight:600;">฿' + fmt(r.u_cost) + '</td>' +
-        '<td class="r" style="font-weight:700;color:var(--blue);">฿' + fmt(r.sales) + '</td>' +
-        '<td class="r">฿' + fmt(r.cost) + '</td>' +
-        '<td class="r" style="color:#dc2626;font-weight:800;">-฿' + fmt(r.loss) + '</td>' +
-        '<td><span class="tag ' + tagClass + '">' + r.reason + '</span></td>' +
+    sortedDMs.forEach(function(dmName, dmIdx){
+      var dData = rData.dms[dmName];
+      var dmKey = rmKey + '_dm_' + dmIdx;
+      if (TREE_EXPANDED[dmKey] === undefined) {
+        TREE_EXPANDED[dmKey] = (rmIdx === 0 && dmIdx === 0);
+      }
+      var isDmOpen = TREE_EXPANDED[dmKey];
+
+      // DM row
+      htmlRows.push('<tr class="mock-dm-row child-of_' + rmKey + '" style="background:#f1f5f9;cursor:pointer;font-weight:700;border-bottom:1px solid #cbd5e1;' + (isRmOpen ? '' : 'display:none;') + '" onclick="toggleTree(\'' + dmKey + '\')">' +
+        '<td style="padding-left:26px;"><span id="icon_' + dmKey + '" style="display:inline-block;width:16px;color:#2563eb;font-weight:800;">' + (isDmOpen ? '▼' : '▶') + '</span> <b>เขต [DM] ' + dmName + '</b> <span style="font-size:11px;color:var(--muted);font-weight:500;">(' + dData.stores.size + ' สาขา, ' + dData.bills.length + ' บิล)</span></td>' +
+        '<td style="color:var(--muted);">—</td>' +
+        '<td><b>' + dData.stores.size + ' สาขา</b></td>' +
+        '<td style="color:#2563eb;font-weight:700;">' + dmName + '</td>' +
+        '<td style="color:var(--muted);">—</td>' +
+        '<td style="color:var(--muted);">—</td>' +
+        '<td style="color:var(--muted);">สรุปรวมเขต ' + dmName + ' (' + dData.bills.length + ' รายการ)</td>' +
+        '<td class="r" style="font-weight:700;">' + fmt(dData.qty) + '</td>' +
+        '<td class="r" style="color:var(--muted);">—</td>' +
+        '<td class="r" style="color:var(--muted);">—</td>' +
+        '<td class="r" style="font-weight:700;color:var(--blue);">฿' + fmt(dData.sales) + '</td>' +
+        '<td class="r" style="font-weight:700;">฿' + fmt(dData.cost) + '</td>' +
+        '<td class="r" style="font-weight:800;color:#dc2626;">-฿' + fmt(dData.loss) + '</td>' +
+        '<td><span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;background:#fee2e2;color:#dc2626;">' + dData.bills.length + ' บิลขาดทุน</span></td>' +
       '</tr>');
+
+      // Bills
+      dData.bills.forEach(function(r){
+        var tagClass = 'tag-info';
+        if ((r.reason || '').indexOf('0 บาท') !== -1) tagClass = 'tag-danger';
+        else if ((r.reason || '').indexOf('>50%') !== -1) tagClass = 'tag-warning';
+
+        var showBill = isRmOpen && isDmOpen;
+        htmlRows.push('<tr class="mock-bill-row child-of_' + rmKey + ' child-of_' + dmKey + '" style="border-bottom:1px solid var(--border);' + (showBill ? '' : 'display:none;') + '">' +
+          '<td style="padding-left:46px;"><a href="#" class="sono-link">' + r.sono + '</a></td>' +
+          '<td>' + r.sodate + '</td>' +
+          '<td><b>[' + r.branch_code + ']</b> ' + r.branch_name + '</td>' +
+          '<td style="font-weight:600;">' + (r.dm || '—') + '</td>' +
+          '<td>' + r.iprod + '</td>' +
+          '<td style="font-family:monospace;font-weight:600;">' + (r.parcode || r.iprod) + '</td>' +
+          '<td style="font-weight:600;">' + r.name + '</td>' +
+          '<td class="r" style="font-weight:700;">' + fmt(r.qty) + '</td>' +
+          '<td class="r">฿' + fmt(r.u_price) + '</td>' +
+          '<td class="r" style="color:#dc2626;font-weight:600;">฿' + fmt(r.u_cost) + '</td>' +
+          '<td class="r" style="font-weight:700;color:var(--blue);">฿' + fmt(r.sales) + '</td>' +
+          '<td class="r">฿' + fmt(r.cost) + '</td>' +
+          '<td class="r" style="color:#dc2626;font-weight:800;">-฿' + fmt(r.loss) + '</td>' +
+          '<td><span class="tag ' + tagClass + '">' + r.reason + '</span></td>' +
+        '</tr>');
+      });
     });
   });
 
   tbody.innerHTML = htmlRows.join('');
 
-  // Grand Total footer
+  // Grand Total
   var tfoot = document.getElementById('tfoot-tx');
   if (tfoot) {
     tfoot.innerHTML = '<tr style="background:#0f172a;color:#fff;font-weight:800;font-size:13px;border-top:3px solid #38bdf8;">' +
-      '<td colspan="7" style="padding:10px 14px;"> Grand Total (รวมทั้งสิ้น ' + sortedDMs.length + ' เขต DM, ' + list.length + ' บิลผิดปกติ)</td>' +
+      '<td colspan="7" style="padding:10px 14px;"> Grand Total (รวมทั้งหมด ' + sortedRMs.length + ' ภาค RM | ' + totalDMs + ' เขต DM | ' + allStores.size + ' สาขา | ' + list.length + ' บิลผิดปกติ)</td>' +
       '<td class="r" style="color:#fde047;">' + fmt(grandQty) + ' ชิ้น</td>' +
       '<td class="r">—</td>' +
       '<td class="r">—</td>' +
@@ -424,7 +508,7 @@ function renderTxTable(list) {
       '<td style="color:#fca5a5;">ขาดทุนรวม -฿' + fmt(grandLoss) + '</td>' +
     '</tr>';
   }
-  document.getElementById('tx-count-label').textContent = 'แสดง ' + sortedDMs.length + ' เขต (' + list.length + ' รายการ)';
+  document.getElementById('tx-count-label').textContent = 'แสดง ' + sortedRMs.length + ' ภาค (' + list.length + ' รายการ)';
 }
 
 function renderMasterTable(list) {
@@ -462,7 +546,8 @@ function filterTxTable() {
                   (r.name || '').toLowerCase().indexOf(q) !== -1 ||
                   (r.branch_name || '').toLowerCase().indexOf(q) !== -1 ||
                   (r.branch_code || '').toLowerCase().indexOf(q) !== -1 ||
-                  (r.dm || '').toLowerCase().indexOf(q) !== -1;
+                  (r.dm || '').toLowerCase().indexOf(q) !== -1 ||
+                  (r.rm || '').toLowerCase().indexOf(q) !== -1;
       if (!match) return false;
     }
     return true;
