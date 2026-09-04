@@ -1549,7 +1549,7 @@ document.getElementById('fs-search').addEventListener('input',applyStoreFilters)
 ['fp-type','fp-group'].forEach(function(id){document.getElementById(id).addEventListener('change',applyProdFilters)});
 document.getElementById('fp-search').addEventListener('input',applyProdFilters);
 
-fetch('./gp_analysis_data.json')
+fetch('./gp_analysis_data.json?v=' + Date.now())
   .then(function(r){return r.json()})
   .then(function(data){
     DATA=data;
@@ -1644,6 +1644,8 @@ fetch('./gp_analysis_data.json')
     renderTrend(data.monthly||[]);
     renderFestivalTab();
     renderMinimartTab();
+    renderAuditTab();
+    renderBranch901Tab();
     document.getElementById('loading').style.display='none';
   })
   .catch(function(e){
@@ -2997,6 +2999,58 @@ function exportAuditCSV() {
 }
 
 
+
+
+function renderAuditTab() {
+  if (!DATA || !DATA.anomalies) {
+    var tbody = document.getElementById('tbody-audit-tx');
+    if (tbody && !tbody.innerHTML) {
+      tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:30px;color:var(--muted);">⏳ กำลังโหลดข้อมูลการตรวจสอบ...</td></tr>';
+    }
+    return;
+  }
+
+  var txList = DATA.anomalies.transactions || [];
+  var masterList = DATA.anomalies.master_cost_over_price || [];
+
+  // Update KPI Overview Cards
+  var totalLoss = txList.reduce(function(sum, r){ return sum + (r.loss || 0); }, 0);
+  var heavyDiscCount = txList.filter(function(r){
+    return (r.reason || '').indexOf('0 บาท') !== -1 || (r.reason || '').indexOf('>50%') !== -1;
+  }).length;
+  var storesSet = new Set();
+  txList.forEach(function(r){ if(r.branch_code) storesSet.add(r.branch_code); });
+
+  if (document.getElementById('audit-kpi-tx-count'))
+    document.getElementById('audit-kpi-tx-count').textContent = txList.length + ' รายการ';
+  if (document.getElementById('audit-kpi-loss-amt'))
+    document.getElementById('audit-kpi-loss-amt').textContent = 'มูลค่าขาดทุนรวม: -฿' + fmt(totalLoss);
+  if (document.getElementById('audit-kpi-master-count'))
+    document.getElementById('audit-kpi-master-count').textContent = masterList.length + ' รายการ';
+  if (document.getElementById('audit-kpi-heavy-disc'))
+    document.getElementById('audit-kpi-heavy-disc').textContent = heavyDiscCount + ' รายการ';
+  if (document.getElementById('audit-kpi-stores-count'))
+    document.getElementById('audit-kpi-stores-count').textContent = storesSet.size + ' สาขา';
+
+  // Populate DM dropdown in Transaction Audit if needed
+  var dmSel = document.getElementById('audit-tx-dm');
+  if (dmSel && dmSel.options.length <= 1) {
+    var curVal = dmSel.value;
+    var dms = new Set();
+    txList.forEach(function(x){ if (x.dm) dms.add(x.dm); });
+    Array.from(dms).sort().forEach(function(d){
+      var opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d;
+      dmSel.appendChild(opt);
+    });
+    dmSel.value = curVal;
+  }
+
+  filterAuditTxTable();
+  filterAuditMasterTable();
+  filterAuditLowGpTable();
+}
 
 // ==================== BRANCH 901 JAVASCRIPT ====================
 var B901_SUBVIEW = 'prods';
