@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>[MOCKUP PREVIEW] ⚠️ ตรวจสอบต้นทุน & รายการขายผิดปกติ (Cost > Price & Sales Audit)</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --primary: #dc2626;
+    --blue: #2563eb;
+    --green: #16a34a;
+    --amber: #d97706;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+    font-size: 13.5px;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+  
+  .header-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+  }
+  .badge-proposal {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  
+  /* KPI Cards */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    border-left: 4px solid var(--border);
+  }
+  .kpi-card.red { border-left-color: #dc2626; }
+  .kpi-card.amber { border-left-color: #d97706; }
+  .kpi-card.blue { border-left-color: #2563eb; }
+  .kpi-card.purple { border-left-color: #9333ea; }
+  .kpi-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+  .kpi-val { font-size: 24px; font-weight: 800; color: var(--text); }
+  .kpi-sub { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+  /* Sub Tab Nav */
+  .subnav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .subnav-btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text);
+    transition: all 0.2s;
+  }
+  .subnav-btn:hover { background: #f1f5f9; }
+  .subnav-btn.active {
+    background: #1e293b;
+    color: #fff;
+    border-color: #1e293b;
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  input, select {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  input:focus, select:focus { outline: 2px solid var(--blue); }
+  .btn {
+    padding: 7px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12.5px;
+    background: #fff;
+  }
+  .btn-xlsx { background: #16a34a; color: #fff; border-color: #16a34a; }
+  
+  /* Tables */
+  .table-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow-x: auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th {
+    background: #0f172a;
+    color: #fff;
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tr:hover { background: #f8fafc; }
+  .r { text-align: right; }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .tag-danger { background: #fee2e2; color: #dc2626; }
+  .tag-warning { background: #fef3c7; color: #d97706; }
+  .tag-info { background: #e0f2fe; color: #0284c7; }
+
+  .sono-link { color: var(--blue); font-weight: 700; text-decoration: none; font-family: monospace; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header Card -->
+  <div class="header-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <h1 style="font-size:20px;font-weight:800;color:#dc2626;">⚠️ ตรวจสอบต้นทุน & รายการขายผิดปกติ (Cost > Price & Sales Audit)</h1>
+        <span class="badge-proposal">📝 MOCKUP สำหรับตรวจทานก่อนสร้างจริง</span>
+      </div>
+      <div>
+        <button class="btn btn-xlsx" onclick="alert('Export XLSX')">⬇ ดาวน์โหลดรายงาน Excel</button>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:13px;line-height:1.6;">
+      ศูนย์ตรวจสอบและแจ้งเตือนความผิดปกติของข้อมูลการขายและโครงสร้างราคา เพื่อช่วยให้ฝ่ายบริหาร, ฝ่ายจัดซื้อ, และผู้จัดการเขต (DM) ตรวจพบสาเหตุที่ทำให้ GP ลดลงได้อย่างแม่นยำ ทั้งกรณี <b>"ราคาทุนในระบบสูงกว่าราคาขายป้าย"</b>, <b>"การขายราคาต่ำกว่าทุนระดับบิล (Price Override / ยิงลดเกินเกณฑ์)"</b>, และ <b>"สินค้าที่มีอัตรากำไรขั้นต้นต่ำผิดปกติ"</b>
+    </p>
+  </div>
+
+  <!-- KPI Overview -->
+  <div class="kpi-grid">
+    <div class="kpi-card red">
+      <div class="kpi-label">รายการขายขาดทุนระดับบิล (ก.ย. 69)</div>
+      <div class="kpi-val" style="color:#dc2626;">50 รายการ</div>
+      <div class="kpi-sub">มูลค่าขาดทุนเฉพาะหน้าตัวอย่าง: -฿16,283.54</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">สินค้าที่ต้นทุนเฉลี่ย &gt; ราคาขายป้าย</div>
+      <div class="kpi-val" style="color:#d97706;">584 รายการ</div>
+      <div class="kpi-sub">ตั้งราคาขายป้ายต่ำกว่าราคาทุนจริงใน Master</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-label">เคสลดราคา &gt; 50% หรือแจกฟรี 100%</div>
+      <div class="kpi-val" style="color:#9333ea;">37 รายการ</div>
+      <div class="kpi-sub">กระทบจากของแถมและส่วนลดหน้าร้าน</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">สาขาที่พบความผิดปกติ</div>
+      <div class="kpi-val" style="color:#2563eb;">25 สาขา</div>
+      <div class="kpi-sub">กระจายในทุกเขตพื้นที่ (DM/RM)</div>
+    </div>
+  </div>
+
+  <!-- Sub Navigation -->
+  <div class="subnav">
+    <button class="subnav-btn active" id="btn-tab1" onclick="switchSubView('tx')">🧾 1. รายการขายผิดปกติระดับบิล (Transaction Audit)</button>
+    <button class="subnav-btn" id="btn-tab2" onclick="switchSubView('master')">🏷️ 2. สินค้าที่ราคาทุนสูงกว่าราคาขายป้าย (Master Cost &gt; Retail Price)</button>
+  </div>
+
+  <!-- VIEW 1: TRANSACTION AUDIT -->
+  <div id="view-tx">
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <label><b>ค้นหา:</b></label>
+      <input type="text" id="tx-search" placeholder="เลขที่บิล / บาร์โค้ด / ชื่อสินค้า / สาขา..." style="width:280px;" oninput="filterTxTable()">
+      
+      <label><b>ภาค (RM):</b></label>
+      <select id="tx-rm" onchange="filterTxTable()">
+        <option value="">ทั้งหมด</option>
+        <option value="จริยา รัตนติน">จริยา รัตนติน</option>
+        <option value="สุพรรษา นามตาปี">สุพรรษา นามตาปี</option>
+        <option value="ฐานพัฒน์ แสงจง">ฐานพัฒน์ แสงจง</option>
+        <option value="จินตนา อินทะเสโน">จินตนา อินทะเสโน</option>
+      </select>
+
+      <label><b>ประเภทข้อผิดพลาด:</b></label>
+      <select id="tx-reason" onchange="filterTxTable()">
+        <option value="">ทุกประเภท</option>
+        <option value="ยิงขาย 0 บาท">ยิงขาย 0 บาท (แจกฟรี 100%)</option>
+        <option value="ส่วนลดสูงเกินเกณฑ์">ส่วนลดสูงเกินเกณฑ์ (>50%)</option>
+        <option value="ราคาทุนป้ายสูงกว่าราคาขาย">ราคาทุนป้ายสูงกว่าราคาขายป้าย</option>
+        <option value="ต้นทุนต่อหน่วยสูงกว่าราคาขาย">ต้นทุนต่อหน่วยสูงกว่าราคาขาย</option>
+      </select>
+
+      <span style="color:var(--muted);margin-left:auto;font-size:12px;" id="tx-count-label">แสดง 50 รายการ</span>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <table id="tbl-tx">
+        <thead>
+          <tr>
+            <th>เลขที่บิล (sono)</th>
+            <th>วันที่ (sodate)</th>
+            <th>สาขา (sotowhs)</th>
+            <th>DM / RM</th>
+            <th>รหัส (iprod)</th>
+            <th>บาร์โค้ด (barcode)</th>
+            <th>ชื่อสินค้า (idesc)</th>
+            <th class="r">จำนวน (soqty)</th>
+            <th class="r">ราคาป้าย/หน่วย</th>
+            <th class="r">ทุน/หน่วย</th>
+            <th class="r" style="color:#60a5fa;">ยอดขายสุทธิ (solineamt)</th>
+            <th class="r">ต้นทุนรวม (cost)</th>
+            <th class="r" style="color:#f87171;">ขาดทุน (GP)</th>
+            <th>สาเหตุความผิดปกติ</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-tx">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- VIEW 2: MASTER COST > PRICE -->
+  <div id="view-master" style="display:none;">
+    <div class="filter-bar">
+      <label><b>ค้นหาสินค้า:</b></label>
+      <input type="text" id="master-search" placeholder="บาร์โค้ด / รหัส / ชื่อสินค้า..." style="width:280px;" oninput="filterMasterTable()">
+      <span style="color:var(--muted);margin-left:auto;font-size:12px;" id="master-count-label">แสดง 584 รายการ</span>
+    </div>
+
+    <div class="table-card">
+      <table id="tbl-master">
+        <thead>
+          <tr>
+            <th>รหัสสินค้า (iprod)</th>
+            <th>บาร์โค้ด (barcode)</th>
+            <th>ชื่อสินค้า</th>
+            <th>หมวดหมู่</th>
+            <th class="r">ราคาขายป้าย (Price 1)</th>
+            <th class="r" style="color:#f87171;">ต้นทุนเฉลี่ย (Avg Cost)</th>
+            <th class="r" style="color:#f87171;">ทุนสูงกว่าราคาขาย (บาท)</th>
+            <th class="r" style="color:#f87171;">ทุนสูงกว่า (%)</th>
+            <th>การวิเคราะห์เบื้องต้น</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-master">
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+var TX_DATA = [{"sono": "BL9016-260901-0069", "sodate": "2026-09-01", "branch_code": "901", "branch_name": "สาขา 901", "dm": "", "rm": "", "iprod": "8851991855108", "barcode": "8851991855108", "name": "หม้อหู36cm.No.185510(ตราม้าลาย)", "qty": 2.0, "u_price": 1480.0, "u_cost": 2070.58, "sales": 2860.0, "cost": 4141.16, "loss": 1281.16, "gp_pct": -44.8, "reason": "ราคาทุนป้ายสูงกว่าราคาขายป้าย"}, {"sono": "BL9011-260903-0377", "sodate": "2026-09-03", "branch_code": "901", "branch_name": "สาขา 901", "dm": "", "rm": "", "iprod": "8851991855108", "barcode": "8851991855108", "name": "หม้อหู36cm.No.185510(ตราม้าลาย)", "qty": 1.0, "u_price": 1480.0, "u_cost": 2070.58, "sales": 1340.0, "cost": 2070.58, "loss": 730.58, "gp_pct": -54.5, "reason": "ราคาทุนป้ายสูงกว่าราคาขายป้าย"}, {"sono": "BL9016-260903-0039", "sodate": "2026-09-03", "branch_code": "901", "branch_name": "สาขา 901", "dm": "", "rm": "", "iprod": "8851991855108", "barcode": "8851991855108", "name": "หม้อหู36cm.No.185510(ตราม้าลาย)", "qty": 1.0, "u_price": 1480.0, "u_cost": 2070.58, "sales": 1469.0, "cost": 2070.58, "loss": 601.58, "gp_pct": -41.0, "reason": "ราคาทุนป้ายสูงกว่าราคาขายป้าย"}, {"sono": "BL9016-260903-0005", "sodate": "2026-09-03", "branch_code": "901", "branch_name": "สาขา 901", "dm": "", "rm": "", "iprod": "8851991855108", "barcode": "8851991855108", "name": "หม้อหู36cm.No.185510(ตราม้าลาย)", "qty": 1.0, "u_price": 1480.0, "u_cost": 2070.58, "sales": 1469.0, "cost": 2070.58, "loss": 601.58, "gp_pct": -41.0, "reason": "ราคาทุนป้ายสูงกว่าราคาขายป้าย"}, {"sono": "BL9017-260902-0049", "sodate": "2026-09-02", "branch_code": "901", "branch_name": "สาขา 901", "dm": "", "rm": "", "iprod": "8851991855108", "barcode": "8851991855108", "name": "หม้อหู36cm.No.185510(ตราม้าลาย)", "qty": 1.0, "u_price": 1480.0, "u_cost": 2070.58, "sales": 1480.0, "cost": 2070.58, "loss": 590.58, "gp_pct": -39.9, "reason": "ราคาทุนป้ายสูงกว่าราคาขายป้าย"}, {"sono": "BL9017-260902-0050", "sodate": "2026-09-02", "branch_code": "901", "branch_name": "สาขา 901", "dm": "", "rm": "", "iprod": "8851991855108", "barcode": "8851991855108", "name": "หม้อหู36cm.No.185510(ตราม้าลาย)", "qty": 1.0, "u_price": 1480.0, "u_cost": 2070.58, "sales": 1480.0, "cost": 2070.58, "loss": 590.58, "gp_pct": -39.9, "reason": "ราคาทุนป้ายสูงกว่าราคาขายป้าย"}, {"sono": "BL9011-260902-0558", "sodate": "2026-09-02", "branch_code": "901", "branch_name": "สาขา 901", "dm": "", "rm": "", "iprod": "8851991855108", "barcode": "8851991855108", "name": "หม้อหู36cm.No.185510(ตราม้าลาย)", "qty": 1.0, "u_price": 1480.0, "u_cost": 2070.58, "sales": 1480.0, "cost": 2070.58, "loss": 590.58, "gp_pct": -39.9, "reason": "ราคาทุนป้ายสูงกว่าราคาขายป้าย"}, {"sono": "BL9017-260902-0051", "sodate": "2026-09-02", "branch_code": "901", "branch_name": "สาขา 901", "dm": "", "rm": "", "iprod": "8851991855108", "barcode": "8851991855108", "name": "หม้อหู36cm.No.185510(ตราม้าลาย)", "qty": 1.0, "u_price": 1480.0, "u_cost": 2070.58, "sales": 1480.0, "cost": 2070.58, "loss": 590.58, "gp_pct": -39.9, "reason": "ราคาทุนป้ายสูงกว่าราคาขายป้าย"}, {"sono": "BL0161-260902-0007", "sodate": "2026-09-02", "branch_code": "016", "branch_name": "โคกกลอย", "dm": "วิไลลักษณ์ เลิศไกร", "rm": "สุพรรษา นามตาปี", "iprod": "8851991855122", "barcode": "8851991855122", "name": "หม้อหู45cm.No.185512(ตราม้าลาย)", "qty": 2.0, "u_price": 2160.0, "u_cost": 1545.5, "sales": 2592.0, "cost": 3091.0, "loss": 499.0, "gp_pct": -19.3, "reason": "ต้นทุนต่อหน่วยสูงกว่าราคาขาย"}, {"sono": "BL0261-260903-0135", "sodate": "2026-09-03", "branch_code": "026", "branch_name": "เขาพนม", "dm": "ณัฐกมล พิมเสน", "rm": "จินตนา อินทะเสโน", "iprod": "1110008427", "barcode": "1110008427", "name": "ตาชั่งสแตนเลส60kg.(VIGO)", "qty": 1.0, "u_price": 2550.0, "u_cost": 1772.0, "sales": 1275.0, "cost": 1772.0, "loss": 497.0, "gp_pct": -39.0, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL0701-260901-0014", "sodate": "2026-09-01", "branch_code": "070", "branch_name": "พระแสง2", "dm": "วิไลลักษณ์ เลิศไกร", "rm": "สุพรรษา นามตาปี", "iprod": "8851456107063", "barcode": "8851456107063", "name": "กระติกน้ำร้อน2.8l.No.KP-B28S(SHARP)", "qty": 2.0, "u_price": 1150.0, "u_cost": 823.5, "sales": 1150.0, "cost": 1647.0, "loss": 497.0, "gp_pct": -43.2, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL1082-260903-0077", "sodate": "2026-09-03", "branch_code": "108", "branch_name": "สมุย2(แม่น้ำ)", "dm": "มณฑา กู้เกียรติเดชสกุล", "rm": "จริยา รัตนติน", "iprod": "8851991140839", "barcode": "0805000021671", "name": "คูลเลอร์26cm.Prima llตราหัวม้าลาย", "qty": 1.0, "u_price": 2400.0, "u_cost": 1676.84, "sales": 1200.0, "cost": 1676.84, "loss": 476.84, "gp_pct": -39.7, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL1081-260903-0055", "sodate": "2026-09-03", "branch_code": "108", "branch_name": "สมุย2(แม่น้ำ)", "dm": "มณฑา กู้เกียรติเดชสกุล", "rm": "จริยา รัตนติน", "iprod": "8850633007097", "barcode": "8850633007097", "name": "ชุดเครื่องครัวเฮลท์ตี้ช้อยส์8ชิ้น(Seagull)", "qty": 1.0, "u_price": 1390.0, "u_cost": 1138.0, "sales": 695.0, "cost": 1138.0, "loss": 443.0, "gp_pct": -63.7, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL0661-260901-0260", "sodate": "2026-09-01", "branch_code": "066", "branch_name": "ทับละมุ", "dm": "วิไลลักษณ์ เลิศไกร", "rm": "สุพรรษา นามตาปี", "iprod": "8850633007097", "barcode": "8850633007097", "name": "ชุดเครื่องครัวเฮลท์ตี้ช้อยส์8ชิ้น(Seagull)", "qty": 1.0, "u_price": 1390.0, "u_cost": 1138.0, "sales": 695.0, "cost": 1138.0, "loss": 443.0, "gp_pct": -63.7, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL2091-260903-0041", "sodate": "2026-09-03", "branch_code": "209", "branch_name": "ศรีธรรมโศก (นศ-34)", "dm": "ปาลิตา ศรีปัญญา", "rm": "สุพรรษา นามตาปี", "iprod": "1000300109", "barcode": "1000300109", "name": "จักรยาน16in.LNB448", "qty": 1.0, "u_price": 2200.0, "u_cost": 1460.0, "sales": 1100.0, "cost": 1460.0, "loss": 360.0, "gp_pct": -32.7, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL0701-260901-0009", "sodate": "2026-09-01", "branch_code": "070", "branch_name": "พระแสง2", "dm": "วิไลลักษณ์ เลิศไกร", "rm": "สุพรรษา นามตาปี", "iprod": "8854984049553", "barcode": "8854984049553", "name": "พัดลมอุสาหกรรมสไลด์18in.No.FAN18i-1(MISUSHITA)", "qty": 1.0, "u_price": 1800.0, "u_cost": 1242.0, "sales": 900.0, "cost": 1242.0, "loss": 342.0, "gp_pct": -38.0, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL1771-260903-0084", "sodate": "2026-09-03", "branch_code": "177", "branch_name": "ทุ่งลุง", "dm": "วรรณนภา ยอดแก้ว", "rm": "จริยา รัตนติน", "iprod": "8851395002276", "barcode": "-", "name": "พัดลมตั้งโต๊ะ16in.No.AP-TF1169A MITSAMARU(ยกเลิก)", "qty": 2.0, "u_price": 650.0, "u_cost": 490.0, "sales": 650.0, "cost": 980.0, "loss": 330.0, "gp_pct": -50.8, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL1151-260903-0034", "sodate": "2026-09-03", "branch_code": "115", "branch_name": "บายพาสพัทลุง", "dm": "ชณารัศมิ์ พลเดช", "rm": "จริยา รัตนติน", "iprod": "8850633303977", "barcode": "8850633303977", "name": "ชุดเครื่องครัวโซเอ็คไซทอิง7ชิ้น Seagull", "qty": 1.0, "u_price": 990.0, "u_cost": 792.5, "sales": 495.0, "cost": 792.5, "loss": 297.5, "gp_pct": -60.1, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL1531-260902-0046", "sodate": "2026-09-02", "branch_code": "153", "branch_name": "อ่าวลึกใต้", "dm": "ณัฐกมล พิมเสน", "rm": "จินตนา อินทะเสโน", "iprod": "8851456105038", "barcode": "8851456105038", "name": "หม้อหุงข้าว1.8l.No.KS-19ET(SHARP)", "qty": 1.0, "u_price": 1550.0, "u_cost": 1055.5, "sales": 775.0, "cost": 1055.5, "loss": 280.5, "gp_pct": -36.2, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL0701-260903-0039", "sodate": "2026-09-03", "branch_code": "070", "branch_name": "พระแสง2", "dm": "วิไลลักษณ์ เลิศไกร", "rm": "สุพรรษา นามตาปี", "iprod": "1000300095", "barcode": "1000300095", "name": "จักรยาน16in.LNB3033", "qty": 1.0, "u_price": 1560.0, "u_cost": 1060.0, "sales": 780.0, "cost": 1060.0, "loss": 280.0, "gp_pct": -35.9, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL1151-260903-0150", "sodate": "2026-09-03", "branch_code": "115", "branch_name": "บายพาสพัทลุง", "dm": "ชณารัศมิ์ พลเดช", "rm": "จริยา รัตนติน", "iprod": "1000300095", "barcode": "1000300095", "name": "จักรยาน16in.LNB3033", "qty": 1.0, "u_price": 1560.0, "u_cost": 1060.0, "sales": 780.0, "cost": 1060.0, "loss": 280.0, "gp_pct": -35.9, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL0371-260903-0083", "sodate": "2026-09-03", "branch_code": "037", "branch_name": "ขนอม", "dm": "เรวดี พรหมอินทร์", "rm": "สุพรรษา นามตาปี", "iprod": "8887770101", "barcode": "8887770101", "name": "กะละมังNo.01สีB(Winner)", "qty": 4.0, "u_price": 10.0, "u_cost": 77.15, "sales": 36.0, "cost": 308.6, "loss": 272.6, "gp_pct": -757.2, "reason": "ราคาทุนป้ายสูงกว่าราคาขายป้าย"}, {"sono": "BL1551-260903-0088", "sodate": "2026-09-03", "branch_code": "155", "branch_name": "ร่อนพิบูลย์", "dm": "ชณารัศมิ์ พลเดช", "rm": "จริยา รัตนติน", "iprod": "8851456107063", "barcode": "8851456107063", "name": "กระติกน้ำร้อน2.8l.No.KP-B28S(SHARP)", "qty": 1.0, "u_price": 1150.0, "u_cost": 823.5, "sales": 575.0, "cost": 823.5, "loss": 248.5, "gp_pct": -43.2, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL1061-260903-0015", "sodate": "2026-09-03", "branch_code": "106", "branch_name": "สมุย1(ตลาดสีฟ้า)", "dm": "มณฑา กู้เกียรติเดชสกุล", "rm": "จริยา รัตนติน", "iprod": "8851333838028", "barcode": "8851333838028", "name": "หม้อแขกชุด14-30cm.พระอาทิตย์", "qty": 1.0, "u_price": 1120.0, "u_cost": 796.0, "sales": 560.0, "cost": 796.0, "loss": 236.0, "gp_pct": -42.1, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL1571-260903-0154", "sodate": "2026-09-03", "branch_code": "157", "branch_name": "กรุงชิง", "dm": "เรวดี พรหมอินทร์", "rm": "สุพรรษา นามตาปี", "iprod": "8851333838028", "barcode": "8851333838028", "name": "หม้อแขกชุด14-30cm.พระอาทิตย์", "qty": 1.0, "u_price": 1120.0, "u_cost": 796.0, "sales": 560.0, "cost": 796.0, "loss": 236.0, "gp_pct": -42.1, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL0611-260903-0068", "sodate": "2026-09-03", "branch_code": "061", "branch_name": "ทรายขาว", "dm": "แพรทิพย์ จันทร์ปาน", "rm": "จินตนา อินทะเสโน", "iprod": "8887770101", "barcode": "8887770101", "name": "กะละมังNo.01สีB(Winner)", "qty": 3.0, "u_price": 10.0, "u_cost": 77.15, "sales": 27.0, "cost": 231.45, "loss": 204.45, "gp_pct": -757.2, "reason": "ราคาทุนป้ายสูงกว่าราคาขายป้าย"}, {"sono": "BL2061-260903-0012", "sodate": "2026-09-03", "branch_code": "206", "branch_name": "โคกหนามแท่ง (สบ-1)", "dm": "อุษา ทองมาก", "rm": "ฐานพัฒน์ แสงจง", "iprod": "8887770101", "barcode": "8887770101", "name": "กะละมังNo.01สีB(Winner)", "qty": 3.0, "u_price": 10.0, "u_cost": 77.15, "sales": 27.0, "cost": 231.45, "loss": 204.45, "gp_pct": -757.2, "reason": "ราคาทุนป้ายสูงกว่าราคาขายป้าย"}, {"sono": "BL1781-260903-0106", "sodate": "2026-09-03", "branch_code": "178", "branch_name": "บ้านไร่ชาวเหนือ", "dm": "จันทรัตน์ เปรมปรี", "rm": "ฐานพัฒน์ แสงจง", "iprod": "1000600001800", "barcode": "1000600001800", "name": "ของเล่นคละแบบ(100)", "qty": 12.0, "u_price": 100.0, "u_cost": 66.55, "sales": 600.0, "cost": 798.6, "loss": 198.6, "gp_pct": -33.1, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL2321-260903-0060", "sodate": "2026-09-03", "branch_code": "232", "branch_name": "สนามบินสมุย (สฎ-44)", "dm": "มณฑา กู้เกียรติเดชสกุล", "rm": "จริยา รัตนติน", "iprod": "9551103067", "barcode": "9551103067", "name": "เตียงพับ3ตอนเหลี่ยม(Kรุ่ง)", "qty": 1.0, "u_price": 960.0, "u_cost": 669.5, "sales": 480.0, "cost": 669.5, "loss": 189.5, "gp_pct": -39.5, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL1731-260901-0064", "sodate": "2026-09-01", "branch_code": "173", "branch_name": "วัดเพลง", "dm": "จันทรัตน์ เปรมปรี", "rm": "ฐานพัฒน์ แสงจง", "iprod": "8854984049638", "barcode": "8854984049638", "name": "พัดลมตั้งโต๊ะ16in.JumboNo.FAN-17-2T(MISUSHITA)", "qty": 1.0, "u_price": 990.0, "u_cost": 683.5, "sales": 495.0, "cost": 683.5, "loss": 188.5, "gp_pct": -38.1, "reason": "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"}, {"sono": "BL1401-260903-0093", "sodate": "2026-09-03", "branch_code": "140", "branch_name": "ดอนสัก", "dm": "เรวดี พรหมอินทร์", "rm": "สุพรรษา นามตาปี", "iprod": "8880009776", "barcode": "8880009776", "name": "โหลแก้วสูงตัด6in.AG101", "qty": 12.0, "u_price": 180.0, "u_cost": 195.7, "sales": 2160.0, "cost": 2348.4, "loss": 188.4, "gp_pct": -8.7, "reason": "ราคาทุนป้ายสูงกว่าราคาขายป้าย"}, {"sono": "BL0851-260901-0032", "sodate": "2026-09-01", "branch_code": "085", "branch_name": "เกาะลันตา 2", "dm": "ลัดดาวรรณ์ สามารถ", "rm": "สุพรรษา นามตาปี", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0391-260901-0088", "sodate": "2026-09-01", "branch_code": "039", "branch_name": "สิชล", "dm": "สุชาวดี บัวเผียน", "rm": "จริยา รัตนติน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0312-260901-0009", "sodate": "2026-09-01", "branch_code": "031", "branch_name": "บ้านนาเดิม", "dm": "ญาณิศา แด่หวา", "rm": "จินตนา อินทะเสโน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0312-260901-0011", "sodate": "2026-09-01", "branch_code": "031", "branch_name": "บ้านนาเดิม", "dm": "ญาณิศา แด่หวา", "rm": "จินตนา อินทะเสโน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0311-260901-0034", "sodate": "2026-09-01", "branch_code": "031", "branch_name": "บ้านนาเดิม", "dm": "ญาณิศา แด่หวา", "rm": "จินตนา อินทะเสโน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0311-260901-0035", "sodate": "2026-09-01", "branch_code": "031", "branch_name": "บ้านนาเดิม", "dm": "ญาณิศา แด่หวา", "rm": "จินตนา อินทะเสโน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0311-260901-0032", "sodate": "2026-09-01", "branch_code": "031", "branch_name": "บ้านนาเดิม", "dm": "ญาณิศา แด่หวา", "rm": "จินตนา อินทะเสโน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0391-260901-0047", "sodate": "2026-09-01", "branch_code": "039", "branch_name": "สิชล", "dm": "สุชาวดี บัวเผียน", "rm": "จริยา รัตนติน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL1082-260901-0020", "sodate": "2026-09-01", "branch_code": "108", "branch_name": "สมุย2(แม่น้ำ)", "dm": "มณฑา กู้เกียรติเดชสกุล", "rm": "จริยา รัตนติน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0311-260901-0021", "sodate": "2026-09-01", "branch_code": "031", "branch_name": "บ้านนาเดิม", "dm": "ญาณิศา แด่หวา", "rm": "จินตนา อินทะเสโน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0312-260901-0008", "sodate": "2026-09-01", "branch_code": "031", "branch_name": "บ้านนาเดิม", "dm": "ญาณิศา แด่หวา", "rm": "จินตนา อินทะเสโน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL2081-260901-0124", "sodate": "2026-09-01", "branch_code": "208", "branch_name": "หัวถนนสมุย (สฎ-41)", "dm": "มณฑา กู้เกียรติเดชสกุล", "rm": "จริยา รัตนติน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL1062-260901-0036", "sodate": "2026-09-01", "branch_code": "106", "branch_name": "สมุย1(ตลาดสีฟ้า)", "dm": "มณฑา กู้เกียรติเดชสกุล", "rm": "จริยา รัตนติน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL1082-260901-0160", "sodate": "2026-09-01", "branch_code": "108", "branch_name": "สมุย2(แม่น้ำ)", "dm": "มณฑา กู้เกียรติเดชสกุล", "rm": "จริยา รัตนติน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0861-260901-0090", "sodate": "2026-09-01", "branch_code": "086", "branch_name": "คลองเขม้า", "dm": "ณัฐกมล พิมเสน", "rm": "จินตนา อินทะเสโน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0851-260901-0170", "sodate": "2026-09-01", "branch_code": "085", "branch_name": "เกาะลันตา 2", "dm": "ลัดดาวรรณ์ สามารถ", "rm": "สุพรรษา นามตาปี", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0851-260902-0081", "sodate": "2026-09-02", "branch_code": "085", "branch_name": "เกาะลันตา 2", "dm": "ลัดดาวรรณ์ สามารถ", "rm": "สุพรรษา นามตาปี", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0861-260901-0145", "sodate": "2026-09-01", "branch_code": "086", "branch_name": "คลองเขม้า", "dm": "ณัฐกมล พิมเสน", "rm": "จินตนา อินทะเสโน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}, {"sono": "BL0311-260901-0236", "sodate": "2026-09-01", "branch_code": "031", "branch_name": "บ้านนาเดิม", "dm": "ญาณิศา แด่หวา", "rm": "จินตนา อินทะเสโน", "iprod": "8855199167018", "barcode": "8851959158012", "name": "โค้ก500ml.", "qty": 12.0, "u_price": 17.0, "u_cost": 15.41, "sales": 0.0, "cost": 184.92, "loss": 184.92, "gp_pct": -9999.0, "reason": "ยิงขาย 0 บาท (แจกฟรี 100%)"}];
+var MASTER_DATA = [{"iprod": "8851991855139", "name": "หม้อหู50cm.No.185513(ตราหัวม้าลาย)", "group": "06010", "cost": 3716.67, "price": 2050.0, "diff": 1666.67, "diff_pct": 81.3, "barcode": "8851991855139"}, {"iprod": "8851991855115", "name": "หม้อหู40cm.No.185511(ตราหัวม้าลาย)", "group": "06010", "cost": 2243.86, "price": 1340.0, "diff": 903.86, "diff_pct": 67.5, "barcode": "0801100054241"}, {"iprod": "8851991855108", "name": "หม้อหู36cm.No.185510(ตราม้าลาย)", "group": "06010", "cost": 2070.58, "price": 1230.0, "diff": 840.58, "diff_pct": 68.3, "barcode": "8851991855108"}, {"iprod": "9551103214", "name": "ตุ๊กตาหมี(650)", "group": "10003", "cost": 500.0, "price": 1.0, "diff": 499.0, "diff_pct": 49900.0, "barcode": "1300400015026"}, {"iprod": "1110002323", "name": "โต๊ะพับ3ft.หน้าพลาสติก048ตรากระต่าย", "group": "04006", "cost": 395.43, "price": 8.34, "diff": 387.09, "diff_pct": 4641.4, "barcode": "0400600058829"}, {"iprod": "1000000091", "name": "หม้อหุงต้ม22cm.ชั้นนึ่งฝาแก้วWisdomตราหัวม้าลายซื้อครบ5,000บาทแถมฟรี", "group": "06010", "cost": 380.93, "price": 0.01, "diff": 380.92, "diff_pct": 3809200.0, "barcode": "0801100054450"}, {"iprod": "8851991140853", "name": "คูลเลอร์30cm.Prima ll ตราหัวม้าลาย", "group": "06038", "cost": 2678.0, "price": 2350.0, "diff": 328.0, "diff_pct": 14.0, "barcode": "0805000021679"}, {"iprod": "0402700087", "name": "โทรศัพท์มือถือiphone13/128", "group": "05043", "cost": 17200.0, "price": 16900.0, "diff": 300.0, "diff_pct": 1.8, "barcode": "0402700087"}, {"iprod": "8850688075515", "name": "จานกลมทรงลึก12.5in.สีดำP2069Flowerware", "group": "06011", "cost": 242.0, "price": 1.0, "diff": 241.0, "diff_pct": 24100.0, "barcode": "0801200060270"}, {"iprod": "8851991104305", "name": "กล่องถนอมอาหาร12*2ฝาสีขาวพร้อมกระเป๋า(รับฟรีเมื่อซื้อสินค้าครบ3000บาท)", "group": "14016", "cost": 232.17, "price": 1.0, "diff": 231.17, "diff_pct": 23117.0, "barcode": "-"}, {"iprod": "8887773262", "name": "โต๊ะพับ3ft.หน้าเหล็ก3เอส", "group": "04006", "cost": 379.85, "price": 180.0, "diff": 199.85, "diff_pct": 111.0, "barcode": "-"}, {"iprod": "0401300069", "name": "ลำโพง+ไมค์No.S-08A/B", "group": "05002", "cost": 978.5, "price": 799.0, "diff": 179.5, "diff_pct": 22.5, "barcode": "0401300069"}, {"iprod": "20220021", "name": "ตู้ลิ้นชักเกียวโตล็อคเกอร์4ชั้นคละสี(ตัวเล็ก)", "group": "04007", "cost": 350.0, "price": 185.0, "diff": 165.0, "diff_pct": 89.2, "barcode": "20220021"}, {"iprod": "1110005187", "name": "กระชอนสเตนเลสใหญ่", "group": "06033", "cost": 160.0, "price": 1.0, "diff": 159.0, "diff_pct": 15900.0, "barcode": "-"}, {"iprod": "8880009887", "name": "ลิ้นชัก2ชั้นTSP", "group": "04007", "cost": 110.0, "price": 1.0, "diff": 109.0, "diff_pct": 10900.0, "barcode": "0400700061064"}, {"iprod": "0402700065", "name": "โทรศัพท์มือถือOppoA18", "group": "05043", "cost": 4300.0, "price": 4200.0, "diff": 100.0, "diff_pct": 2.4, "barcode": "0402700065"}, {"iprod": "8852080024238", "name": "ลิ้นชัก3ชั้นNo.2423(JCJ)", "group": "04007", "cost": 494.5, "price": 400.0, "diff": 94.5, "diff_pct": 23.6, "barcode": "0400700060595"}, {"iprod": "8880002303", "name": "ถุงกาแฟNo. 1STP", "group": "01010", "cost": 210.0, "price": 120.0, "diff": 90.0, "diff_pct": 75.0, "barcode": "8880002303"}, {"iprod": "8850674008244", "name": "ปิ่นโตกลมเล็ก4ชั้น5in. (คละสี)", "group": "06015", "cost": 195.0, "price": 115.0, "diff": 80.0, "diff_pct": 69.6, "barcode": "8850674008244"}, {"iprod": "8887772827", "name": "เครื่องคิดเลขGA885-12", "group": "16019", "cost": 80.25, "price": 1.0, "diff": 79.25, "diff_pct": 7925.0, "barcode": "8887772827"}, {"iprod": "8850421032805", "name": "กระติกน้ำNo.0328(13l.)ตรามือ", "group": "14012", "cost": 513.5, "price": 435.0, "diff": 78.5, "diff_pct": 18.0, "barcode": "2001000038047"}, {"iprod": "0003700016", "name": "ทินเนอร์ผสมสีทาถนนNo.81(Use)", "group": "03005", "cost": 590.0, "price": 514.02, "diff": 75.98, "diff_pct": 14.8, "barcode": "-"}, {"iprod": "8852080024245", "name": "ลิ้นชัก4ชั้น2424JCJ", "group": "04007", "cost": 575.0, "price": 500.0, "diff": 75.0, "diff_pct": 15.0, "barcode": "0400700060579"}, {"iprod": "9551102382", "name": "เต็นท์สำเร็จรูป3*4.5", "group": "04010", "cost": 2250.0, "price": 2175.0, "diff": 75.0, "diff_pct": 3.4, "barcode": "9551102382"}, {"iprod": "1200300040", "name": "สินค้าสมนาคุณร่มเตือนใจ28in.", "group": "26003", "cost": 72.0, "price": 0.01, "diff": 71.99, "diff_pct": 719900.0, "barcode": "1200300040"}, {"iprod": "0201100125", "name": "ครกหินบดยา", "group": "06045", "cost": 360.0, "price": 300.0, "diff": 60.0, "diff_pct": 20.0, "barcode": "0201100125"}, {"iprod": "8851906182305", "name": "เครื่องปิ้งขนมปังรุ่นET-200S", "group": "05026", "cost": 386.5, "price": 335.0, "diff": 51.5, "diff_pct": 15.4, "barcode": "0702100032859"}, {"iprod": "0003700015", "name": "สีทาถนนสีเหลืองสะท้อนแสง(Use)", "group": "03005", "cost": 750.0, "price": 700.0, "diff": 50.0, "diff_pct": 7.1, "barcode": "-"}, {"iprod": "0003700027", "name": "สีทาถนนสีแดงสะท้อนแสง(Use)", "group": "03005", "cost": 750.0, "price": 700.0, "diff": 50.0, "diff_pct": 7.1, "barcode": "-"}, {"iprod": "9551101390", "name": "เตาปิ้งย่างขนาดใหญ่No.25600B(A03-Q-110)", "group": "06029", "cost": 4950.0, "price": 4900.0, "diff": 50.0, "diff_pct": 1.0, "barcode": "0701100021443"}, {"iprod": "6922182622105", "name": "นาฬิกาปลุกTW-07034(V10)", "group": "19004", "cost": 50.5, "price": 1.0, "diff": 49.5, "diff_pct": 4950.0, "barcode": "3300200014867"}, {"iprod": "6922182622112", "name": "นาฬิกาปลุกTW-07033(V11)", "group": "19004", "cost": 50.5, "price": 1.0, "diff": 49.5, "diff_pct": 4950.0, "barcode": "3300200015842"}, {"iprod": "8850421032720", "name": "กระติกน้ำNo.0327(7l.)สีน้ำเงินตรามือ", "group": "14012", "cost": 328.0, "price": 280.0, "diff": 48.0, "diff_pct": 17.1, "barcode": "-"}, {"iprod": "1200300039", "name": "สินค้าสมนาคุณร่มเตือนใจ22in.", "group": "26003", "cost": 48.0, "price": 0.01, "diff": 47.99, "diff_pct": 479900.0, "barcode": "1200300039"}, {"iprod": "8850421036728", "name": "กระติกน้ำNo.0367(5.5l.)สีน้ำเงินตรามือ", "group": "14012", "cost": 153.02, "price": 107.0, "diff": 46.02, "diff_pct": 43.0, "barcode": "2001000038061"}, {"iprod": "8851094010770", "name": "ชามแก้ว3ใบBLS591/3-2GB", "group": "06007", "cost": 65.0, "price": 20.0, "diff": 45.0, "diff_pct": 225.0, "barcode": "8851094010770"}, {"iprod": "8859110107107", "name": "เครื่องปั่นNo.BD-1520(SMARTHOME)", "group": "05027", "cost": 391.4, "price": 350.0, "diff": 41.4, "diff_pct": 11.8, "barcode": "8859110107107"}, {"iprod": "2000500094", "name": "นาฬิกาJW-2003 BB-SW", "group": "19004", "cost": 139.5, "price": 100.0, "diff": 39.5, "diff_pct": 39.5, "barcode": "2000500094"}, {"iprod": "2000500095", "name": "นาฬิกาJW-2003 WW-SB", "group": "19004", "cost": 139.5, "price": 100.0, "diff": 39.5, "diff_pct": 39.5, "barcode": "2000500095"}, {"iprod": "0002700045", "name": "ไม้ปัดขนไก่ด้ามขาว/ด้ามพลาสติกใหญ่/ด้ามแดงเล็กตราเพชร(Use)", "group": "03039", "cost": 75.0, "price": 36.5, "diff": 38.5, "diff_pct": 105.5, "barcode": "-"}, {"iprod": "8850421032621", "name": "กระติกน้ำNo.0326(4L.)สีน้ำเงินตรามือ", "group": "14012", "cost": 218.5, "price": 180.0, "diff": 38.5, "diff_pct": 21.4, "barcode": "2001000038036"}, {"iprod": "9551103199", "name": "คั้นส้มเหลี่ยมเล็ก(ตราวัว)", "group": "06017", "cost": 287.5, "price": 250.0, "diff": 37.5, "diff_pct": 15.0, "barcode": "9551103199"}, {"iprod": "4446666254", "name": "ตักขนม24cm.No.924ปลากระแบนคู่ตาห่าง", "group": "06028", "cost": 304.0, "price": 270.0, "diff": 34.0, "diff_pct": 12.6, "barcode": "4446666254"}, {"iprod": "8858740502078", "name": "ที่นอนปิคนิค3ชั้น30*40HSM06(208507)(Clearance)", "group": "07001", "cost": 393.0, "price": 360.0, "diff": 33.0, "diff_pct": 9.2, "barcode": "0401400022730"}, {"iprod": "8851094020557", "name": "คว่ำแก้วฝาปิดNo.K-439(KEYWAY)", "group": "14033", "cost": 95.0, "price": 65.0, "diff": 30.0, "diff_pct": 46.2, "barcode": "8851094020557"}, {"iprod": "4446665004", "name": "ขวดโหล210ml.1B13621ตราโอเชี่ยน", "group": "06026", "cost": 33.55, "price": 4.84, "diff": 28.71, "diff_pct": 593.2, "barcode": "4446665004"}, {"iprod": "0000300007", "name": "หมึกพิมพ์เลเซอร์HP 35A(Use)", "group": "03030", "cost": 193.53, "price": 165.0, "diff": 28.53, "diff_pct": 17.3, "barcode": "-"}, {"iprod": "0602000061", "name": "ร่ม16in.ยูวีในคละสีลายการตูนส์B-03/RA-01", "group": "04005", "cost": 29.5, "price": 1.0, "diff": 28.5, "diff_pct": 2850.0, "barcode": "0602000061"}, {"iprod": "8853347024015", "name": "ยานพาหนะกล่อง868-4BNo.911831", "group": "10001", "cost": 82.5, "price": 55.0, "diff": 27.5, "diff_pct": 50.0, "barcode": "8853347024015"}, {"iprod": "8880007523", "name": "จานเมลามีน109-9TASABA", "group": "06011", "cost": 28.0, "price": 1.0, "diff": 27.0, "diff_pct": 2700.0, "barcode": "0801200061294"}, {"iprod": "19012009", "name": "แก้วกาแฟ096", "group": "06060", "cost": 55.3, "price": 30.0, "diff": 25.3, "diff_pct": 84.3, "barcode": "19012009"}, {"iprod": "8880003081", "name": "ถาดแขก36cm.ร่ม", "group": "06008", "cost": 24.5, "price": 1.0, "diff": 23.5, "diff_pct": 2350.0, "barcode": "8880003081"}, {"iprod": "8852317110390", "name": "กระดาษปกรายงานA4(509)", "group": "16017", "cost": 33.0, "price": 11.51, "diff": 21.49, "diff_pct": 186.7, "barcode": "8852317110390"}, {"iprod": "1110006002", "name": "จานเปล/จานกลมใหญ่วงหอย/ถาดกลมหยัก", "group": "06011", "cost": 91.0, "price": 70.0, "diff": 21.0, "diff_pct": 30.0, "barcode": "0801200059730"}, {"iprod": "4446663867", "name": "ตาข่ายไนล่อน16*90*15", "group": "04019", "cost": 149.5, "price": 130.0, "diff": 19.5, "diff_pct": 15.0, "barcode": "4446663867"}, {"iprod": "8852198004917", "name": "หัวฆ้อนSOLONo.H27-27mm.เฮอร์ตัน", "group": "17011", "cost": 154.5, "price": 135.0, "diff": 19.5, "diff_pct": 14.4, "barcode": "2601600013365"}, {"iprod": "8880002026", "name": "พาน22cm.ลาวทองแสงตะวัน", "group": "06030", "cost": 20.3, "price": 1.0, "diff": 19.3, "diff_pct": 1930.0, "barcode": "0804000011353"}, {"iprod": "8851826041218", "name": "สบู่สิวฝ้าดร.มนตรี70ก.แถมครีมซอง10ก.", "group": "02016", "cost": 20.0, "price": 1.0, "diff": 19.0, "diff_pct": 1900.0, "barcode": "0200600036503"}, {"iprod": "6903071000143", "name": "ลิป Baxi", "group": "02031", "cost": 27.3, "price": 9.17, "diff": 18.13, "diff_pct": 197.7, "barcode": "6903071000143"}, {"iprod": "8851991052101", "name": "กระบวย4in.ด้ามดำม้าลาย", "group": "06004", "cost": 147.5, "price": 130.0, "diff": 17.5, "diff_pct": 13.5, "barcode": "8851991052101"}, {"iprod": "8851871903141", "name": "ชามหน้าหมีพูห์7in.B6226-7", "group": "06007", "cost": 152.2, "price": 135.0, "diff": 17.2, "diff_pct": 12.7, "barcode": "0800800049860"}, {"iprod": "8851871279062", "name": "ถาดอาหารว่างNo.26044-10.5ลายPooh A SENSE OF ADVENTURE", "group": "06008", "cost": 122.07, "price": 105.0, "diff": 17.07, "diff_pct": 16.3, "barcode": "8851871279062"}, {"iprod": "8851871283618", "name": "ถาด3ช่องT26044-10.5ลายPooh J", "group": "14023", "cost": 122.07, "price": 105.0, "diff": 17.07, "diff_pct": 16.3, "barcode": "8851871283618"}, {"iprod": "8850633110162", "name": "ขันน้ำ16cm.สเตนเลสนางนวล", "group": "06002", "cost": 115.0, "price": 98.0, "diff": 17.0, "diff_pct": 17.3, "barcode": "8850633110162"}, {"iprod": "0000300003", "name": "หมึกปริ้นบาร์โค๊ต(ริบบอนแวกซ์)110*300(Use)", "group": "03030", "cost": 256.8, "price": 240.0, "diff": 16.8, "diff_pct": 7.0, "barcode": "-"}, {"iprod": "8853705019455", "name": "กล่องฝาล็อคNo.M100สีดำสกรีนPLAMY(โมเดิร์น)(Clearance)", "group": "14016", "cost": 226.5, "price": 210.0, "diff": 16.5, "diff_pct": 7.9, "barcode": "8853705019455"}, {"iprod": "0002600033", "name": "คว่ำจานฝาปิดNo.264สหชัย(Use)", "group": "03036", "cost": 222.33, "price": 206.0, "diff": 16.33, "diff_pct": 7.9, "barcode": "-"}, {"iprod": "8880005145", "name": "กระเป๋าสตางค์(T34)", "group": "01001", "cost": 50.15, "price": 34.0, "diff": 16.15, "diff_pct": 47.5, "barcode": "8880005145"}, {"iprod": "775011218", "name": "หม้อด้าม18cm.สามห่วงทอง", "group": "06010", "cost": 111.0, "price": 95.0, "diff": 16.0, "diff_pct": 16.8, "barcode": "-"}, {"iprod": "8850633298372", "name": "มีดเชฟโปร8in.(150000652)", "group": "06031", "cost": 125.5, "price": 110.0, "diff": 15.5, "diff_pct": 14.1, "barcode": "8850633298372"}, {"iprod": "0202100011", "name": "แชมพูสูตรสมุนไพร1000g.ตราแคร์บิว", "group": "02020", "cost": 95.0, "price": 80.0, "diff": 15.0, "diff_pct": 18.8, "barcode": "0202100011"}, {"iprod": "8859592389220", "name": "ผงซักฟอก1800g.กลิ่นพิงค์ฟลาวเวอร์(ชัวร์)", "group": "02015", "cost": 80.0, "price": 65.0, "diff": 15.0, "diff_pct": 23.1, "barcode": "8859592389220"}, {"iprod": "8880005870", "name": "กระเป๋าสะพาย(T110/159)", "group": "01001", "cost": 125.0, "price": 110.0, "diff": 15.0, "diff_pct": 13.6, "barcode": "8880005870"}, {"iprod": "4446663031", "name": "แว่นตา 55/99", "group": "01011", "cost": 69.5, "price": 55.0, "diff": 14.5, "diff_pct": 26.4, "barcode": "0101400026433"}, {"iprod": "8851771616011", "name": "ชามแกง7.5in.No.B429-7.5ลายแมวมารีคิตตี้", "group": "06007", "cost": 104.5, "price": 90.0, "diff": 14.5, "diff_pct": 16.1, "barcode": "8851771616011"}, {"iprod": "8853198344522", "name": "กล่องเหลี่ยมชุดBBSET4BBกระเช้า", "group": "14016", "cost": 243.89, "price": 230.0, "diff": 13.89, "diff_pct": 6.0, "barcode": "2001400042069"}, {"iprod": "8880006084", "name": "นาฬิกา703", "group": "19004", "cost": 55.5, "price": 42.0, "diff": 13.5, "diff_pct": 32.1, "barcode": "3300200015212"}, {"iprod": "1110003248", "name": "สายAV1.5m.4หัวใสBOEKI", "group": "05012", "cost": 16.27, "price": 2.84, "diff": 13.43, "diff_pct": 472.9, "barcode": "-"}, {"iprod": "0002600007", "name": "แก้วหูสเตนเลส7cm.จรวด(Use)", "group": "03036", "cost": 37.88, "price": 25.0, "diff": 12.88, "diff_pct": 51.5, "barcode": "-"}, {"iprod": "0001900001", "name": "กล่องเอกสาร1ช่องNo.F-02ST(Use)", "group": "03003", "cost": 74.77, "price": 62.0, "diff": 12.77, "diff_pct": 20.6, "barcode": "-"}, {"iprod": "8880009777", "name": "โหลตัดแก้ว7in.เอ", "group": "06026", "cost": 187.5, "price": 175.0, "diff": 12.5, "diff_pct": 7.1, "barcode": "8880009777"}, {"iprod": "9551106548", "name": "สร้อยเงิน180*39", "group": "01018", "cost": 27.3, "price": 15.0, "diff": 12.3, "diff_pct": 82.0, "barcode": "9551106548"}, {"iprod": "8852100300113", "name": "รถสามล้อมดแดงไรเดอร์ไฟว์T-C1143A APEX TOYS", "group": "10001", "cost": 387.0, "price": 375.0, "diff": 12.0, "diff_pct": 3.2, "barcode": "1300200054855"}, {"iprod": "8880002914", "name": "~หม้อโจ๊ก20cm.ตราร่ม/3A", "group": "06010", "cost": 112.0, "price": 100.0, "diff": 12.0, "diff_pct": 12.0, "barcode": "-"}, {"iprod": "8850722152479", "name": "ลิป/บลัชออน2สีคาเวียร์", "group": "02031", "cost": 41.5, "price": 30.0, "diff": 11.5, "diff_pct": 38.3, "barcode": "8850722152479"}, {"iprod": "8880004837", "name": "ขันน้ำด้ามNo.125สีB RK", "group": "14007", "cost": 19.0, "price": 7.5, "diff": 11.5, "diff_pct": 153.3, "barcode": "-"}, {"iprod": "1200300018", "name": "สินค้าสมนาคุณปฏิทิน", "group": "26008", "cost": 11.24, "price": 0.01, "diff": 11.23, "diff_pct": 112300.0, "barcode": "1200300018"}, {"iprod": "4971850127802", "name": "เครื่องคิดเลขNo.CA-308", "group": "16019", "cost": 69.0, "price": 58.0, "diff": 11.0, "diff_pct": 19.0, "barcode": "4971850127802"}, {"iprod": "8853152049432", "name": "กระจกกลมSimilan3ชิ้นNo.SM303Wสีขาว(SL)", "group": "01003", "cost": 211.0, "price": 200.0, "diff": 11.0, "diff_pct": 5.5, "barcode": "8853152049432"}, {"iprod": "1110001706", "name": "ตักขนม16cm.No.916/1ด้ามดำตาถี่(ปลากระเบนคู่)", "group": "06028", "cost": 115.88, "price": 105.0, "diff": 10.88, "diff_pct": 10.4, "barcode": "1110001706"}, {"iprod": "0200200012", "name": "ปิ้งปลาชุปจัมโบ้ JT", "group": "06059", "cost": 27.5, "price": 16.67, "diff": 10.83, "diff_pct": 65.0, "barcode": "0200200012"}, {"iprod": "8880006277", "name": "หมวกT17/39", "group": "01024", "cost": 27.3, "price": 17.0, "diff": 10.3, "diff_pct": 60.6, "barcode": "8880006277"}, {"iprod": "0002700024", "name": "แปรงล้างห้องน้ำหัวหมี(Use)", "group": "03039", "cost": 26.75, "price": 16.5, "diff": 10.25, "diff_pct": 62.1, "barcode": "-"}, {"iprod": "8851991002229", "name": "มีดครัว6in.Chefหัวม้าลาย", "group": "06031", "cost": 105.0, "price": 95.0, "diff": 10.0, "diff_pct": 10.5, "barcode": "8851991002229"}, {"iprod": "8851991300462", "name": "ถาดเหลี่ยม18in.หัวม้าลาย130046", "group": "06008", "cost": 560.0, "price": 550.0, "diff": 10.0, "diff_pct": 1.8, "barcode": "8851991300462"}, {"iprod": "8854953007072", "name": "น้ำยาล้างจาน1000ml.กลิ่นมะนาว(M-Wash)", "group": "02014", "cost": 30.0, "price": 20.0, "diff": 10.0, "diff_pct": 50.0, "barcode": "8854953007072"}, {"iprod": "8857126793314", "name": "น้ำยาซักผ้าผสมน้ำยาปรับผ้านุ่ม600ml.No.DL-001กลิ่นเลิฟพิงค์กี้(Jaxx)", "group": "02015", "cost": 30.0, "price": 20.0, "diff": 10.0, "diff_pct": 50.0, "barcode": "8857126793314"}, {"iprod": "8880009120", "name": "กระจกขอบทอง16*24in.ตราชฎา", "group": "01003", "cost": 125.0, "price": 115.0, "diff": 10.0, "diff_pct": 8.7, "barcode": "8880009120"}, {"iprod": "1200300038", "name": "สินค้าสมนาคุณแก้วสวัสดีปีใหม่", "group": "26005", "cost": 10.0, "price": 0.01, "diff": 9.99, "diff_pct": 99900.0, "barcode": "1200300038"}, {"iprod": "8853204208121", "name": "ลิปแคร์", "group": "02031", "cost": 27.3, "price": 17.5, "diff": 9.8, "diff_pct": 56.0, "barcode": "8853204208121"}];
+
+function fmt(n) {
+  if (n == null) return '—';
+  return Number(n).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function switchSubView(v) {
+  document.getElementById('view-tx').style.display = (v === 'tx') ? '' : 'none';
+  document.getElementById('view-master').style.display = (v === 'master') ? '' : 'none';
+  document.getElementById('btn-tab1').className = 'subnav-btn ' + (v === 'tx' ? 'active' : '');
+  document.getElementById('btn-tab2').className = 'subnav-btn ' + (v === 'master' ? 'active' : '');
+}
+
+function renderTxTable(list) {
+  var tbody = document.getElementById('tbody-tx');
+  tbody.innerHTML = list.map(function(r){
+    var tagClass = 'tag-danger';
+    if (r.reason.indexOf('0 บาท') !== -1) tagClass = 'tag-danger';
+    else if (r.reason.indexOf('>50%') !== -1) tagClass = 'tag-warning';
+    else tagClass = 'tag-info';
+
+    return '<tr>' +
+      '<td><a href="#" class="sono-link">' + r.sono + '</a></td>' +
+      '<td style="white-space:nowrap;">' + r.sodate + '</td>' +
+      '<td><b>[' + r.branch_code + ']</b> ' + r.branch_name + '</td>' +
+      '<td style="font-size:11.5px;color:var(--muted);">' + (r.dm || '—') + '<br>' + (r.rm || '—') + '</td>' +
+      '<td>' + r.iprod + '</td>' +
+      '<td style="font-family:monospace;">' + r.barcode + '</td>' +
+      '<td style="font-weight:600;max-width:240px;">' + r.name + '</td>' +
+      '<td class="r" style="font-weight:700;">' + Number(r.qty).toLocaleString() + '</td>' +
+      '<td class="r">฿' + fmt(r.u_price) + '</td>' +
+      '<td class="r" style="color:#dc2626;font-weight:600;">฿' + fmt(r.u_cost) + '</td>' +
+      '<td class="r" style="font-weight:700;color:var(--blue);">฿' + fmt(r.sales) + '</td>' +
+      '<td class="r">฿' + fmt(r.cost) + '</td>' +
+      '<td class="r" style="color:#dc2626;font-weight:800;font-size:13px;">-฿' + fmt(r.loss) + '</td>' +
+      '<td><span class="tag ' + tagClass + '">' + r.reason + '</span></td>' +
+    '</tr>';
+  }).join('');
+  document.getElementById('tx-count-label').textContent = 'แสดง ' + list.length + ' รายการ';
+}
+
+function renderMasterTable(list) {
+  var tbody = document.getElementById('tbody-master');
+  tbody.innerHTML = list.map(function(r){
+    var remark = 'ตั้งราคาขายต่ำกว่าต้นทุน';
+    if (r.price <= 1) remark = 'ของสมนาคุณ/ของแถม (ตั้งราคา ฿1 หรือ ฿0.01)';
+    else if (r.diff_pct > 50) remark = 'ต้นทุนปรับสูงขึ้นผิดปกติ หรือคีย์หน่วยผิด';
+
+    return '<tr>' +
+      '<td>' + r.iprod + '</td>' +
+      '<td style="font-family:monospace;">' + r.barcode + '</td>' +
+      '<td style="font-weight:600;">' + r.name + '</td>' +
+      '<td>' + r.group + '</td>' +
+      '<td class="r" style="font-weight:700;">฿' + fmt(r.price) + '</td>' +
+      '<td class="r" style="color:#dc2626;font-weight:700;">฿' + fmt(r.cost) + '</td>' +
+      '<td class="r" style="color:#dc2626;font-weight:800;">+฿' + fmt(r.diff) + '</td>' +
+      '<td class="r" style="color:#dc2626;font-weight:700;">+' + r.diff_pct.toFixed(1) + '%</td>' +
+      '<td><span class="tag ' + (r.price <= 1 ? 'tag-warning' : 'tag-danger') + '">' + remark + '</span></td>' +
+    '</tr>';
+  }).join('');
+  document.getElementById('master-count-label').textContent = 'แสดง ' + list.length + ' รายการ';
+}
+
+function filterTxTable() {
+  var q = (document.getElementById('tx-search').value || '').toLowerCase().trim();
+  var rm = (document.getElementById('tx-rm').value || '');
+  var reason = (document.getElementById('tx-reason').value || '');
+
+  var filtered = TX_DATA.filter(function(r){
+    if (rm && r.rm !== rm) return false;
+    if (reason && r.reason.indexOf(reason) === -1) return false;
+    if (q) {
+      var match = (r.sono || '').toLowerCase().indexOf(q) !== -1 ||
+                  (r.barcode || '').toLowerCase().indexOf(q) !== -1 ||
+                  (r.iprod || '').toLowerCase().indexOf(q) !== -1 ||
+                  (r.name || '').toLowerCase().indexOf(q) !== -1 ||
+                  (r.branch_name || '').toLowerCase().indexOf(q) !== -1 ||
+                  (r.branch_code || '').toLowerCase().indexOf(q) !== -1;
+      if (!match) return false;
+    }
+    return true;
+  });
+  renderTxTable(filtered);
+}
+
+function filterMasterTable() {
+  var q = (document.getElementById('master-search').value || '').toLowerCase().trim();
+  var filtered = MASTER_DATA.filter(function(r){
+    if (q) {
+      var match = (r.barcode || '').toLowerCase().indexOf(q) !== -1 ||
+                  (r.iprod || '').toLowerCase().indexOf(q) !== -1 ||
+                  (r.name || '').toLowerCase().indexOf(q) !== -1;
+      if (!match) return false;
+    }
+    return true;
+  });
+  renderMasterTable(filtered);
+}
+
+// Initialize
+renderTxTable(TX_DATA);
+renderMasterTable(MASTER_DATA);
+</script>
+</body>
+</html>
