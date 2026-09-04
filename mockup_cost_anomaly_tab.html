@@ -32,6 +32,29 @@
     white-space: nowrap !important;
     vertical-align: middle !important;
   }
+  tfoot, tfoot tr, tfoot tr.grand-total-row {
+    background: #0f172a !important;
+    color: #ffffff !important;
+  }
+  tfoot td, tfoot th {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-size: 13px !important;
+    padding: 10px 12px !important;
+    border-top: 3px solid #38bdf8 !important;
+    border-bottom: 2px solid #0f172a !important;
+    vertical-align: middle !important;
+  }
+  thead th[data-col] {
+    cursor: pointer !important;
+    user-select: none !important;
+  }
+  thead th[data-col]:hover {
+    background: #1e293b !important;
+  }
+  thead th.sort-asc::after { content: ' ▲' !important; color: #38bdf8 !important; font-weight: 800 !important; }
+  thead th.sort-desc::after { content: ' ▼' !important; color: #38bdf8 !important; font-weight: 800 !important; }
   .table-card, .table-wrap { overflow-x: auto !important; }
 
   .header-card {
@@ -238,20 +261,20 @@
       <table id="tbl-tx">
         <thead>
           <tr>
-            <th>ลำดับชั้น (1. ภาค RM ➔ 2. เขต DM ➔ 3. รายการบิล)</th>
-            <th>วันที่ (sodate)</th>
-            <th>สาขา (sotowhs)</th>
-            <th style="color:#38bdf8;">ผู้จัดการเขต (DM)</th>
-            <th>รหัส (iprod)</th>
-            <th>พาร์โค้ด (parcode)</th>
-            <th>ชื่อสินค้า (idesc)</th>
-            <th class="r">จำนวน (soqty)</th>
-            <th class="r">ราคาป้าย/หน่วย</th>
-            <th class="r">ทุน/หน่วย</th>
-            <th class="r" style="color:#60a5fa;">ยอดขายสุทธิ (solineamt)</th>
-            <th class="r">ต้นทุนรวม (cost)</th>
-            <th class="r" style="color:#f87171;">ขาดทุน (GP)</th>
-            <th>สาเหตุความผิดปกติ</th>
+            <th data-col="name">ลำดับชั้น (1. ภาค RM ➔ 2. เขต DM ➔ 3. รายการบิล)</th>
+            <th data-col="sodate">วันที่ (sodate)</th>
+            <th data-col="branch_code">สาขา (sotowhs)</th>
+            <th data-col="dm" style="color:#38bdf8;">ผู้จัดการเขต (DM)</th>
+            <th data-col="iprod">รหัส (iprod)</th>
+            <th data-col="parcode">พาร์โค้ด (parcode)</th>
+            <th data-col="item_name">ชื่อสินค้า (idesc)</th>
+            <th data-col="qty" class="r">จำนวน (soqty)</th>
+            <th data-col="u_price" class="r">ราคาป้าย/หน่วย</th>
+            <th data-col="u_cost" class="r">ทุน/หน่วย</th>
+            <th data-col="sales" class="r" style="color:#60a5fa;">ยอดขายสุทธิ (solineamt)</th>
+            <th data-col="cost" class="r">ต้นทุนรวม (cost)</th>
+            <th data-col="loss" class="r sort-desc" style="color:#f87171;">ขาดทุน (GP)</th>
+            <th data-col="reason">สาเหตุความผิดปกติ</th>
           </tr>
         </thead>
         <tbody id="tbody-tx"></tbody>
@@ -272,18 +295,19 @@
       <table id="tbl-master">
         <thead>
           <tr>
-            <th>รหัสสินค้า (iprod)</th>
-            <th>พาร์โค้ด (parcode)</th>
-            <th>ชื่อสินค้า</th>
-            <th>หมวดหมู่</th>
-            <th class="r">ราคาขายป้าย (Price 3)</th>
-            <th class="r" style="color:#f87171;">ต้นทุนเฉลี่ย (Avg Cost)</th>
-            <th class="r" style="color:#f87171;">ทุนสูงกว่าราคาขาย (บาท)</th>
-            <th class="r" style="color:#f87171;">ทุนสูงกว่า (%)</th>
-            <th>การวิเคราะห์เบื้องต้น</th>
+            <th data-col="iprod">รหัสสินค้า (iprod)</th>
+            <th data-col="parcode">พาร์โค้ด (parcode)</th>
+            <th data-col="name">ชื่อสินค้า</th>
+            <th data-col="group_name">หมวดหมู่</th>
+            <th data-col="price3" class="r">ราคาขายป้าย (Price 3)</th>
+            <th data-col="cost" class="r" style="color:#f87171;">ต้นทุนเฉลี่ย (Avg Cost)</th>
+            <th data-col="diff" class="r sort-desc" style="color:#f87171;">ทุนสูงกว่าราคาขาย (บาท)</th>
+            <th data-col="diff_pct" class="r" style="color:#f87171;">ทุนสูงกว่า (%)</th>
+            <th data-col="remark">การวิเคราะห์เบื้องต้น</th>
           </tr>
         </thead>
         <tbody id="tbody-master"></tbody>
+        <tfoot id="tfoot-master"></tfoot>
       </table>
     </div>
   </div>
@@ -401,8 +425,29 @@ function renderTxTable(list) {
     allStores.add(br);
   });
 
+  var sc = MOCK_TX_SORT.col, sdir = MOCK_TX_SORT.dir;
+  function getMockVal(node, col) {
+    if (col === 'name') return node.rm || node.dm || node.name || '';
+    if (col === 'loss') return node.loss || 0;
+    if (col === 'sales') return node.sales || 0;
+    if (col === 'cost') return node.cost || 0;
+    if (col === 'qty') return node.qty || 0;
+    if (col === 'u_price') return node.u_price || 0;
+    if (col === 'u_cost') return node.u_cost || 0;
+    if (col === 'sodate') return node.sodate || '';
+    if (col === 'sono') return node.sono || '';
+    if (col === 'iprod') return node.iprod || '';
+    if (col === 'parcode') return node.parcode || '';
+    if (col === 'item_name') return node.name || '';
+    if (col === 'branch_code') return node.branch_code || (node.stores ? node.stores.size : 0);
+    if (col === 'dm') return node.dm || (node.dms ? Object.keys(node.dms).length : 0);
+    if (col === 'reason') return node.reason || '';
+    return node[col] || 0;
+  }
   var sortedRMs = Object.keys(rmGroups).sort(function(a,b){
-    return rmGroups[b].loss - rmGroups[a].loss;
+    var va = getMockVal(rmGroups[a], sc), vb = getMockVal(rmGroups[b], sc);
+    if (typeof va === 'string') return sdir * va.localeCompare(vb);
+    return sdir * (va - vb);
   });
 
   var htmlRows = [];
@@ -435,7 +480,9 @@ function renderTxTable(list) {
     '</tr>');
 
     var sortedDMs = Object.keys(rData.dms).sort(function(a,b){
-      return rData.dms[b].loss - rData.dms[a].loss;
+      var va = getMockVal(rData.dms[a], sc), vb = getMockVal(rData.dms[b], sc);
+      if (typeof va === 'string') return sdir * va.localeCompare(vb);
+      return sdir * (va - vb);
     });
     totalDMs += sortedDMs.length;
 
@@ -466,7 +513,12 @@ function renderTxTable(list) {
       '</tr>');
 
       // Bills
-      dData.bills.forEach(function(r){
+      var sortedBills = dData.bills.slice().sort(function(a, b){
+        var va = getMockVal(a, sc), vb = getMockVal(b, sc);
+        if (typeof va === 'string') return sdir * va.localeCompare(vb);
+        return sdir * (va - vb);
+      });
+      sortedBills.forEach(function(r){
         var tagClass = 'tag-info';
         if ((r.reason || '').indexOf('0 บาท') !== -1) tagClass = 'tag-danger';
         else if ((r.reason || '').indexOf('>50%') !== -1) tagClass = 'tag-warning';
@@ -494,26 +546,33 @@ function renderTxTable(list) {
 
   tbody.innerHTML = htmlRows.join('');
 
-  // Grand Total
+  // Grand Total (Solid High-Contrast Navy)
   var tfoot = document.getElementById('tfoot-tx');
   if (tfoot) {
-    tfoot.innerHTML = '<tr style="background:#0f172a;color:#fff;font-weight:800;font-size:13px;border-top:3px solid #38bdf8;">' +
-      '<td colspan="7" style="padding:10px 14px;"> Grand Total (รวมทั้งหมด ' + sortedRMs.length + ' ภาค RM | ' + totalDMs + ' เขต DM | ' + allStores.size + ' สาขา | ' + list.length + ' บิลผิดปกติ)</td>' +
-      '<td class="r" style="color:#fde047;">' + fmt(grandQty) + ' ชิ้น</td>' +
-      '<td class="r">—</td>' +
-      '<td class="r">—</td>' +
-      '<td class="r" style="color:#60a5fa;">฿' + fmt(grandSales) + '</td>' +
-      '<td class="r">฿' + fmt(grandCost) + '</td>' +
-      '<td class="r" style="color:#f87171;font-size:14px;">-฿' + fmt(grandLoss) + '</td>' +
-      '<td style="color:#fca5a5;">ขาดทุนรวม -฿' + fmt(grandLoss) + '</td>' +
+    tfoot.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;font-size:13px;border-top:3px solid #38bdf8 !important;">' +
+      '<td colspan="7" style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;white-space:nowrap;font-size:13.5px;"><b>📌 Grand Total</b> (รวมทั้งหมด ' + sortedRMs.length + ' ภาค RM | ' + totalDMs + ' เขต DM | ' + allStores.size + ' สาขา | ' + list.length + ' บิลผิดปกติ)</td>' +
+      '<td class="r gt-qty" style="background:#0f172a !important;color:#fde047 !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">' + fmt(grandQty) + ' ชิ้น</td>' +
+      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;white-space:nowrap;">—</td>' +
+      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;white-space:nowrap;">—</td>' +
+      '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">฿' + fmt(grandSales) + '</td>' +
+      '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">฿' + fmt(grandCost) + '</td>' +
+      '<td class="r gt-loss" style="background:#0f172a !important;color:#f87171 !important;padding:12px;font-weight:800;font-size:14px;white-space:nowrap;">-฿' + fmt(grandLoss) + '</td>' +
+      '<td style="background:#0f172a !important;color:#ffffff !important;padding:12px;white-space:nowrap;"><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-weight:800;background:#dc2626 !important;color:#ffffff !important;font-size:12px;">ขาดทุนรวม -฿' + fmt(grandLoss) + '</span></td>' +
     '</tr>';
   }
   document.getElementById('tx-count-label').textContent = 'แสดง ' + sortedRMs.length + ' ภาค (' + list.length + ' รายการ)';
 }
 
 function renderMasterTable(list) {
+  var sc = MOCK_MASTER_SORT.col, sdir = MOCK_MASTER_SORT.dir;
+  var sorted = list.slice().sort(function(a, b){
+    var va = a[sc], vb = b[sc];
+    if (typeof va === 'string') return sdir * va.localeCompare(vb);
+    if (va == null) va = 0; if (vb == null) vb = 0;
+    return sdir * (va - vb);
+  });
   var tbody = document.getElementById('tbody-master');
-  tbody.innerHTML = list.map(function(r){
+  tbody.innerHTML = sorted.map(function(r){
     var remark = 'ตั้งราคาขายต่ำกว่าต้นทุน';
     if (r.price3 <= 1) remark = 'ของสมนาคุณ/ของแถม (ตั้งราคา ฿1 หรือ ฿0.01)';
     else if (r.diff_pct > 50) remark = 'ต้นทุนปรับสูงขึ้นผิดปกติ หรือคีย์หน่วยผิด';
@@ -531,6 +590,18 @@ function renderMasterTable(list) {
     '</tr>';
   }).join('');
   document.getElementById('master-count-label').textContent = 'แสดง ' + list.length + ' รายการ';
+  var totDiff = list.reduce(function(a, r){ return a + (r.diff || 0); }, 0);
+  var tfoot = document.getElementById('tfoot-master');
+  if (tfoot) {
+    tfoot.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;font-size:13px;border-top:3px solid #38bdf8 !important;">' +
+      '<td colspan="4" style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;font-size:13.5px;"><b>📌 Grand Total</b> (รวมสินค้าต้นทุนสูงกว่าราคาป้าย ' + list.length + ' รายการ)</td>' +
+      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;">—</td>' +
+      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;">—</td>' +
+      '<td class="r gt-loss" style="background:#0f172a !important;color:#f87171 !important;padding:12px;font-weight:800;font-size:14px;">+฿' + fmt(totDiff) + '</td>' +
+      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;">—</td>' +
+      '<td style="background:#0f172a !important;color:#ffffff !important;padding:12px;"><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-weight:800;background:#dc2626 !important;color:#ffffff !important;font-size:12px;">ส่วนต่างต้นทุนเกินราคาขาย +฿' + fmt(totDiff) + '</span></td>' +
+    '</tr>';
+  }
 }
 
 function filterTxTable() {
@@ -580,6 +651,9 @@ Array.from(dms).sort().forEach(function(d){
   opt.value = d; opt.textContent = d;
   dmSel.appendChild(opt);
 });
+
+initMockSort('tbl-tx', MOCK_TX_SORT, function(){ filterTxTable(); });
+initMockSort('tbl-master', MOCK_MASTER_SORT, function(){ filterMasterTable(); });
 
 renderTxTable(TX_DATA);
 renderMasterTable(MASTER_DATA);
