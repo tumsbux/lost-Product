@@ -101,14 +101,14 @@ def query_products(cfg):
     print('[3/4] Querying products from dim_product + item_group + item_type ...')
     conn = get_conn(cfg)
     cur = conn.cursor()
-    cur.execute("SELECT iprod, idesc, igrcode, iacst, ipunit1 FROM `data-lake`.dim_product")
+    cur.execute("SELECT iprod, idesc, igrcode, iacst, ipunit3 FROM `data-lake`.dim_product")
     prods = {}
-    for iprod, idesc, igrcode, iacst, ipunit1 in cur:
+    for iprod, idesc, igrcode, iacst, ipunit3 in cur:
         prods[str(iprod)] = {
             'name': idesc or '',
             'group': str(igrcode or ''),
             'cost': float(iacst or 0),
-            'price': float(ipunit1 or 0)
+            'price3': float(ipunit3 or 0)
         }
     cur.close(); conn.close()
 
@@ -134,8 +134,9 @@ def query_products(cfg):
 
 # ── step 3: aggregate ────────────────────────────────────────────────────────
 
-def query_anomalies(cfg, current_month, prods, stores, barcodes):
-    print('  Querying transaction anomalies from fact_sales ...')
+
+def query_anomalies(cfg, current_month, prods, stores, barcode_to_parcode, groups):
+    print('  Querying transaction anomalies from fact_sales (excluding branch 901) ...')
     conn = get_conn(cfg)
     cur = conn.cursor(dictionary=True)
     month_start = current_month + '-01'
@@ -145,6 +146,7 @@ def query_anomalies(cfg, current_month, prods, stores, barcodes):
                (total_cost - solineamt) as loss
         FROM `data-lake`.fact_sales
         WHERE sodate >= %s
+          AND sotowhs != '901'
           AND total_cost > solineamt
           AND soqty > 0
           AND solinetype NOT IN ('C','R')
@@ -161,7 +163,7 @@ def query_anomalies(cfg, current_month, prods, stores, barcodes):
         whs = str(r['sotowhs']).zfill(3)
         p_info = prods.get(ip, {'name': 'ไม่พบชื่อสินค้า', 'group': ''})
         s_info = stores.get(whs, {'name': f'สาขา {whs}', 'dm': '', 'rm': ''})
-        barcode = barcodes.get(ip, '-')
+        parcode = barcode_to_parcode.get(ip, ip)
         
         qty = float(r['soqty'] or 0)
         u_price = float(r['sopricunit'] or 0)
@@ -186,7 +188,7 @@ def query_anomalies(cfg, current_month, prods, stores, barcodes):
             'dm': s_info['dm'],
             'rm': s_info['rm'],
             'iprod': ip,
-            'barcode': barcode,
+            'parcode': parcode,
             'name': p_info['name'],
             'qty': qty,
             'u_price': round(u_price, 2),
@@ -197,28 +199,165 @@ def query_anomalies(cfg, current_month, prods, stores, barcodes):
             'reason': reason
         })
 
-    # Master cost > price
+    # Master cost > Price 3
     master_list = []
     for ip, p in prods.items():
         c = p.get('cost', 0)
-        pr = p.get('price', 0)
-        if c > pr and pr > 0 and c > 0:
+        pr3 = p.get('price3', 0)
+        if c > pr3 and pr3 > 0 and c > 0:
+            grp_code = p.get('group', '')
+            grp_name = groups.get(grp_code, grp_code)
             master_list.append({
                 'iprod': ip,
-                'barcode': barcodes.get(ip, '-'),
+                'parcode': barcode_to_parcode.get(ip, ip),
                 'name': p.get('name', ''),
-                'group': p.get('group', ''),
+                'group': grp_code,
+                'group_name': grp_name,
                 'cost': round(c, 2),
-                'price': round(pr, 2),
-                'diff': round(c - pr, 2),
-                'diff_pct': round((c - pr) / pr * 100, 1)
+                'price3': round(pr3, 2),
+                'diff': round(c - pr3, 2),
+                'diff_pct': round((c - pr3) / pr3 * 100, 1)
             })
     master_list.sort(key=lambda x: x['diff'], reverse=True)
 
-    print(f'    {len(tx_list):,} transaction anomalies, {len(master_list):,} master cost>price items')
+    print(f'    {len(tx_list):,} retail transaction anomalies, {len(master_list):,} master cost>price3 items')
     return {
         'transactions': tx_list,
         'master_cost_over_price': master_list[:150]
+    }
+
+def query_branch_901(cfg, current_month, prods, barcode_to_parcode, groups):
+    print('  Querying Branch 901 dedicated data ...')
+    conn = get_conn(cfg)
+    cur = conn.cursor(dictionary=True)
+    
+    # 1. Monthly Performance
+    cur.execute("""
+        SELECT 
+            CONCAT(YEAR(sodate), '-', LPAD(MONTH(sodate),2,'0')) as mo,
+            SUM(net_sales_amt) as sales,
+            SUM(total_cost) as cost,
+            SUM(soqty * sopricdisc) as sku_disc,
+            SUM(solineamt - net_sales_amt) as bill_disc,
+            SUM(soqty) as qty,
+            (SUM(net_sales_amt) - SUM(total_cost)) as gp,
+            ((SUM(net_sales_amt) - SUM(total_cost)) / SUM(net_sales_amt) * 100) as gp_pct,
+            COUNT(*) as tx_cnt
+        FROM `data-lake`.fact_sales
+        WHERE sotowhs = '901'
+          AND sodate >= '2026-08-01'
+          AND solinetype NOT IN ('C','R')
+          AND soretflag = 'N'
+        GROUP BY mo
+        ORDER BY mo
+    """)
+    monthly_rows = cur.fetchall()
+    monthly = []
+    for m in monthly_rows:
+        monthly.append({
+            'month': m['mo'],
+            'sales': round(float(m['sales'] or 0), 2),
+            'cost': round(float(m['cost'] or 0), 2),
+            'sku_disc': round(float(m['sku_disc'] or 0), 2),
+            'bill_disc': round(float(m['bill_disc'] or 0), 2),
+            'qty': round(float(m['qty'] or 0), 0),
+            'gp': round(float(m['gp'] or 0), 2),
+            'gp_pct': round(float(m['gp_pct'] or 0), 1),
+            'tx_cnt': int(m['tx_cnt'] or 0)
+        })
+
+    # 2. Top products MTD
+    month_start = current_month + '-01'
+    cur.execute("""
+        SELECT 
+            iprod,
+            SUM(soqty) as qty,
+            SUM(net_sales_amt) as sales,
+            SUM(total_cost) as cost,
+            (SUM(net_sales_amt) - SUM(total_cost)) as gp,
+            ((SUM(net_sales_amt) - SUM(total_cost)) / SUM(net_sales_amt) * 100) as gp_pct
+        FROM `data-lake`.fact_sales
+        WHERE sotowhs = '901'
+          AND sodate >= %s
+          AND solinetype NOT IN ('C','R')
+          AND soretflag = 'N'
+        GROUP BY iprod
+        ORDER BY sales DESC
+        LIMIT 100
+    """, (month_start,))
+    prod_rows = cur.fetchall()
+    top_prods = []
+    for r in prod_rows:
+        ip = str(r['iprod'])
+        p_info = prods.get(ip, {'name': 'ไม่พบชื่อสินค้า', 'group': ''})
+        grp_code = p_info.get('group', '')
+        top_prods.append({
+            'iprod': ip,
+            'parcode': barcode_to_parcode.get(ip, ip),
+            'name': p_info.get('name', ''),
+            'group_name': groups.get(grp_code, grp_code),
+            'qty': round(float(r['qty'] or 0), 0),
+            'sales': round(float(r['sales'] or 0), 2),
+            'cost': round(float(r['cost'] or 0), 2),
+            'gp': round(float(r['gp'] or 0), 2),
+            'gp_pct': round(float(r['gp_pct'] or 0), 1)
+        })
+
+    # 3. Anomalies at 901
+    cur.execute("""
+        SELECT sono, DATE_FORMAT(sodate, '%Y-%m-%d') as sodate, sotowhs, iprod,
+               soqty, sopricunit, solineamt, socstunit, total_cost,
+               (total_cost - solineamt) as loss
+        FROM `data-lake`.fact_sales
+        WHERE sotowhs = '901'
+          AND sodate >= %s
+          AND total_cost > solineamt
+          AND soqty > 0
+          AND solinetype NOT IN ('C','R')
+          AND soretflag = 'N'
+        ORDER BY (total_cost - solineamt) DESC
+        LIMIT 100
+    """, (month_start,))
+    anom_rows = cur.fetchall()
+    anomalies_901 = []
+    for a in anom_rows:
+        ip = str(a['iprod'])
+        p_info = prods.get(ip, {'name': 'ไม่พบชื่อสินค้า', 'group': ''})
+        u_p = float(a['sopricunit'] or 0)
+        u_c = float(a['socstunit'] or 0)
+        s = float(a['solineamt'] or 0)
+        c = float(a['total_cost'] or 0)
+        q = float(a['soqty'] or 0)
+        
+        reason = "ต้นทุนต่อหน่วยสูงกว่าราคาขาย"
+        if s == 0 and c > 0:
+            reason = "ยิงขาย 0 บาท (แจกฟรี 100%)"
+        elif u_p > 0 and (s / (q * u_p)) <= 0.55:
+            reason = "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"
+        elif u_c > u_p:
+            reason = "ราคาทุนป้ายสูงกว่าราคาขายป้าย"
+
+        anomalies_901.append({
+            'sono': str(a['sono']),
+            'sodate': str(a['sodate']),
+            'iprod': ip,
+            'parcode': barcode_to_parcode.get(ip, ip),
+            'name': p_info.get('name', ''),
+            'qty': q,
+            'u_price': round(u_p, 2),
+            'u_cost': round(u_c, 2),
+            'sales': round(s, 2),
+            'cost': round(c, 2),
+            'loss': round(c - s, 2),
+            'reason': reason
+        })
+
+    cur.close(); conn.close()
+    print(f'    Branch 901: {len(monthly)} months, {len(top_prods)} top products, {len(anomalies_901)} anomalies')
+    return {
+        'monthly': monthly,
+        'products_mtd': top_prods,
+        'anomalies': anomalies_901
     }
 
 def build_json(rows, stores, prods, groups, types, barcodes, months, current_month, days_elapsed, cfg=None):
@@ -446,11 +585,13 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
     payload['festival_stores'] = fest_store_list
     print(f'  festival_stores: {len(fest_store_list)} stores aggregated for Category 22')
 
-    # Query and attach anomalies
+    # Query and attach anomalies & Branch 901
     if cfg:
-        payload['anomalies'] = query_anomalies(cfg, current_month, prods, stores, barcodes)
+        payload['anomalies'] = query_anomalies(cfg, current_month, prods, stores, barcodes, groups)
+        payload['branch_901'] = query_branch_901(cfg, current_month, prods, barcodes, groups)
     else:
         payload['anomalies'] = {'transactions': [], 'master_cost_over_price': []}
+        payload['branch_901'] = {'monthly': [], 'products_mtd': [], 'anomalies': []}
 
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
@@ -485,7 +626,7 @@ def push_to_github(cfg):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--no-push', action='store_true')
-    parser.add_argument('--months', type=int, default=4, help='Lookback months including current (default: 4)')
+    parser.add_argument('--months', type=int, default=2, help='Lookback months including current (default: 2: prev month + current)')
     args = parser.parse_args()
 
     cfg = load_db_config()
