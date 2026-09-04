@@ -45,7 +45,42 @@ thead th.sort-desc::after{content:' ▼'}
 tbody tr{border-bottom:1px solid var(--border)}
 tbody tr:hover{background:#f8f9fa}
 tbody td{padding:7px 10px;vertical-align:top}
-tfoot td{padding:8px 10px;font-weight:700;background:#ecf0f1;border-top:2px solid var(--border)}
+tfoot, tfoot tr, tfoot tr.grand-total-row {
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+tfoot td, tfoot th {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 13px !important;
+  padding: 10px 12px !important;
+  border-top: 3px solid #38bdf8 !important;
+  border-bottom: 2px solid #0f172a !important;
+  vertical-align: middle !important;
+}
+tfoot td b, tfoot td strong, tfoot td span.gt-label {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+.gt-qty { color: #fde047 !important; font-weight: 800 !important; }
+.gt-sales { color: #60a5fa !important; font-weight: 800 !important; }
+.gt-cost { color: #f1f5f9 !important; font-weight: 800 !important; }
+.gt-loss, .gt-diff { color: #f87171 !important; font-weight: 800 !important; font-size: 13.5px !important; }
+.gt-gp { color: #4ade80 !important; font-weight: 800 !important; font-size: 13.5px !important; }
+.gt-disc { color: #fb923c !important; font-weight: 800 !important; }
+.gt-dim { color: #94a3b8 !important; }
+
+thead th[data-col] {
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: background 0.15s !important;
+}
+thead th[data-col]:hover {
+  background: #1e293b !important;
+}
+thead th.sort-asc::after { content: ' ▲' !important; color: #38bdf8 !important; font-weight: 800 !important; }
+thead th.sort-desc::after { content: ' ▼' !important; color: #38bdf8 !important; font-weight: 800 !important; }
 .gp-badge{display:inline-block;border-radius:10px;padding:2px 9px;font-size:13px;font-weight:600;color:#fff}
 .gp-nocost{background:#95a5a6;font-weight:500;font-size:12px}
 .gp-low{background:var(--red)}
@@ -229,15 +264,16 @@ thead th, tbody td, tfoot td,
   </div>
   <table id="trend-tbl">
     <thead><tr>
-      <th>เดือน</th>
-      <th class="r">Net Sales</th>
-      <th class="r" title="ส่วนลดรวม (sku + bill)">ส่วนลดรวม</th>
-      <th class="r">Cost</th>
-      <th class="r">GP</th>
-      <th class="r">GP %</th>
+      <th data-col="month">เดือน</th>
+      <th data-col="sales" class="r">Net Sales</th>
+      <th data-col="disc" class="r" title="ส่วนลดรวม (sku + bill)">ส่วนลดรวม</th>
+      <th data-col="cost" class="r">Cost</th>
+      <th data-col="gp" class="r">GP</th>
+      <th data-col="gp_pct" class="r">GP %</th>
       <th></th>
     </tr></thead>
     <tbody id="trend-tbody"></tbody>
+    <tfoot id="trend-tfoot"></tfoot>
   </table>
 </div>
 
@@ -365,13 +401,13 @@ thead th, tbody td, tfoot td,
       </div>
       <table id="fest-tree-tbl" style="width:100%;border-collapse:collapse;margin-bottom:12px;">
         <thead><tr>
-          <th style="width:340px;">ลำดับชั้น (1. ภาค RM ➔ 2. เขต DM ➔ 3. สาขา)</th>
-          <th class="r" style="color:var(--blue);font-weight:700;">จำนวนแจก (Qty)</th>
-          <th class="r">Sales MTD</th>
-          <th class="r" style="color:var(--red);">ส่วนลดที่แจก</th>
-          <th class="r">ต้นทุนที่ตัดจ่าย</th>
-          <th class="r" style="color:var(--red);">GP ขาดทุน</th>
-          <th class="r">GP %</th>
+          <th data-col="name" style="width:340px;">ลำดับชั้น (1. ภาค RM ➔ 2. เขต DM ➔ 3. สาขา)</th>
+          <th data-col="qty" class="r" style="color:var(--blue);font-weight:700;">จำนวนแจก (Qty)</th>
+          <th data-col="sales" class="r">Sales MTD</th>
+          <th data-col="disc" class="r" style="color:var(--red);">ส่วนลดที่แจก</th>
+          <th data-col="cost" class="r">ต้นทุนที่ตัดจ่าย</th>
+          <th data-col="gp" class="r" style="color:var(--red);">GP ขาดทุน</th>
+          <th data-col="gp_pct" class="r">GP %</th>
         </tr></thead>
         <tbody id="fest-tree-tbody"></tbody>
         <tfoot id="fest-tree-tfoot"></tfoot>
@@ -541,6 +577,7 @@ thead th, tbody td, tfoot td,
         <th data-col="gp_pct" class="r">GP %</th>
       </tr></thead>
       <tbody id="mini-subgrp-tbody"></tbody>
+      <tfoot id="mini-subgrp-tfoot"></tfoot>
     </table>
   </div>
 
@@ -566,6 +603,7 @@ thead th, tbody td, tfoot td,
         <th data-col="gp_pct" class="r">GP %</th>
       </tr></thead>
       <tbody id="mini-crit-tbody"></tbody>
+      <tfoot id="mini-crit-tfoot"></tfoot>
     </table>
   </div>
 </div>
@@ -1025,20 +1063,20 @@ thead th, tbody td, tfoot td,
       <table style="width:100%;border-collapse:collapse;font-size:12.5px;" id="tbl-audit-tx">
         <thead>
           <tr style="background:#0f172a;color:#fff;">
-            <th style="padding:10px 12px;white-space:nowrap;">ลำดับชั้น (1. ภาค RM ➔ 2. เขต DM ➔ 3. รายการบิล)</th>
-            <th style="padding:10px 12px;white-space:nowrap;">วันที่ (sodate)</th>
-            <th style="padding:10px 12px;white-space:nowrap;">สาขา (sotowhs)</th>
-            <th style="padding:10px 12px;white-space:nowrap;color:#38bdf8;">ผู้จัดการเขต (DM)</th>
-            <th style="padding:10px 12px;white-space:nowrap;">รหัส (iprod)</th>
-            <th style="padding:10px 12px;white-space:nowrap;">พาร์โค้ด (parcode)</th>
-            <th style="padding:10px 12px;white-space:nowrap;">ชื่อสินค้า (idesc)</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;">จำนวน (soqty)</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;">ราคาป้าย/หน่วย</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;">ทุน/หน่วย</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;color:#60a5fa;">ยอดขายสุทธิ (solineamt)</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;">ต้นทุนรวม (cost)</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;color:#f87171;">ขาดทุน (GP)</th>
-            <th style="padding:10px 12px;white-space:nowrap;">สาเหตุความผิดปกติ</th>
+            <th data-col="name" style="padding:10px 12px;white-space:nowrap;">ลำดับชั้น (1. ภาค RM ➔ 2. เขต DM ➔ 3. รายการบิล)</th>
+            <th data-col="sodate" style="padding:10px 12px;white-space:nowrap;">วันที่ (sodate)</th>
+            <th data-col="branch_code" style="padding:10px 12px;white-space:nowrap;">สาขา (sotowhs)</th>
+            <th data-col="dm" style="padding:10px 12px;white-space:nowrap;color:#38bdf8;">ผู้จัดการเขต (DM)</th>
+            <th data-col="iprod" style="padding:10px 12px;white-space:nowrap;">รหัส (iprod)</th>
+            <th data-col="parcode" style="padding:10px 12px;white-space:nowrap;">พาร์โค้ด (parcode)</th>
+            <th data-col="item_name" style="padding:10px 12px;white-space:nowrap;">ชื่อสินค้า (idesc)</th>
+            <th data-col="qty" class="r" style="padding:10px 12px;white-space:nowrap;">จำนวน (soqty)</th>
+            <th data-col="u_price" class="r" style="padding:10px 12px;white-space:nowrap;">ราคาป้าย/หน่วย</th>
+            <th data-col="u_cost" class="r" style="padding:10px 12px;white-space:nowrap;">ทุน/หน่วย</th>
+            <th data-col="sales" class="r" style="padding:10px 12px;white-space:nowrap;color:#60a5fa;">ยอดขายสุทธิ (solineamt)</th>
+            <th data-col="cost" class="r" style="padding:10px 12px;white-space:nowrap;">ต้นทุนรวม (cost)</th>
+            <th data-col="loss" class="r sort-desc" style="padding:10px 12px;white-space:nowrap;color:#f87171;">ขาดทุน (GP)</th>
+            <th data-col="reason" style="padding:10px 12px;white-space:nowrap;">สาเหตุความผิดปกติ</th>
           </tr>
         </thead>
         <tbody id="tbody-audit-tx"></tbody>
@@ -1059,18 +1097,19 @@ thead th, tbody td, tfoot td,
       <table style="width:100%;border-collapse:collapse;font-size:12.5px;" id="tbl-audit-master">
         <thead>
           <tr style="background:#0f172a;color:#fff;">
-            <th style="padding:10px 12px;white-space:nowrap;">รหัสสินค้า (iprod)</th>
-            <th style="padding:10px 12px;white-space:nowrap;">พาร์โค้ด (parcode)</th>
-            <th style="padding:10px 12px;white-space:nowrap;">ชื่อสินค้า</th>
-            <th style="padding:10px 12px;white-space:nowrap;">หมวดหมู่</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;">ราคาขายป้าย (Price 3)</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;color:#f87171;">ต้นทุนเฉลี่ย (Avg Cost)</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;color:#f87171;">ทุนสูงกว่าราคาขาย (บาท)</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;color:#f87171;">ทุนสูงกว่า (%)</th>
-            <th style="padding:10px 12px;white-space:nowrap;">การวิเคราะห์เบื้องต้น</th>
+            <th data-col="iprod" style="padding:10px 12px;white-space:nowrap;">รหัสสินค้า (iprod)</th>
+            <th data-col="parcode" style="padding:10px 12px;white-space:nowrap;">พาร์โค้ด (parcode)</th>
+            <th data-col="name" style="padding:10px 12px;white-space:nowrap;">ชื่อสินค้า</th>
+            <th data-col="group_name" style="padding:10px 12px;white-space:nowrap;">หมวดหมู่</th>
+            <th data-col="price3" class="r" style="padding:10px 12px;white-space:nowrap;">ราคาขายป้าย (Price 3)</th>
+            <th data-col="cost" class="r" style="padding:10px 12px;white-space:nowrap;color:#f87171;">ต้นทุนเฉลี่ย (Avg Cost)</th>
+            <th data-col="diff" class="r sort-desc" style="padding:10px 12px;white-space:nowrap;color:#f87171;">ทุนสูงกว่าราคาขาย (บาท)</th>
+            <th data-col="diff_pct" class="r" style="padding:10px 12px;white-space:nowrap;color:#f87171;">ทุนสูงกว่า (%)</th>
+            <th data-col="remark" style="padding:10px 12px;white-space:nowrap;">การวิเคราะห์เบื้องต้น</th>
           </tr>
         </thead>
         <tbody id="tbody-audit-master"></tbody>
+        <tfoot id="tfoot-audit-master"></tfoot>
       </table>
     </div>
   </div>
@@ -1087,18 +1126,19 @@ thead th, tbody td, tfoot td,
       <table style="width:100%;border-collapse:collapse;font-size:12.5px;" id="tbl-audit-lowgp">
         <thead>
           <tr style="background:#0f172a;color:#fff;">
-            <th style="padding:10px 12px;white-space:nowrap;">รหัสสินค้า (iprod)</th>
-            <th style="padding:10px 12px;white-space:nowrap;">ชื่อสินค้า</th>
-            <th style="padding:10px 12px;white-space:nowrap;">กลุ่มสินค้า</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;color:var(--blue);font-weight:700;">จำนวนขาย (Qty)</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;">Sales MTD</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;color:var(--red);">ส่วนลด</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;">Cost</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;color:var(--red);">GP</th>
-            <th class="r" style="padding:10px 12px;white-space:nowrap;">GP %</th>
+            <th data-col="iprod" style="padding:10px 12px;white-space:nowrap;">รหัสสินค้า (iprod)</th>
+            <th data-col="name" style="padding:10px 12px;white-space:nowrap;">ชื่อสินค้า</th>
+            <th data-col="group_name" style="padding:10px 12px;white-space:nowrap;">กลุ่มสินค้า</th>
+            <th data-col="qty" class="r" style="padding:10px 12px;white-space:nowrap;color:var(--blue);font-weight:700;">จำนวนขาย (Qty)</th>
+            <th data-col="sales" class="r" style="padding:10px 12px;white-space:nowrap;">Sales MTD</th>
+            <th data-col="disc" class="r" style="padding:10px 12px;white-space:nowrap;color:var(--red);">ส่วนลด</th>
+            <th data-col="cost" class="r" style="padding:10px 12px;white-space:nowrap;">Cost</th>
+            <th data-col="gp" class="r" style="padding:10px 12px;white-space:nowrap;color:var(--red);">GP</th>
+            <th data-col="gp_pct" class="r sort-asc" style="padding:10px 12px;white-space:nowrap;">GP %</th>
           </tr>
         </thead>
         <tbody id="tbody-audit-lowgp"></tbody>
+        <tfoot id="tfoot-audit-lowgp"></tfoot>
       </table>
     </div>
   </div>
@@ -1149,21 +1189,22 @@ thead th, tbody td, tfoot td,
   <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:20px;">
     <h3 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">📊 เปรียบเทียบผลประกอบการรายเดือน สาขา 901 (เดือนก่อนหน้า vs ปัจจุบัน)</h3>
     <div style="overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+      <table id="tbl-b901-monthly" style="width:100%;border-collapse:collapse;font-size:12.5px;">
         <thead>
           <tr style="background:#0f172a;color:#fff;">
-            <th style="padding:8px 12px;">เดือน</th>
-            <th class="r" style="padding:8px 12px;">ยอดขายสุทธิ (Sales)</th>
-            <th class="r" style="padding:8px 12px;">ต้นทุน (Cost)</th>
-            <th class="r" style="padding:8px 12px;color:#fca5a5;">ส่วนลดรายการ</th>
-            <th class="r" style="padding:8px 12px;color:#fca5a5;">ส่วนลดท้ายบิล</th>
-            <th class="r" style="padding:8px 12px;color:#86efac;">กำไร (GP บาท)</th>
-            <th class="r" style="padding:8px 12px;">GP %</th>
-            <th class="r" style="padding:8px 12px;">จำนวนชิ้น (Qty)</th>
-            <th class="r" style="padding:8px 12px;">จำนวนบิล (Tx)</th>
+            <th data-col="month" style="padding:8px 12px;">เดือน</th>
+            <th data-col="sales" class="r" style="padding:8px 12px;">ยอดขายสุทธิ (Sales)</th>
+            <th data-col="cost" class="r" style="padding:8px 12px;">ต้นทุน (Cost)</th>
+            <th data-col="sku_disc" class="r" style="padding:8px 12px;color:#fca5a5;">ส่วนลดรายการ</th>
+            <th data-col="bill_disc" class="r" style="padding:8px 12px;color:#fca5a5;">ส่วนลดท้ายบิล</th>
+            <th data-col="gp" class="r" style="padding:8px 12px;color:#86efac;">กำไร (GP บาท)</th>
+            <th data-col="gp_pct" class="r" style="padding:8px 12px;">GP %</th>
+            <th data-col="qty" class="r" style="padding:8px 12px;">จำนวนชิ้น (Qty)</th>
+            <th data-col="tx_cnt" class="r" style="padding:8px 12px;">จำนวนบิล (Tx)</th>
           </tr>
         </thead>
         <tbody id="tbody-b901-monthly"></tbody>
+        <tfoot id="tfoot-b901-monthly"></tfoot>
       </table>
     </div>
   </div>
@@ -1182,21 +1223,22 @@ thead th, tbody td, tfoot td,
       <span style="color:var(--muted);margin-left:auto;font-size:12px;" id="b901-prod-count-label">แสดง 0 รายการ</span>
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+      <table id="tbl-b901-prods" style="width:100%;border-collapse:collapse;font-size:12.5px;">
         <thead>
           <tr style="background:#0f172a;color:#fff;">
-            <th style="padding:8px 12px;">รหัสสินค้า (iprod)</th>
-            <th style="padding:8px 12px;">พาร์โค้ด (parcode)</th>
-            <th style="padding:8px 12px;">ชื่อสินค้า</th>
-            <th style="padding:8px 12px;">หมวดหมู่</th>
-            <th class="r" style="padding:8px 12px;">จำนวนขาย (Qty)</th>
-            <th class="r" style="padding:8px 12px;color:#60a5fa;">ยอดขาย (Sales)</th>
-            <th class="r" style="padding:8px 12px;">ต้นทุน (Cost)</th>
-            <th class="r" style="padding:8px 12px;color:#86efac;">กำไร (GP)</th>
-            <th class="r" style="padding:8px 12px;">GP %</th>
+            <th data-col="iprod" style="padding:8px 12px;">รหัสสินค้า (iprod)</th>
+            <th data-col="parcode" style="padding:8px 12px;">พาร์โค้ด (parcode)</th>
+            <th data-col="name" style="padding:8px 12px;">ชื่อสินค้า</th>
+            <th data-col="group_name" style="padding:8px 12px;">หมวดหมู่</th>
+            <th data-col="qty" class="r" style="padding:8px 12px;">จำนวนขาย (Qty)</th>
+            <th data-col="sales" class="r sort-desc" style="padding:8px 12px;color:#60a5fa;">ยอดขาย (Sales)</th>
+            <th data-col="cost" class="r" style="padding:8px 12px;">ต้นทุน (Cost)</th>
+            <th data-col="gp" class="r" style="padding:8px 12px;color:#86efac;">กำไร (GP)</th>
+            <th data-col="gp_pct" class="r" style="padding:8px 12px;">GP %</th>
           </tr>
         </thead>
         <tbody id="tbody-b901-prods"></tbody>
+        <tfoot id="tfoot-b901-prods"></tfoot>
       </table>
     </div>
   </div>
@@ -1209,24 +1251,25 @@ thead th, tbody td, tfoot td,
       <span style="color:var(--muted);margin-left:auto;font-size:12px;" id="b901-anom-count-label">แสดง 0 รายการ</span>
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+      <table id="tbl-b901-anom" style="width:100%;border-collapse:collapse;font-size:12.5px;">
         <thead>
           <tr style="background:#0f172a;color:#fff;">
-            <th style="padding:8px 12px;">เลขที่บิล (sono)</th>
-            <th style="padding:8px 12px;">วันที่ (sodate)</th>
-            <th style="padding:8px 12px;">รหัส (iprod)</th>
-            <th style="padding:8px 12px;">พาร์โค้ด (parcode)</th>
-            <th style="padding:8px 12px;">ชื่อสินค้า</th>
-            <th class="r" style="padding:8px 12px;">จำนวน (soqty)</th>
-            <th class="r" style="padding:8px 12px;">ราคาขาย/หน่วย</th>
-            <th class="r" style="padding:8px 12px;color:#f87171;">ต้นทุน/หน่วย</th>
-            <th class="r" style="padding:8px 12px;color:#60a5fa;">ยอดขาย (solineamt)</th>
-            <th class="r" style="padding:8px 12px;">ต้นทุนรวม (Cost)</th>
-            <th class="r" style="padding:8px 12px;color:#f87171;">ขาดทุน (GP)</th>
-            <th style="padding:8px 12px;">สาเหตุ</th>
+            <th data-col="sono" style="padding:8px 12px;">เลขที่บิล (sono)</th>
+            <th data-col="sodate" style="padding:8px 12px;">วันที่ (sodate)</th>
+            <th data-col="iprod" style="padding:8px 12px;">รหัส (iprod)</th>
+            <th data-col="parcode" style="padding:8px 12px;">พาร์โค้ด (parcode)</th>
+            <th data-col="name" style="padding:8px 12px;">ชื่อสินค้า</th>
+            <th data-col="qty" class="r" style="padding:8px 12px;">จำนวน (soqty)</th>
+            <th data-col="u_price" class="r" style="padding:8px 12px;">ราคาขาย/หน่วย</th>
+            <th data-col="u_cost" class="r" style="padding:8px 12px;color:#f87171;">ต้นทุน/หน่วย</th>
+            <th data-col="sales" class="r" style="padding:8px 12px;color:#60a5fa;">ยอดขาย (solineamt)</th>
+            <th data-col="cost" class="r" style="padding:8px 12px;">ต้นทุนรวม (Cost)</th>
+            <th data-col="loss" class="r sort-desc" style="padding:8px 12px;color:#f87171;">ขาดทุน (GP)</th>
+            <th data-col="reason" style="padding:8px 12px;">สาเหตุ</th>
           </tr>
         </thead>
         <tbody id="tbody-b901-anom"></tbody>
+        <tfoot id="tfoot-b901-anom"></tfoot>
       </table>
     </div>
   </div>
@@ -1510,19 +1553,75 @@ function renderTrend(monthly){
       plugins:{legend:{position:'top',labels:{font:{size:14}}}}
     }
   });
-  document.getElementById('trend-tbody').innerHTML=monthly.map(function(m,i){return '<tr><td>'+labels[i]+'</td><td class="r">'+fmt(m.sales)+'</td><td class="r">'+fmt(m.disc||0)+'</td><td class="r">'+fmt(m.cost)+'</td><td class="r">'+fmt(m.gp)+'</td><td class="r">'+gpBadge(m.gp_pct,m.cost)+'</td><td>'+(m.is_mtd?'<span style="color:var(--muted);font-size:11px">MTD</span>':'')+'</td></tr>'}).join('');
+  renderTrendTable();
 }
 
-function initSort(tblId,sortObj,renderFn){
-  document.querySelectorAll('#'+tblId+' thead th[data-col]').forEach(function(th){
-    th.addEventListener('click',function(){
-      var col=th.dataset.col;
-      if(sortObj.col===col)sortObj.dir*=-1;
-      else{sortObj.col=col;sortObj.dir=1;}
-      document.querySelectorAll('#'+tblId+' thead th').forEach(function(t){t.classList.remove('sort-asc','sort-desc')});
-      th.classList.add(sortObj.dir===1?'sort-asc':'sort-desc');
+var TREND_SORT = { col: 'month', dir: 1 };
+function renderTrendTable() {
+  var monthly = (DATA.monthly || []).slice();
+  var sc = TREND_SORT.col, sdir = TREND_SORT.dir;
+  monthly.sort(function(a, b){
+    var va = a[sc], vb = b[sc];
+    if (typeof va === 'string') return sdir * va.localeCompare(vb);
+    if (va == null) va = 0; if (vb == null) vb = 0;
+    return sdir * (va - vb);
+  });
+  var totS = monthly.reduce(function(a,m){return a+(m.sales||0)},0);
+  var totD = monthly.reduce(function(a,m){return a+(m.disc||0)},0);
+  var totC = monthly.reduce(function(a,m){return a+(m.cost||0)},0);
+  var totG = monthly.reduce(function(a,m){return a+(m.gp||0)},0);
+  var totPct = totS ? (totG / totS * 100) : 0;
+
+  var tbody = document.getElementById('trend-tbody');
+  if (tbody) {
+    tbody.innerHTML = monthly.map(function(m){
+      return '<tr>' +
+        '<td><b>' + m.month + '</b>' + (m.is_mtd ? ' <span style="color:var(--muted);font-size:11px">(MTD)</span>' : '') + '</td>' +
+        '<td class="r gt-sales">฿' + fmt(m.sales) + '</td>' +
+        '<td class="r gt-disc">฿' + fmt(m.disc||0) + '</td>' +
+        '<td class="r gt-cost">฿' + fmt(m.cost) + '</td>' +
+        '<td class="r gt-gp" style="color:' + (m.gp < 0 ? '#f87171' : '#4ade80') + ' !important;">' + (m.gp < 0 ? '-' : '') + '฿' + fmt(Math.abs(m.gp)) + '</td>' +
+        '<td class="r">' + gpBadge(m.gp_pct, m.cost) + '</td>' +
+        '<td>' + (m.is_mtd ? '<span style="color:var(--blue);font-weight:700;font-size:11px">ปัจจุบัน</span>' : '') + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  var tfoot = document.getElementById('trend-tfoot');
+  if (tfoot) {
+    tfoot.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;border-top:3px solid #38bdf8 !important;">' +
+      '<td style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;font-size:13px;"><b>📌 Grand Total</b> (รวม ' + monthly.length + ' เดือน)</td>' +
+      '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totS) + '</td>' +
+      '<td class="r gt-disc" style="background:#0f172a !important;color:#fb923c !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totD) + '</td>' +
+      '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totC) + '</td>' +
+      '<td class="r gt-gp" style="background:#0f172a !important;color:' + (totG < 0 ? '#f87171' : '#4ade80') + ' !important;padding:12px;font-weight:800;font-size:14px;">' + (totG < 0 ? '-' : '') + '฿' + fmt(Math.abs(totG)) + '</td>' +
+      '<td class="r" style="background:#0f172a !important;padding:12px;">' + gpBadge(totPct, totC) + '</td>' +
+      '<td style="background:#0f172a !important;"></td>' +
+    '</tr>';
+  }
+}
+
+function initSort(tblId, sortObj, renderFn) {
+  var tbl = document.getElementById(tblId);
+  if (!tbl) return;
+  tbl.querySelectorAll('thead th[data-col]').forEach(function(th){
+    th.style.cursor = 'pointer';
+    th.setAttribute('title', 'คลิกเพื่อเรียงลำดับ มาก ⇄ น้อย');
+    th.onclick = function(){
+      var col = th.dataset.col;
+      if (sortObj.col === col) {
+        sortObj.dir *= -1;
+      } else {
+        sortObj.col = col;
+        var isAlpha = ['name', 'iprod', 'parcode', 'barcode', 'code', 'dm', 'rm', 'group_name', 'type_name', 'sodate', 'sono', 'month', 'reason', 'remark', 'item_name'].indexOf(col) !== -1;
+        sortObj.dir = isAlpha ? 1 : -1; // Alpha default A-Z (1), Numeric default Max-Min (-1)
+      }
+      tbl.querySelectorAll('thead th').forEach(function(t){
+        t.classList.remove('sort-asc', 'sort-desc');
+      });
+      th.classList.add(sortObj.dir === 1 ? 'sort-asc' : 'sort-desc');
       renderFn();
-    });
+    };
   });
 }
 
@@ -1612,12 +1711,20 @@ fetch('./gp_analysis_data.json?v=' + Date.now())
 
     STORE_FILTERED=STORES_ALL.slice();
     PROD_FILTERED=PRODS_ALL.slice();
-    initSort('store-tbl',STORE_SORT,renderStores);
-    initSort('prod-tbl',PROD_SORT,renderProds);
-    initSort('fest-tbl',FEST_SORT,renderFestivalTab);
-    initSort('fest-store-tbl',FEST_STORE_SORT,renderFestivalStoresTable);
-    initSort('mini-subgrp-tbl',MINI_SUBGRP_SORT,renderMinimartTab);
-    initSort('mini-crit-tbl',MINI_CRIT_SORT,renderMinimartTab);
+        initSort('store-tbl', STORE_SORT, renderStores);
+    initSort('prod-tbl', PROD_SORT, renderProds);
+    initSort('trend-tbl', TREND_SORT, renderTrendTable);
+    initSort('fest-tree-tbl', FEST_TREE_SORT, renderFestivalTreeTable);
+    initSort('fest-tbl', FEST_SORT, renderFestivalTab);
+    initSort('fest-store-tbl', FEST_STORE_SORT, renderFestivalStoresTable);
+    initSort('mini-subgrp-tbl', MINI_SUBGRP_SORT, renderMinimartTab);
+    initSort('mini-crit-tbl', MINI_CRIT_SORT, renderMinimartTab);
+    initSort('tbl-audit-tx', AUDIT_TX_SORT, filterAuditTxTable);
+    initSort('tbl-audit-master', AUDIT_MASTER_SORT, filterAuditMasterTable);
+    initSort('tbl-audit-lowgp', AUDIT_LOWGP_SORT, filterAuditLowGpTable);
+    initSort('tbl-b901-monthly', B901_MONTHLY_SORT, renderBranch901Tab);
+    initSort('tbl-b901-prods', B901_PROD_SORT, filterBranch901ProdTable);
+    initSort('tbl-b901-anom', B901_ANOM_SORT, filterBranch901AnomTable);
 
     // Setup Minimart RM/DM dropdowns
     refreshMinimartDropdowns();
@@ -1944,6 +2051,7 @@ function renderSimulationBudgetTable() {
 }
 
 var FEST_SORT = { col: 'gp', dir: 1 };
+var FEST_TREE_SORT = { col: 'gp', dir: 1 };
 var FEST_STORE_SORT = { col: 'gp', dir: 1 };
 var FEST_VIEW = 'tree';
 var FEST_STORES_FILTERED = [];
@@ -2056,7 +2164,22 @@ function renderFestivalTreeTable() {
   });
 
   var rList = Object.keys(tree).map(function(k){ return tree[k]; });
-  rList.sort(function(a,b){ return a.gp - b.gp; }); // Most negative loss first
+  var sc = FEST_TREE_SORT.col, sdir = FEST_TREE_SORT.dir;
+  function getFestVal(node, col) {
+    if (col === 'name') return node.rm || node.dm || node.name || '';
+    if (col === 'qty') return node.qty || 0;
+    if (col === 'sales') return node.sales || 0;
+    if (col === 'disc') return node.disc || 0;
+    if (col === 'cost') return node.cost || 0;
+    if (col === 'gp') return node.gp || 0;
+    if (col === 'gp_pct') return node.sales ? (node.gp / node.sales * 100) : 0;
+    return 0;
+  }
+  rList.sort(function(a, b){
+    var va = getFestVal(a, sc), vb = getFestVal(b, sc);
+    if (typeof va === 'string') return sdir * va.localeCompare(vb);
+    return sdir * (va - vb);
+  }); // Most negative loss first
 
   var html = '';
   rList.forEach(function(r, rIdx){
@@ -2077,7 +2200,11 @@ function renderFestivalTreeTable() {
 
     // Level 2: DMs under RM
     var dList = Object.keys(r.dms).map(function(k){ return r.dms[k]; });
-    dList.sort(function(a,b){ return a.gp - b.gp; }); // Most negative loss first
+    dList.sort(function(a, b){
+      var va = getFestVal(a, sc), vb = getFestVal(b, sc);
+      if (typeof va === 'string') return sdir * va.localeCompare(vb);
+      return sdir * (va - vb);
+    }); // Most negative loss first
 
     dList.forEach(function(d, dIdx){
       var dId = rId + '_dm_' + dIdx;
@@ -2097,7 +2224,11 @@ function renderFestivalTreeTable() {
 
       // Level 3: Stores under DM
       var sList = d.stores.slice();
-      sList.sort(function(a,b){ return a.gp - b.gp; }); // Most negative loss first
+      sList.sort(function(a, b){
+        var va = getFestVal(a, sc), vb = getFestVal(b, sc);
+        if (typeof va === 'string') return sdir * va.localeCompare(vb);
+        return sdir * (va - vb);
+      }); // Most negative loss first
 
       sList.forEach(function(s){
         var sGpPct = s.sales ? (s.gp / s.sales * 100) : 0;
@@ -2129,14 +2260,14 @@ function renderFestivalTreeTable() {
 
   var tfoot = document.getElementById('fest-tree-tfoot');
   if (tfoot) {
-    tfoot.innerHTML = '<tr style="background:#e2e8f0;font-weight:700;font-size:13px;">' +
-      '<td style="padding:10px 12px;">รวมทั้งหมด (' + rList.length + ' RM | ' + stores.length + ' สาขา)</td>' +
-      '<td class="r" style="color:var(--blue);font-size:14px;">' + fmt(totQ) + ' ชิ้น</td>' +
-      '<td class="r">' + fmt(totS) + '</td>' +
-      '<td class="r" style="color:var(--red);">' + fmt(totD) + '</td>' +
-      '<td class="r">' + fmt(totC) + '</td>' +
-      '<td class="r" style="color:var(--red);font-size:14px;">' + fmt(totG) + '</td>' +
-      '<td class="r">' + gpBadge(totPct, totC) + '</td>' +
+    tfoot.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;font-size:13px;border-top:3px solid #38bdf8 !important;">' +
+      '<td style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;font-size:13.5px;"><b>📌 Grand Total</b> (รวม ' + rList.length + ' ภาค RM | ' + stores.length + ' สาขา)</td>' +
+      '<td class="r gt-qty" style="background:#0f172a !important;color:#fde047 !important;font-size:13.5px;padding:12px;font-weight:800;">' + fmt(totQ) + ' ชิ้น</td>' +
+      '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;font-size:13.5px;padding:12px;font-weight:800;">฿' + fmt(totS) + '</td>' +
+      '<td class="r gt-disc" style="background:#0f172a !important;color:#fb923c !important;font-size:13.5px;padding:12px;font-weight:800;">฿' + fmt(totD) + '</td>' +
+      '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;font-size:13.5px;padding:12px;font-weight:800;">฿' + fmt(totC) + '</td>' +
+      '<td class="r gt-loss" style="background:#0f172a !important;color:#f87171 !important;font-size:14px;padding:12px;font-weight:800;">-฿' + fmt(Math.abs(totG)) + '</td>' +
+      '<td class="r" style="background:#0f172a !important;padding:12px;">' + gpBadge(totPct, totC) + '</td>' +
     '</tr>';
   }
 }
@@ -2300,14 +2431,14 @@ function renderFestivalStoresTable() {
   
   var tfoot = document.getElementById('fest-store-tfoot');
   if (tfoot) {
-    tfoot.innerHTML = '<tr>' +
-      '<td colspan="4" style="color:var(--muted);font-size:12px;">รวม ' + stores.length + ' สาขา</td>' +
-      '<td class="r" style="font-weight:700;color:var(--blue);">' + fmt(totQ) + ' ชิ้น</td>' +
-      '<td class="r">' + fmt(totS) + '</td>' +
-      '<td class="r" style="color:var(--red);font-weight:700;">' + fmt(totD) + '</td>' +
-      '<td class="r">' + fmt(totC) + '</td>' +
-      '<td class="r" style="color:var(--red);font-weight:700;">' + fmt(totG) + '</td>' +
-      '<td class="r">' + gpBadge(totPct, totC) + '</td>' +
+    tfoot.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;font-size:13px;border-top:3px solid #38bdf8 !important;">' +
+      '<td colspan="4" style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;font-size:13px;"><b>📌 Grand Total</b> (รวม ' + stores.length + ' สาขา)</td>' +
+      '<td class="r gt-qty" style="background:#0f172a !important;color:#fde047 !important;font-size:13.5px;padding:12px;font-weight:800;">' + fmt(totQ) + ' ชิ้น</td>' +
+      '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;font-size:13.5px;padding:12px;font-weight:800;">฿' + fmt(totS) + '</td>' +
+      '<td class="r gt-disc" style="background:#0f172a !important;color:#fb923c !important;font-size:13.5px;padding:12px;font-weight:800;">฿' + fmt(totD) + '</td>' +
+      '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;font-size:13.5px;padding:12px;font-weight:800;">฿' + fmt(totC) + '</td>' +
+      '<td class="r gt-loss" style="background:#0f172a !important;color:#f87171 !important;font-size:14px;padding:12px;font-weight:800;">-฿' + fmt(Math.abs(totG)) + '</td>' +
+      '<td class="r" style="background:#0f172a !important;padding:12px;">' + gpBadge(totPct, totC) + '</td>' +
     '</tr>';
   }
 }
@@ -2408,15 +2539,15 @@ function renderFestivalTab() {
 
   var tfootFest = document.getElementById('fest-tfoot');
   if (tfootFest) {
-    tfootFest.innerHTML = '<tr style="background:#e2e8f0;font-weight:700;font-size:13px;border-top:2px solid #cbd5e1;">' +
-      '<td colspan="2" style="padding:10px 12px;">รวมทั้งหมด (' + shown.length + ' รายการ)</td>' +
-      '<td class="r" style="color:var(--blue);font-size:14px;">' + fmt(totFestQ) + ' ชิ้น</td>' +
-      '<td class="r">' + fmt(totFestS) + '</td>' +
-      '<td class="r" style="color:var(--red);font-weight:700;">' + fmt(totFestD) + '</td>' +
-      '<td class="r" style="color:var(--red);font-weight:700;">' + totDiscRate.toFixed(1) + '%</td>' +
-      '<td class="r">' + fmt(totFestC) + '</td>' +
-      '<td class="r" style="color:var(--red);font-size:14px;">' + fmt(totFestG) + '</td>' +
-      '<td class="r">' + gpBadge(totFestPct, totFestC) + '</td>' +
+    tfootFest.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;font-size:13px;border-top:3px solid #38bdf8 !important;">' +
+      '<td colspan="2" style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;font-size:13.5px;"><b>📌 Grand Total</b> (รวม ' + shown.length + ' รายการ)</td>' +
+      '<td class="r gt-qty" style="background:#0f172a !important;color:#fde047 !important;padding:12px;font-weight:800;font-size:13.5px;">' + fmt(totFestQ) + ' ชิ้น</td>' +
+      '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totFestS) + '</td>' +
+      '<td class="r gt-disc" style="background:#0f172a !important;color:#fb923c !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totFestD) + '</td>' +
+      '<td class="r gt-disc" style="background:#0f172a !important;color:#fb923c !important;padding:12px;font-weight:800;font-size:13px;">' + totDiscRate.toFixed(1) + '%</td>' +
+      '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totFestC) + '</td>' +
+      '<td class="r gt-loss" style="background:#0f172a !important;color:#f87171 !important;font-size:14px;padding:12px;font-weight:800;">-฿' + fmt(Math.abs(totFestG)) + '</td>' +
+      '<td class="r" style="background:#0f172a !important;padding:12px;">' + gpBadge(totFestPct, totFestC) + '</td>' +
     '</tr>';
   }
 
@@ -2700,6 +2831,8 @@ function collapseAllAuditTree() {
   });
 }
 
+var AUDIT_TX_SORT = { col: 'loss', dir: -1 };
+
 function filterAuditTxTable() {
   var txList = (DATA.anomalies || {}).transactions || [];
   var q = (document.getElementById('audit-tx-search') || {}).value || '';
@@ -2775,8 +2908,33 @@ function filterAuditTxTable() {
     allStores.add(br);
   });
 
+  var sc = AUDIT_TX_SORT.col;
+  var sdir = AUDIT_TX_SORT.dir;
+
+  function getAuditVal(node, col) {
+    if (col === 'name') return node.rm || node.dm || node.name || '';
+    if (col === 'loss') return node.loss || 0;
+    if (col === 'sales') return node.sales || 0;
+    if (col === 'cost') return node.cost || 0;
+    if (col === 'qty') return node.qty || 0;
+    if (col === 'u_price') return node.u_price || 0;
+    if (col === 'u_cost') return node.u_cost || 0;
+    if (col === 'sodate') return node.sodate || '';
+    if (col === 'sono') return node.sono || '';
+    if (col === 'iprod') return node.iprod || '';
+    if (col === 'parcode') return node.parcode || '';
+    if (col === 'item_name') return node.name || '';
+    if (col === 'branch_code') return node.branch_code || (node.stores ? node.stores.size : 0);
+    if (col === 'dm') return node.dm || (node.dms ? Object.keys(node.dms).length : 0);
+    if (col === 'reason') return node.reason || '';
+    return node[col] || 0;
+  }
+
   var sortedRMs = Object.keys(rmGroups).sort(function(a, b){
-    return rmGroups[b].loss - rmGroups[a].loss;
+    var va = getAuditVal(rmGroups[a], sc);
+    var vb = getAuditVal(rmGroups[b], sc);
+    if (typeof va === 'string') return sdir * va.localeCompare(vb);
+    return sdir * (va - vb);
   });
 
   var tbody = document.getElementById('tbody-audit-tx');
@@ -2812,7 +2970,10 @@ function filterAuditTxTable() {
     '</tr>');
 
     var sortedDMs = Object.keys(rData.dms).sort(function(a, b){
-      return rData.dms[b].loss - rData.dms[a].loss;
+      var va = getAuditVal(rData.dms[a], sc);
+      var vb = getAuditVal(rData.dms[b], sc);
+      if (typeof va === 'string') return sdir * va.localeCompare(vb);
+      return sdir * (va - vb);
     });
     totalDMsCount += sortedDMs.length;
 
@@ -2843,7 +3004,13 @@ function filterAuditTxTable() {
       '</tr>');
 
       // Level 3: Individual Bills under this DM
-      dData.bills.forEach(function(r){
+      var sortedBills = dData.bills.slice().sort(function(a, b){
+        var va = getAuditVal(a, sc);
+        var vb = getAuditVal(b, sc);
+        if (typeof va === 'string') return sdir * va.localeCompare(vb);
+        return sdir * (va - vb);
+      });
+      sortedBills.forEach(function(r){
         var tagClass = 'background:#e0f2fe;color:#0284c7;';
         if ((r.reason || '').indexOf('0 บาท') !== -1) tagClass = 'background:#fee2e2;color:#dc2626;';
         else if ((r.reason || '').indexOf('>50%') !== -1) tagClass = 'background:#fef3c7;color:#d97706;';
@@ -2874,21 +3041,23 @@ function filterAuditTxTable() {
   // Render Grand Total Footer
   var tfoot = document.getElementById('tfoot-audit-tx');
   if (tfoot) {
-    tfoot.innerHTML = '<tr style="background:#0f172a;color:#fff;font-weight:800;font-size:13px;border-top:3px solid #38bdf8;">' +
-      '<td colspan="7" style="padding:10px 14px;white-space:nowrap;"> Grand Total (รวมทั้งหมด ' + sortedRMs.length + ' ภาค RM | ' + totalDMsCount + ' เขต DM | ' + allStores.size + ' สาขา | ' + filtered.length + ' บิลผิดปกติ)</td>' +
-      '<td class="r" style="padding:10px 12px;color:#fde047;white-space:nowrap;">' + fmt(grandQty) + ' ชิ้น</td>' +
-      '<td class="r" style="padding:10px 12px;white-space:nowrap;">—</td>' +
-      '<td class="r" style="padding:10px 12px;white-space:nowrap;">—</td>' +
-      '<td class="r" style="padding:10px 12px;color:#60a5fa;white-space:nowrap;">฿' + fmt(grandSales) + '</td>' +
-      '<td class="r" style="padding:10px 12px;white-space:nowrap;">฿' + fmt(grandCost) + '</td>' +
-      '<td class="r" style="padding:10px 12px;color:#f87171;font-size:14px;white-space:nowrap;">-฿' + fmt(grandLoss) + '</td>' +
-      '<td style="padding:10px 12px;color:#fca5a5;white-space:nowrap;">ขาดทุนรวม -฿' + fmt(grandLoss) + '</td>' +
+    tfoot.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;font-size:13px;border-top:3px solid #38bdf8 !important;">' +
+      '<td colspan="7" style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;white-space:nowrap;font-size:13.5px;"><b>📌 Grand Total</b> (รวมทั้งหมด ' + sortedRMs.length + ' ภาค RM | ' + totalDMsCount + ' เขต DM | ' + allStores.size + ' สาขา | ' + filtered.length + ' บิลผิดปกติ)</td>' +
+      '<td class="r gt-qty" style="background:#0f172a !important;color:#fde047 !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">' + fmt(grandQty) + ' ชิ้น</td>' +
+      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;white-space:nowrap;">—</td>' +
+      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;white-space:nowrap;">—</td>' +
+      '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">฿' + fmt(grandSales) + '</td>' +
+      '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">฿' + fmt(grandCost) + '</td>' +
+      '<td class="r gt-loss" style="background:#0f172a !important;color:#f87171 !important;font-size:14px;padding:12px;font-weight:800;white-space:nowrap;">-฿' + fmt(grandLoss) + '</td>' +
+      '<td style="background:#0f172a !important;color:#ffffff !important;padding:12px;white-space:nowrap;"><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-weight:800;background:#dc2626 !important;color:#ffffff !important;font-size:12px;">ขาดทุนรวม -฿' + fmt(grandLoss) + '</span></td>' +
     '</tr>';
   }
 
   var lbl = document.getElementById('audit-tx-count-label');
   if (lbl) lbl.textContent = 'แสดง ' + sortedRMs.length + ' ภาค (' + filtered.length + ' รายการ)';
 }
+
+var AUDIT_MASTER_SORT = { col: 'diff', dir: -1 };
 
 function filterAuditMasterTable() {
   var masterList = (DATA.anomalies || {}).master_cost_over_price || [];
@@ -2906,6 +3075,19 @@ function filterAuditMasterTable() {
       if (!match) return false;
     }
     return true;
+  });
+
+    var sc = AUDIT_MASTER_SORT.col;
+  var sdir = AUDIT_MASTER_SORT.dir;
+  filtered.sort(function(a, b){
+    var va = a[sc], vb = b[sc];
+    if (sc === 'price3') {
+      va = a.price3 != null ? a.price3 : a.price;
+      vb = b.price3 != null ? b.price3 : b.price;
+    }
+    if (typeof va === 'string') return sdir * va.localeCompare(vb);
+    if (va == null) va = 0; if (vb == null) vb = 0;
+    return sdir * (va - vb);
   });
 
   var tbody = document.getElementById('tbody-audit-master');
@@ -2936,7 +3118,22 @@ function filterAuditMasterTable() {
 
   var lbl = document.getElementById('audit-master-count-label');
   if (lbl) lbl.textContent = 'แสดง ' + filtered.length + ' รายการ';
+
+  var totDiff = filtered.reduce(function(a, r){ return a + (r.diff || 0); }, 0);
+  var tfoot = document.getElementById('tfoot-audit-master');
+  if (tfoot) {
+    tfoot.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;font-size:13px;border-top:3px solid #38bdf8 !important;">' +
+      '<td colspan="4" style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;white-space:nowrap;font-size:13.5px;"><b>📌 Grand Total</b> (รวมสินค้าต้นทุนสูงกว่าราคาป้าย ' + filtered.length + ' รายการ)</td>' +
+      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;white-space:nowrap;">—</td>' +
+      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;white-space:nowrap;">—</td>' +
+      '<td class="r gt-loss" style="background:#0f172a !important;color:#f87171 !important;padding:12px;font-weight:800;font-size:14px;white-space:nowrap;">+฿' + fmt(totDiff) + '</td>' +
+      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;white-space:nowrap;">—</td>' +
+      '<td style="background:#0f172a !important;color:#ffffff !important;padding:12px;white-space:nowrap;"><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-weight:800;background:#dc2626 !important;color:#ffffff !important;font-size:12px;">ส่วนต่างต้นทุนเกินราคาขาย +฿' + fmt(totDiff) + '</span></td>' +
+    '</tr>';
+  }
 }
+
+var AUDIT_LOWGP_SORT = { col: 'gp_pct', dir: 1 };
 
 function filterAuditLowGpTable() {
   var prods = PRODS_ALL || [];
@@ -2952,6 +3149,15 @@ function filterAuditLowGpTable() {
       if (!match) return false;
     }
     return true;
+  });
+
+    var sc = AUDIT_LOWGP_SORT.col;
+  var sdir = AUDIT_LOWGP_SORT.dir;
+  filtered.sort(function(a, b){
+    var va = a[sc], vb = b[sc];
+    if (typeof va === 'string') return sdir * va.localeCompare(vb);
+    if (va == null) va = 0; if (vb == null) vb = 0;
+    return sdir * (va - vb);
   });
 
   var tbody = document.getElementById('tbody-audit-lowgp');
@@ -2973,6 +3179,26 @@ function filterAuditLowGpTable() {
 
   var lbl = document.getElementById('audit-lowgp-count-label');
   if (lbl) lbl.textContent = 'แสดง ' + filtered.length + ' รายการ';
+
+  var totQ = filtered.reduce(function(a, p){ return a + (p.qty || 0); }, 0);
+  var totS = filtered.reduce(function(a, p){ return a + (p.sales || 0); }, 0);
+  var totD = filtered.reduce(function(a, p){ return a + (p.disc || 0); }, 0);
+  var totC = filtered.reduce(function(a, p){ return a + (p.cost || 0); }, 0);
+  var totG = filtered.reduce(function(a, p){ return a + (p.gp || 0); }, 0);
+  var totPct = totS ? (totG / totS * 100) : 0;
+
+  var tfoot = document.getElementById('tfoot-audit-lowgp');
+  if (tfoot) {
+    tfoot.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;font-size:13px;border-top:3px solid #38bdf8 !important;">' +
+      '<td colspan="3" style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;white-space:nowrap;font-size:13.5px;"><b>📌 Grand Total</b> (รวมสินค้ามาร์จิ้นวิกฤต ' + filtered.length + ' รายการ)</td>' +
+      '<td class="r gt-qty" style="background:#0f172a !important;color:#fde047 !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">' + fmt(totQ) + ' ชิ้น</td>' +
+      '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;padding:12px;font-weight:800;white-space:nowrap;font-size:13.5px;">฿' + fmt(totS) + '</td>' +
+      '<td class="r gt-disc" style="background:#0f172a !important;color:#fb923c !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totD) + '</td>' +
+      '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totC) + '</td>' +
+      '<td class="r gt-loss" style="background:#0f172a !important;color:' + (totG < 0 ? '#f87171' : '#4ade80') + ' !important;padding:12px;font-weight:800;font-size:14px;white-space:nowrap;">' + (totG < 0 ? '-' : '') + '฿' + fmt(Math.abs(totG)) + '</td>' +
+      '<td class="r" style="background:#0f172a !important;padding:12px;">' + gpBadge(totPct, totC) + '</td>' +
+    '</tr>';
+  }
 }
 
 function exportAuditCSV() {
@@ -3047,6 +3273,10 @@ function renderAuditTab() {
     dmSel.value = curVal;
   }
 
+  initSort('tbl-audit-tx', AUDIT_TX_SORT, filterAuditTxTable);
+  initSort('tbl-audit-master', AUDIT_MASTER_SORT, filterAuditMasterTable);
+  initSort('tbl-audit-lowgp', AUDIT_LOWGP_SORT, filterAuditLowGpTable);
+
   filterAuditTxTable();
   filterAuditMasterTable();
   filterAuditLowGpTable();
@@ -3069,9 +3299,20 @@ function switchB901SubView(v) {
   }
 }
 
+var B901_MONTHLY_SORT = { col: 'month', dir: 1 };
+var B901_PROD_SORT = { col: 'sales', dir: -1 };
+var B901_ANOM_SORT = { col: 'loss', dir: -1 };
+
 function renderBranch901Tab() {
   var b901 = DATA.branch_901 || {};
-  var monthly = b901.monthly || [];
+  var monthly = (b901.monthly || []).slice();
+  var sc = B901_MONTHLY_SORT.col, sdir = B901_MONTHLY_SORT.dir;
+  monthly.sort(function(a, b){
+    var va = a[sc], vb = b[sc];
+    if (typeof va === 'string') return sdir * va.localeCompare(vb);
+    if (va == null) va = 0; if (vb == null) vb = 0;
+    return sdir * (va - vb);
+  });
   var prods = b901.products_mtd || [];
   var anom = b901.anomalies || [];
 
@@ -3101,17 +3342,44 @@ function renderBranch901Tab() {
       var isMtd = (m.month === (DATA._meta || {}).current_month);
       return '<tr style="border-bottom:1px solid var(--border);' + (isMtd ? 'background:#f0fdf4;font-weight:600;' : '') + '">' +
         '<td style="padding:8px 12px;"><b>' + m.month + (isMtd ? ' (ปัจจุบัน MTD)' : ' (เดือนก่อนหน้า)') + '</b></td>' +
-        '<td class="r" style="padding:8px 12px;color:var(--blue);">฿' + fmt(m.sales) + '</td>' +
-        '<td class="r" style="padding:8px 12px;">฿' + fmt(m.cost) + '</td>' +
-        '<td class="r" style="padding:8px 12px;color:var(--red);">฿' + fmt(m.sku_disc) + '</td>' +
-        '<td class="r" style="padding:8px 12px;color:var(--red);">฿' + fmt(m.bill_disc) + '</td>' +
-        '<td class="r" style="padding:8px 12px;color:#059669;font-weight:700;">฿' + fmt(m.gp) + '</td>' +
+        '<td class="r gt-sales" style="padding:8px 12px;">฿' + fmt(m.sales) + '</td>' +
+        '<td class="r gt-cost" style="padding:8px 12px;">฿' + fmt(m.cost) + '</td>' +
+        '<td class="r gt-disc" style="padding:8px 12px;">฿' + fmt(m.sku_disc) + '</td>' +
+        '<td class="r gt-disc" style="padding:8px 12px;">฿' + fmt(m.bill_disc) + '</td>' +
+        '<td class="r gt-gp" style="padding:8px 12px;font-weight:700;">฿' + fmt(m.gp) + '</td>' +
         '<td class="r" style="padding:8px 12px;">' + gpBadge(m.gp_pct, m.cost) + '</td>' +
-        '<td class="r" style="padding:8px 12px;">' + fmt(m.qty) + '</td>' +
+        '<td class="r gt-qty" style="padding:8px 12px;">' + fmt(m.qty) + '</td>' +
         '<td class="r" style="padding:8px 12px;">' + fmt(m.tx_cnt) + '</td>' +
       '</tr>';
     }).join('');
   }
+
+  var tfMo = document.getElementById('tfoot-b901-monthly');
+  if (tfMo) {
+    var tot9S = monthly.reduce(function(a,m){ return a + (m.sales || 0); }, 0);
+    var tot9C = monthly.reduce(function(a,m){ return a + (m.cost || 0); }, 0);
+    var tot9Sku = monthly.reduce(function(a,m){ return a + (m.sku_disc || 0); }, 0);
+    var tot9Bill = monthly.reduce(function(a,m){ return a + (m.bill_disc || 0); }, 0);
+    var tot9G = monthly.reduce(function(a,m){ return a + (m.gp || 0); }, 0);
+    var tot9Q = monthly.reduce(function(a,m){ return a + (m.qty || 0); }, 0);
+    var tot9Tx = monthly.reduce(function(a,m){ return a + (m.tx_cnt || 0); }, 0);
+    var tot9Pct = tot9S ? (tot9G / tot9S * 100) : 0;
+    tfMo.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;border-top:3px solid #38bdf8 !important;">' +
+      '<td style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;font-size:13px;"><b>📌 Grand Total</b> (รวม ' + monthly.length + ' เดือน)</td>' +
+      '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(tot9S) + '</td>' +
+      '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(tot9C) + '</td>' +
+      '<td class="r gt-disc" style="background:#0f172a !important;color:#fb923c !important;padding:12px;font-weight:800;font-size:13px;">฿' + fmt(tot9Sku) + '</td>' +
+      '<td class="r gt-disc" style="background:#0f172a !important;color:#fb923c !important;padding:12px;font-weight:800;font-size:13px;">฿' + fmt(tot9Bill) + '</td>' +
+      '<td class="r gt-gp" style="background:#0f172a !important;color:' + (tot9G < 0 ? '#f87171' : '#4ade80') + ' !important;padding:12px;font-weight:800;font-size:14px;">' + (tot9G < 0 ? '-' : '') + '฿' + fmt(Math.abs(tot9G)) + '</td>' +
+      '<td class="r" style="background:#0f172a !important;padding:12px;">' + gpBadge(tot9Pct, tot9C) + '</td>' +
+      '<td class="r gt-qty" style="background:#0f172a !important;color:#fde047 !important;padding:12px;font-weight:800;font-size:13.5px;">' + fmt(tot9Q) + '</td>' +
+      '<td class="r" style="background:#0f172a !important;padding:12px;color:#ffffff !important;">' + fmt(tot9Tx) + '</td>' +
+    '</tr>';
+  }
+
+  initSort('tbl-b901-monthly', B901_MONTHLY_SORT, renderBranch901Tab);
+  initSort('tbl-b901-prods', B901_PROD_SORT, filterBranch901ProdTable);
+  initSort('tbl-b901-anom', B901_ANOM_SORT, filterBranch901AnomTable);
 
   filterBranch901ProdTable();
   filterBranch901AnomTable();
@@ -3133,6 +3401,14 @@ function filterBranch901ProdTable() {
     return true;
   });
 
+    var sc = B901_PROD_SORT.col, sdir = B901_PROD_SORT.dir;
+  filtered.sort(function(a, b){
+    var va = a[sc], vb = b[sc];
+    if (typeof va === 'string') return sdir * va.localeCompare(vb);
+    if (va == null) va = 0; if (vb == null) vb = 0;
+    return sdir * (va - vb);
+  });
+
   var tbody = document.getElementById('tbody-b901-prods');
   if (!tbody) return;
 
@@ -3152,6 +3428,24 @@ function filterBranch901ProdTable() {
 
   var lbl = document.getElementById('b901-prod-count-label');
   if (lbl) lbl.textContent = 'แสดง ' + filtered.length + ' รายการ';
+
+  var totQ = filtered.reduce(function(a, p){ return a + (p.qty || 0); }, 0);
+  var totS = filtered.reduce(function(a, p){ return a + (p.sales || 0); }, 0);
+  var totC = filtered.reduce(function(a, p){ return a + (p.cost || 0); }, 0);
+  var totG = filtered.reduce(function(a, p){ return a + (p.gp || 0); }, 0);
+  var totPct = totS ? (totG / totS * 100) : 0;
+
+  var tfoot = document.getElementById('tfoot-b901-prods');
+  if (tfoot) {
+    tfoot.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;border-top:3px solid #38bdf8 !important;">' +
+      '<td colspan="4" style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;font-size:13px;"><b>📌 Grand Total</b> (รวม ' + filtered.length + ' รายการ)</td>' +
+      '<td class="r gt-qty" style="background:#0f172a !important;color:#fde047 !important;padding:12px;font-weight:800;font-size:13.5px;">' + fmt(totQ) + '</td>' +
+      '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totS) + '</td>' +
+      '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totC) + '</td>' +
+      '<td class="r gt-gp" style="background:#0f172a !important;color:' + (totG < 0 ? '#f87171' : '#4ade80') + ' !important;padding:12px;font-weight:800;font-size:14px;">' + (totG < 0 ? '-' : '') + '฿' + fmt(Math.abs(totG)) + '</td>' +
+      '<td class="r" style="background:#0f172a !important;padding:12px;">' + gpBadge(totPct, totC) + '</td>' +
+    '</tr>';
+  }
 }
 
 function filterBranch901AnomTable() {
@@ -3168,6 +3462,14 @@ function filterBranch901AnomTable() {
       if (!match) return false;
     }
     return true;
+  });
+
+    var sc = B901_ANOM_SORT.col, sdir = B901_ANOM_SORT.dir;
+  filtered.sort(function(a, b){
+    var va = a[sc], vb = b[sc];
+    if (typeof va === 'string') return sdir * va.localeCompare(vb);
+    if (va == null) va = 0; if (vb == null) vb = 0;
+    return sdir * (va - vb);
   });
 
   var tbody = document.getElementById('tbody-b901-anom');
@@ -3192,6 +3494,25 @@ function filterBranch901AnomTable() {
 
   var lbl = document.getElementById('b901-anom-count-label');
   if (lbl) lbl.textContent = 'แสดง ' + filtered.length + ' รายการ';
+
+  var totQ = filtered.reduce(function(a, r){ return a + (r.qty || 0); }, 0);
+  var totS = filtered.reduce(function(a, r){ return a + (r.sales || 0); }, 0);
+  var totC = filtered.reduce(function(a, r){ return a + (r.cost || 0); }, 0);
+  var totL = filtered.reduce(function(a, r){ return a + (r.loss || 0); }, 0);
+
+  var tfoot = document.getElementById('tfoot-b901-anom');
+  if (tfoot) {
+    tfoot.innerHTML = '<tr class="grand-total-row" style="background:#0f172a !important;color:#ffffff !important;font-weight:800;font-size:13px;border-top:3px solid #38bdf8 !important;">' +
+      '<td colspan="5" style="background:#0f172a !important;color:#ffffff !important;padding:12px 14px;font-size:13px;"><b>📌 Grand Total</b> (รวม ' + filtered.length + ' บิลผิดปกติในสาขา 901)</td>' +
+      '<td class="r gt-qty" style="background:#0f172a !important;color:#fde047 !important;padding:12px;font-weight:800;font-size:13.5px;">' + fmt(totQ) + '</td>' +
+      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;">—</td>' +
+      '<td class="r gt-dim" style="background:#0f172a !important;color:#94a3b8 !important;padding:12px;">—</td>' +
+      '<td class="r gt-sales" style="background:#0f172a !important;color:#60a5fa !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totS) + '</td>' +
+      '<td class="r gt-cost" style="background:#0f172a !important;color:#ffffff !important;padding:12px;font-weight:800;font-size:13.5px;">฿' + fmt(totC) + '</td>' +
+      '<td class="r gt-loss" style="background:#0f172a !important;color:#f87171 !important;font-size:14px;padding:12px;font-weight:800;">-฿' + fmt(totL) + '</td>' +
+      '<td style="background:#0f172a !important;color:#ffffff !important;padding:12px;"><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-weight:800;background:#dc2626 !important;color:#ffffff !important;font-size:12px;">ขาดทุนรวม -฿' + fmt(totL) + '</span></td>' +
+    '</tr>';
+  }
 }
 
 function exportBranch901CSV() {
