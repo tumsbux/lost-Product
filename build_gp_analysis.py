@@ -101,10 +101,15 @@ def query_products(cfg):
     print('[3/4] Querying products from dim_product + item_group + item_type ...')
     conn = get_conn(cfg)
     cur = conn.cursor()
-    cur.execute("SELECT iprod, idesc, igrcode FROM `data-lake`.dim_product")
+    cur.execute("SELECT iprod, idesc, igrcode, iacst, ipunit1 FROM `data-lake`.dim_product")
     prods = {}
-    for iprod, idesc, igrcode in cur:
-        prods[str(iprod)] = {'name': idesc or '', 'group': str(igrcode or '')}
+    for iprod, idesc, igrcode, iacst, ipunit1 in cur:
+        prods[str(iprod)] = {
+            'name': idesc or '',
+            'group': str(igrcode or ''),
+            'cost': float(iacst or 0),
+            'price': float(ipunit1 or 0)
+        }
     cur.close(); conn.close()
 
     # group names
@@ -128,7 +133,95 @@ def query_products(cfg):
     return prods, groups, types, barcodes
 
 # ── step 3: aggregate ────────────────────────────────────────────────────────
-def build_json(rows, stores, prods, groups, types, barcodes, months, current_month, days_elapsed):
+
+def query_anomalies(cfg, current_month, prods, stores, barcodes):
+    print('  Querying transaction anomalies from fact_sales ...')
+    conn = get_conn(cfg)
+    cur = conn.cursor(dictionary=True)
+    month_start = current_month + '-01'
+    cur.execute("""
+        SELECT sono, DATE_FORMAT(sodate, '%Y-%m-%d') as sodate, sotowhs, iprod,
+               soqty, sopricunit, solineamt, socstunit, total_cost,
+               (total_cost - solineamt) as loss
+        FROM `data-lake`.fact_sales
+        WHERE sodate >= %s
+          AND total_cost > solineamt
+          AND soqty > 0
+          AND solinetype NOT IN ('C','R')
+          AND soretflag = 'N'
+        ORDER BY (total_cost - solineamt) DESC
+        LIMIT 250
+    """, (month_start,))
+    raw_tx = cur.fetchall()
+    cur.close(); conn.close()
+
+    tx_list = []
+    for r in raw_tx:
+        ip = str(r['iprod'])
+        whs = str(r['sotowhs']).zfill(3)
+        p_info = prods.get(ip, {'name': 'ไม่พบชื่อสินค้า', 'group': ''})
+        s_info = stores.get(whs, {'name': f'สาขา {whs}', 'dm': '', 'rm': ''})
+        barcode = barcodes.get(ip, '-')
+        
+        qty = float(r['soqty'] or 0)
+        u_price = float(r['sopricunit'] or 0)
+        u_cost = float(r['socstunit'] or 0)
+        sales = float(r['solineamt'] or 0)
+        cost = float(r['total_cost'] or 0)
+        loss = cost - sales
+        
+        reason = "ต้นทุนต่อหน่วยสูงกว่าราคาขาย"
+        if sales == 0 and cost > 0:
+            reason = "ยิงขาย 0 บาท (แจกฟรี 100%)"
+        elif u_price > 0 and (sales / (qty * u_price)) <= 0.55:
+            reason = "ส่วนลดสูงเกินเกณฑ์ (>50%) ขายต่ำกว่าทุน"
+        elif u_cost > u_price:
+            reason = "ราคาทุนป้ายสูงกว่าราคาขายป้าย"
+            
+        tx_list.append({
+            'sono': str(r['sono']),
+            'sodate': str(r['sodate']),
+            'branch_code': whs,
+            'branch_name': s_info['name'],
+            'dm': s_info['dm'],
+            'rm': s_info['rm'],
+            'iprod': ip,
+            'barcode': barcode,
+            'name': p_info['name'],
+            'qty': qty,
+            'u_price': round(u_price, 2),
+            'u_cost': round(u_cost, 2),
+            'sales': round(sales, 2),
+            'cost': round(cost, 2),
+            'loss': round(loss, 2),
+            'reason': reason
+        })
+
+    # Master cost > price
+    master_list = []
+    for ip, p in prods.items():
+        c = p.get('cost', 0)
+        pr = p.get('price', 0)
+        if c > pr and pr > 0 and c > 0:
+            master_list.append({
+                'iprod': ip,
+                'barcode': barcodes.get(ip, '-'),
+                'name': p.get('name', ''),
+                'group': p.get('group', ''),
+                'cost': round(c, 2),
+                'price': round(pr, 2),
+                'diff': round(c - pr, 2),
+                'diff_pct': round((c - pr) / pr * 100, 1)
+            })
+    master_list.sort(key=lambda x: x['diff'], reverse=True)
+
+    print(f'    {len(tx_list):,} transaction anomalies, {len(master_list):,} master cost>price items')
+    return {
+        'transactions': tx_list,
+        'master_cost_over_price': master_list[:150]
+    }
+
+def build_json(rows, stores, prods, groups, types, barcodes, months, current_month, days_elapsed, cfg=None):
     print('[4/4] Building gp_analysis_data.json ...')
 
     # ── resolve barcodes -> master iprod & filter excluded types ──────────────
@@ -353,6 +446,12 @@ def build_json(rows, stores, prods, groups, types, barcodes, months, current_mon
     payload['festival_stores'] = fest_store_list
     print(f'  festival_stores: {len(fest_store_list)} stores aggregated for Category 22')
 
+    # Query and attach anomalies
+    if cfg:
+        payload['anomalies'] = query_anomalies(cfg, current_month, prods, stores, barcodes)
+    else:
+        payload['anomalies'] = {'transactions': [], 'master_cost_over_price': []}
+
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
 
@@ -433,7 +532,7 @@ def main():
         gc.collect()
         prods, groups, types, barcodes = query_products(cfg)
         gc.collect()
-        payload = build_json(raw, stores, prods, groups, types, barcodes, months_list, current_month, days_elapsed)
+        payload = build_json(raw, stores, prods, groups, types, barcodes, months_list, current_month, days_elapsed, cfg=cfg)
         del raw
         gc.collect()
 
