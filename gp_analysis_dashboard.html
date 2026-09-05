@@ -6,7 +6,7 @@
 <title>GP Analysis Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-:root{--bg:#f4f6f9;--card:#fff;--border:#e0e4ea;--text:#2c3e50;--muted:#7f8c9a;--red:#e74c3c;--orange:#e67e22;--blue:#2e86ab;--green:#27ae60;--purple:#8e44ad;--teal:#16a085}
+:root{--bg:#f4f6f9;--card:#fff;--border:#cbd5e1;--text:#0f172a;--muted:#475569;--red:#dc2626;--orange:#d97706;--blue:#1d4ed8;--green:#16a34a;--purple:#7c3aed;--teal:#0d9488}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px}
 .hdr{background:#1a252f;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:16px}
@@ -63,13 +63,28 @@ tfoot td b, tfoot td strong, tfoot td span.gt-label {
   color: #ffffff !important;
   font-weight: 800 !important;
 }
-.gt-qty { color: #fde047 !important; font-weight: 800 !important; }
-.gt-sales { color: #60a5fa !important; font-weight: 800 !important; }
-.gt-cost { color: #f1f5f9 !important; font-weight: 800 !important; }
-.gt-loss, .gt-diff { color: #f87171 !important; font-weight: 800 !important; font-size: 13.5px !important; }
-.gt-gp { color: #4ade80 !important; font-weight: 800 !important; font-size: 13.5px !important; }
-.gt-disc { color: #fb923c !important; font-weight: 800 !important; }
-.gt-dim { color: #94a3b8 !important; }
+/* Default body table cells (High Contrast Dark Colors on Light Backgrounds) */
+.gt-cost { color: #0f172a !important; font-weight: 700 !important; }
+.gt-sales { color: #1d4ed8 !important; font-weight: 700 !important; }
+.gt-disc { color: #c2410c !important; font-weight: 700 !important; }
+.gt-qty { color: #0f172a !important; font-weight: 700 !important; }
+.gt-gp { color: #047857 !important; font-weight: 700 !important; font-size: 13px !important; }
+.gt-loss, .gt-diff { color: #b91c1c !important; font-weight: 700 !important; font-size: 13px !important; }
+.gt-dim { color: #475569 !important; }
+
+/* Grand Total (Dark Navy #0f172a Footer & Highlight Rows) */
+tfoot td, tfoot th, .grand-total-row td, [style*="#0f172a"] td {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+tfoot .gt-qty, .grand-total-row .gt-qty, [style*="#0f172a"] .gt-qty { color: #fde047 !important; font-weight: 800 !important; }
+tfoot .gt-sales, .grand-total-row .gt-sales, [style*="#0f172a"] .gt-sales { color: #60a5fa !important; font-weight: 800 !important; }
+tfoot .gt-cost, .grand-total-row .gt-cost, [style*="#0f172a"] .gt-cost { color: #ffffff !important; font-weight: 800 !important; }
+tfoot .gt-loss, tfoot .gt-diff, .grand-total-row .gt-loss, .grand-total-row .gt-diff, [style*="#0f172a"] .gt-loss, [style*="#0f172a"] .gt-diff { color: #f87171 !important; font-weight: 800 !important; font-size: 13.5px !important; }
+tfoot .gt-gp, .grand-total-row .gt-gp, [style*="#0f172a"] .gt-gp { color: #4ade80 !important; font-weight: 800 !important; font-size: 13.5px !important; }
+tfoot .gt-disc, .grand-total-row .gt-disc, [style*="#0f172a"] .gt-disc { color: #fb923c !important; font-weight: 800 !important; }
+tfoot .gt-dim, .grand-total-row .gt-dim, [style*="#0f172a"] .gt-dim { color: #94a3b8 !important; }
 
 thead th[data-col] {
   cursor: pointer !important;
@@ -1165,19 +1180,19 @@ thead th, tbody td, tfoot td,
   <!-- KPI Overview -->
   <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:16px;margin-bottom:16px;">
     <div style="background:#fff;border:1px solid var(--border);border-left:4px solid #4f46e5;border-radius:10px;padding:16px 20px;">
-      <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px;">ยอดขายสุทธิ MTD (ก.ย. 69)</div>
-      <div style="font-size:24px;font-weight:800;color:#4f46e5;" id="b901-kpi-sales">฿0</div>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:4px;" id="b901-kpi-sales-sub">เดือนก่อนหน้า (ส.ค. 69): ฿18.33M</div>
+      <div style="font-size:12px;color:#475569;font-weight:700;margin-bottom:4px;">ยอดขายสุทธิ MTD (ก.ย. 69)</div>
+      <div style="font-size:24px;font-weight:800;color:#1d4ed8;" id="b901-kpi-sales">฿0</div>
+      <div style="font-size:12px;color:#334155;font-weight:600;margin-top:4px;" id="b901-kpi-sales-sub">เดือนก่อนหน้า (ส.ค. 69): ฿18.33M</div>
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-left:4px solid #059669;border-radius:10px;padding:16px 20px;">
-      <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px;">กำไรขั้นต้น (GP) MTD</div>
-      <div style="font-size:24px;font-weight:800;color:#059669;" id="b901-kpi-gp">฿0</div>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:4px;" id="b901-kpi-gp-sub">ต้นทุนสินค้า: ฿0</div>
+      <div style="font-size:12px;color:#475569;font-weight:700;margin-bottom:4px;">กำไรขั้นต้น (GP) MTD</div>
+      <div style="font-size:24px;font-weight:800;color:#047857;" id="b901-kpi-gp">฿0</div>
+      <div style="font-size:12px;color:#334155;font-weight:600;margin-top:4px;" id="b901-kpi-gp-sub">ต้นทุนสินค้า: ฿0</div>
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-left:4px solid #2563eb;border-radius:10px;padding:16px 20px;">
-      <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px;">อัตรากำไรขั้นต้น (GP %)</div>
-      <div style="font-size:24px;font-weight:800;color:#2563eb;" id="b901-kpi-gppct">0.0%</div>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:4px;" id="b901-kpi-gppct-sub">ส.ค. 69 ทำได้ 26.2%</div>
+      <div style="font-size:12px;color:#475569;font-weight:700;margin-bottom:4px;">อัตรากำไรขั้นต้น (GP %)</div>
+      <div style="font-size:24px;font-weight:800;color:#1d4ed8;" id="b901-kpi-gppct">0.0%</div>
+      <div style="font-size:12px;color:#334155;font-weight:600;margin-top:4px;" id="b901-kpi-gppct-sub">ส.ค. 69 ทำได้ 26.2%</div>
     </div>
     <div style="background:#fff;border:1px solid var(--border);border-left:4px solid #dc2626;border-radius:10px;padding:16px 20px;">
       <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px;">รายการขายขาดทุนในสาขา 901</div>
@@ -1578,11 +1593,11 @@ function renderTrendTable() {
   if (tbody) {
     tbody.innerHTML = monthly.map(function(m){
       return '<tr>' +
-        '<td><b>' + m.month + '</b>' + (m.is_mtd ? ' <span style="color:var(--muted);font-size:11px">(MTD)</span>' : '') + '</td>' +
-        '<td class="r gt-sales">฿' + fmt(m.sales) + '</td>' +
-        '<td class="r gt-disc">฿' + fmt(m.disc||0) + '</td>' +
-        '<td class="r gt-cost">฿' + fmt(m.cost) + '</td>' +
-        '<td class="r gt-gp" style="color:' + (m.gp < 0 ? '#f87171' : '#4ade80') + ' !important;">' + (m.gp < 0 ? '-' : '') + '฿' + fmt(Math.abs(m.gp)) + '</td>' +
+        '<td style="color:#0f172a;"><b>' + m.month + '</b>' + (m.is_mtd ? ' <span style="color:var(--muted);font-size:11px">(MTD)</span>' : '') + '</td>' +
+        '<td class="r" style="color:#1d4ed8;font-weight:700;font-size:13.5px;">฿' + fmt(m.sales) + '</td>' +
+        '<td class="r" style="color:#c2410c;font-weight:700;font-size:13px;">฿' + fmt(m.disc||0) + '</td>' +
+        '<td class="r" style="color:#0f172a;font-weight:700;font-size:13.5px;">฿' + fmt(m.cost) + '</td>' +
+        '<td class="r" style="color:' + (m.gp < 0 ? '#dc2626' : '#047857') + ';font-weight:700;font-size:13.5px;">' + (m.gp < 0 ? '-' : '') + '฿' + fmt(Math.abs(m.gp)) + '</td>' +
         '<td class="r">' + gpBadge(m.gp_pct, m.cost) + '</td>' +
         '<td>' + (m.is_mtd ? '<span style="color:var(--blue);font-weight:700;font-size:11px">ปัจจุบัน</span>' : '') + '</td>' +
       '</tr>';
@@ -3081,7 +3096,7 @@ function filterAuditTxTable() {
       '<td class="r" style="padding:10px 12px;font-weight:800;white-space:nowrap;">' + fmt(rData.qty) + '</td>' +
       '<td class="r" style="padding:10px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
       '<td class="r" style="padding:10px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
-      '<td class="r gt-disc" style="padding:10px 12px;font-weight:800;color:#fb923c;white-space:nowrap;">฿' + fmt(rData.disc) + '</td>' +
+      '<td class="r gt-disc" style="padding:10px 12px;font-weight:800;color:#c2410c;white-space:nowrap;">฿' + fmt(rData.disc) + '</td>' +
       '<td class="r" style="padding:10px 12px;font-weight:800;color:var(--blue);white-space:nowrap;">฿' + fmt(rData.sales) + '</td>' +
       '<td class="r" style="padding:10px 12px;font-weight:800;white-space:nowrap;">฿' + fmt(rData.cost) + '</td>' +
       '<td class="r" style="padding:10px 12px;font-weight:800;color:#dc2626;font-size:13.5px;white-space:nowrap;">-฿' + fmt(rData.loss) + '</td>' +
@@ -3116,7 +3131,7 @@ function filterAuditTxTable() {
         '<td class="r" style="padding:8px 12px;font-weight:700;white-space:nowrap;">' + fmt(dData.qty) + '</td>' +
         '<td class="r" style="padding:8px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
         '<td class="r" style="padding:8px 12px;color:var(--muted);white-space:nowrap;">—</td>' +
-        '<td class="r gt-disc" style="padding:8px 12px;font-weight:700;color:#fb923c;white-space:nowrap;">฿' + fmt(dData.disc) + '</td>' +
+        '<td class="r gt-disc" style="padding:8px 12px;font-weight:700;color:#c2410c;white-space:nowrap;">฿' + fmt(dData.disc) + '</td>' +
         '<td class="r" style="padding:8px 12px;font-weight:700;color:var(--blue);white-space:nowrap;">฿' + fmt(dData.sales) + '</td>' +
         '<td class="r" style="padding:8px 12px;font-weight:700;white-space:nowrap;">฿' + fmt(dData.cost) + '</td>' +
         '<td class="r" style="padding:8px 12px;font-weight:800;color:#dc2626;white-space:nowrap;">-฿' + fmt(dData.loss) + '</td>' +
@@ -3147,7 +3162,7 @@ function filterAuditTxTable() {
           '<td class="r" style="padding:7px 12px;font-weight:700;white-space:nowrap;">' + fmt(r.qty) + '</td>' +
           '<td class="r" style="padding:7px 12px;white-space:nowrap;">฿' + fmt(r.u_price) + '</td>' +
           '<td class="r" style="padding:7px 12px;color:#dc2626;font-weight:600;white-space:nowrap;">฿' + fmt(r.u_cost) + '</td>' +
-          '<td class="r gt-disc" style="padding:7px 12px;font-weight:700;color:#fb923c;white-space:nowrap;">฿' + fmt(r.disc) + '</td>' +
+          '<td class="r gt-disc" style="padding:7px 12px;font-weight:700;color:#c2410c;white-space:nowrap;">฿' + fmt(r.disc) + '</td>' +
           '<td class="r" style="padding:7px 12px;font-weight:700;color:var(--blue);white-space:nowrap;">฿' + fmt(r.sales) + '</td>' +
           '<td class="r" style="padding:7px 12px;white-space:nowrap;">฿' + fmt(r.cost) + '</td>' +
           '<td class="r" style="padding:7px 12px;color:#dc2626;font-weight:800;white-space:nowrap;">-฿' + fmt(r.loss) + '</td>' +
@@ -3465,15 +3480,15 @@ function renderBranch901Tab() {
     tbMo.innerHTML = monthly.map(function(m){
       var isMtd = (m.month === (DATA._meta || {}).current_month);
       return '<tr style="border-bottom:1px solid var(--border);' + (isMtd ? 'background:#f0fdf4;font-weight:600;' : '') + '">' +
-        '<td style="padding:8px 12px;"><b>' + m.month + (isMtd ? ' (ปัจจุบัน MTD)' : ' (เดือนก่อนหน้า)') + '</b></td>' +
-        '<td class="r gt-sales" style="padding:8px 12px;">฿' + fmt(m.sales) + '</td>' +
-        '<td class="r gt-cost" style="padding:8px 12px;">฿' + fmt(m.cost) + '</td>' +
-        '<td class="r gt-disc" style="padding:8px 12px;">฿' + fmt(m.sku_disc) + '</td>' +
-        '<td class="r gt-disc" style="padding:8px 12px;">฿' + fmt(m.bill_disc) + '</td>' +
-        '<td class="r gt-gp" style="padding:8px 12px;font-weight:700;">฿' + fmt(m.gp) + '</td>' +
-        '<td class="r" style="padding:8px 12px;">' + gpBadge(m.gp_pct, m.cost) + '</td>' +
-        '<td class="r gt-qty" style="padding:8px 12px;">' + fmt(m.qty) + '</td>' +
-        '<td class="r" style="padding:8px 12px;">' + fmt(m.tx_cnt) + '</td>' +
+        '<td style="padding:10px 12px;color:#0f172a;"><b>' + m.month + (isMtd ? ' (ปัจจุบัน MTD)' : ' (เดือนก่อนหน้า)') + '</b></td>' +
+        '<td class="r" style="padding:10px 12px;color:#1d4ed8;font-weight:700;font-size:13.5px;">฿' + fmt(m.sales) + '</td>' +
+        '<td class="r" style="padding:10px 12px;color:#0f172a;font-weight:700;font-size:13.5px;">฿' + fmt(m.cost) + '</td>' +
+        '<td class="r" style="padding:10px 12px;color:#c2410c;font-weight:700;font-size:13px;">฿' + fmt(m.sku_disc) + '</td>' +
+        '<td class="r" style="padding:10px 12px;color:#c2410c;font-weight:700;font-size:13px;">฿' + fmt(m.bill_disc) + '</td>' +
+        '<td class="r" style="padding:10px 12px;color:#047857;font-weight:700;font-size:13.5px;">฿' + fmt(m.gp) + '</td>' +
+        '<td class="r" style="padding:10px 12px;">' + gpBadge(m.gp_pct, m.cost) + '</td>' +
+        '<td class="r" style="padding:10px 12px;color:#0f172a;font-weight:600;">' + fmt(m.qty) + '</td>' +
+        '<td class="r" style="padding:10px 12px;color:#0f172a;font-weight:600;">' + fmt(m.tx_cnt) + '</td>' +
       '</tr>';
     }).join('');
   }
@@ -3615,7 +3630,7 @@ function filterBranch901AnomTable() {
       '<td class="r" style="font-weight:700;padding:8px 12px;">' + fmt(a.qty) + '</td>' +
       '<td class="r" style="padding:8px 12px;">฿' + fmt(a.u_price) + '</td>' +
       '<td class="r" style="color:#dc2626;font-weight:600;padding:8px 12px;">฿' + fmt(a.u_cost) + '</td>' +
-      '<td class="r gt-disc" style="font-weight:700;color:#fb923c;padding:8px 12px;">฿' + fmt(a.disc) + '</td>' +
+      '<td class="r gt-disc" style="font-weight:700;color:#c2410c;padding:8px 12px;">฿' + fmt(a.disc) + '</td>' +
       '<td class="r" style="font-weight:700;color:var(--blue);padding:8px 12px;">฿' + fmt(a.sales) + '</td>' +
       '<td class="r" style="padding:8px 12px;">฿' + fmt(a.cost) + '</td>' +
       '<td class="r" style="color:#dc2626;font-weight:800;font-size:13px;padding:8px 12px;">-฿' + fmt(a.loss) + '</td>' +
