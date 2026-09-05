@@ -136,6 +136,49 @@
 
 ---
 
+### 2.3 ข้อควรระวังเรื่อง Collation Mismatch ข้ามฐานข้อมูล (Cross-Schema Collation Handling)
+
+> [!CAUTION]
+> ⚠️ **คำเตือนสำคัญสำหรับทีม IT (Database Administrator & Data Engineer):**
+> ระหว่างฐานข้อมูล `data-lake` และ `MYPOS2018_CENTER` มีการกำหนด Character Set และ Collation ต่างกัน:
+> - **`data-lake.*`**: ใช้ `utf8mb4` (Collation: `utf8mb4_general_ci`)
+> - **`MYPOS2018_CENTER.*`**: ใช้ `utf8mb3` / `utf8` (Collation: `utf8mb3_general_ci`)
+>
+> หากนำตารางข้ามฐานข้อมูลมาทำ `JOIN` กันตรงๆ ผ่าน SQL เช่น:
+> ```sql
+> -- ❌ คำสั่งนี้จะพังทันทีด้วย Error 1267!
+> SELECT *
+> FROM `data-lake`.fact_sales fs
+> JOIN `MYPOS2018_CENTER`.item_barcode ib ON ib.barcode = fs.iprod;
+> ```
+> MySQL จะตัดการทำงานทันทีและส่ง Error:
+> `ERROR 1267 (HY000): Illegal mix of collations (utf8mb4_general_ci,IMPLICIT) and (utf8mb3_general_ci,IMPLICIT) for operation '='`
+
+#### แนวทางการแก้ไขในคำสั่ง SQL (SQL Solutions):
+หากจำเป็นต้องเขียนคำสั่ง SQL JOIN ข้ามระบบโดยตรง สามารถทำได้ 2 วิธี:
+
+1. **วิธีที่ 1: ใช้ `CAST(... AS BINARY)` (แนะนำ — ปลอดภัยและเร็วที่สุด)**
+   แปลงทั้งสองฝั่งให้เปรียบเทียบในระดับไบต์ (Binary string):
+   ```sql
+   ON CAST(ib.barcode AS BINARY) = CAST(fs.iprod AS BINARY)
+   ```
+2. **วิธีที่ 2: ระบุ `COLLATE utf8mb4_general_ci` ชัดเจน**
+   แปลง Collation ของฝั่ง `utf8mb3` ให้เป็น `utf8mb4`:
+   ```sql
+   ON (ib.barcode COLLATE utf8mb4_general_ci) = fs.iprod
+   ```
+
+#### สถาปัตยกรรม Python Pipeline (`build_gp_analysis.py`) หลีกเลี่ยงปัญหานี้อย่างไร?
+ในสคริปต์ `build_gp_analysis.py` ระบบถูกออกแบบให้ **ไม่ทำ Cross-Schema JOIN บน MySQL Database Engine**:
+1. สคริปต์จะ Query `dim_product` และ `item_barcode` แยกออกมาเก็บไว้ใน Python In-Memory Dictionary (`prods`, `barcodes`)
+2. จากนั้น Query `fact_sales` แล้วนำข้อมูลมา Resolve จับคู่ Barcode Alias และ Master Product ใน RAM ผ่าน Python Dictionary lookup แบบ $O(1)$
+3. **ข้อดี:**
+   - ขจัดปัญหา Collation Conflict 100%
+   - ลดภาระหนักของ MySQL Server (ไม่ต้อง Cross-Join ตารางขนาดหลายสิบล้านแถว)
+   - ประมวลผลได้รวดเร็ว (Pipeline ใช้เวลาเฉลี่ยไม่ถึง 45 วินาที)
+
+---
+
 ## 3. คลังข้อมูลระดับไฟล์: `gp_analysis_data.json` (Local Datamart)
 
 - **ที่ตั้งไฟล์:** `F:\lost-Product\gp_analysis_data.json` (และสำเนาซิงค์ที่ `F:\facebook\gp_data.json`)
