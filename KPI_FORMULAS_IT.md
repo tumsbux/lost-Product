@@ -10,14 +10,14 @@
 ระบบนี้คือ **Gross Profit (GP) Recovery & Monitoring Engine** ของเครือข่ายร้านค้าปลีก (จำนวน 202 สาขาในฐานข้อมูลปัจจุบัน) พัฒนาขึ้นเพื่อรับมือกับวิกฤตอัตรากำไรขั้นต้น (GP%) ที่ร่วงลงอย่างรวดเร็วจาก **31.5% ในเดือนสิงหาคม 2026 (2026-08)** ลงมาอยู่ที่ **24.2% ในเดือนกันยายน 2026 (2026-09 MTD)** 
 
 สาเหตุทางธุรกิจที่ระบบนี้ถูกสร้างขึ้นมาจับโดยเฉพาะประกอบด้วย 4 ปัจจัยหลัก:
-1. **วิกฤตสินค้าเทศกาล (Category 22: Festival Goods):** สาขานำสินค้ากลุ่มนี้ไปแจกเป็นของแถมหรือยิงขายในราคา ฿0 หรือให้ส่วนลด 100% ทำให้ระบบตัดต้นทุนสินค้า (COGS) เต็มจำนวนโดยไม่มียอดขายมาชดเชย ส่งผลกระทบกด GP รวมของบริษัทลดลงถึง **-7.09 percentage points (pp)**
-2. **โครงสร้างกำไร Minimart (Category 02):** มีสัดส่วนยอดขายสูงแต่มาร์จิ้นต่ำกว่าเกณฑ์ปกติ กดดัน GP รวมอีก **-3.69 pp**
+1. **วิกฤตสินค้าเทศกาล (Category 22: Festival Goods):** สาขานำสินค้ากลุ่มนี้ไปแจกเป็นของแถมหรือยิงขายในราคา ฿0 หรือให้ส่วนลด 100% ทำให้ระบบตัดต้นทุนสินค้า (COGS) เต็มจำนวนโดยไม่มียอดขายมาชดเชย ส่งผลกระทบกด GP รวมของบริษัทลดลงถึง **-5.89 percentage points (pp)** (คำนวณแบบ Dynamic MTD: ขาดทุนสะสม ฿875,179 จากยอดขาย ฿23,355 และต้นทุน ฿898,534)
+2. **โครงสร้างกำไร Minimart (Category 02):** มีสัดส่วนยอดขายสูงแต่มาร์จิ้นต่ำกว่าเกณฑ์ปกติ (GP% MTD = 16.35% เทียบกับเกณฑ์สิงหาคม 31.48%) กดดัน GP รวมอีก **-3.50 pp**
 3. **การทุจริต/ข้อผิดพลาดระดับบิล (Transaction Anomalies):** แคชเชียร์ยิงขายของแถม ฿0, ให้ส่วนลดผิดเกณฑ์ (>50%), หรือตั้งราคาทุนสูงกว่าราคาขายป้าย
 4. **การปนเปื้อนของร้าน Online (สาขา 901):** มีโมเดลการคิดราคา ต้นทุน และส่วนลดต่างจากสาขาหน้าร้านทั่วไป หากนำมารวมกับสาขาหน้าร้านจะทำให้ตัวเลขบิดเบือน จึงต้องแยกแท็บวิเคราะห์ต่างหาก
 
 ---
 
-### 0.2 ค่าคงที่/ตรึงไว้ (Static/Pro-Forma) vs ยอดสะสม/อัปเดตตลอด (MTD Actuals)
+### 0.2 ตัวเลขจริง MTD (Actuals) vs แบบจำลอง Pro-Forma (Dynamic Simulation)
 ในระบบมีการแบ่งประเภทของตัวเลขออกเป็น 2 ชั้นอย่างชัดเจน:
 
 1. **ยอดสะสม MTD (Actual Accumulated Numbers):**
@@ -25,13 +25,13 @@
    - ฟิลด์ใน JSON ได้แก่ `summary.sales`, `summary.cost`, `summary.disc`, `summary.gp`, `summary.gp_pct`
    - ในหน้าเว็บฝั่ง Client-side เมื่อมีการกรอง RM/DM/ค้นหา จะเกิดการคำนวณใหม่สดๆ ใน RAM ของเบราว์เซอร์ โดยเก็บค่ารวมดั้งเดิมไว้ใน Attribute `dataset.orig` เพื่อสลับกลับมาเมื่อล้างตัวกรอง
 
-2. **ค่าตรึง/แบบจำลอง Pro-Forma (Pro-Forma Baseline & Simulation Constants):**
-   - ในแท็บ **"💡 จำลอง Pro-Forma GP (รออนุมัติ)"** (`updateSimulation()`) มีการตรึงตัวเลขฐานและค่าการปรับปรุงเชิงยุทธศาสตร์ไว้ 3 ค่า:
-     - `baseGpPct = 22.79`: ค่า GP% ฐาน ณ จุดที่เริ่มตรวจพบวิกฤต (อ้างอิงจากรอบวิเคราะห์ก่อนหน้า)
-     - `m1` (ปรับปรุง Category 22 เป็นงบการตลาด): `+7.09 pp` (เพิ่มกำไร `+฿736,271`)
-     - `m2` (ปรับราคากลุ่ม Minimart 02 ให้สะท้อนต้นทุนจริง): `+0.55 pp` (เพิ่มกำไร `+฿57,450`)
-     - `m3` (ปิดจุดรั่วไหลบิลขายต่ำกว่าทุน/แจกฟรี 0 บาท): `+1.20 pp` (เพิ่มกำไร `+฿125,000`)
-   - **เหตุผลที่ต้องแยก:** ค่าจริง MTD สะท้อนสิ่งที่เกิดขึ้นจริงในอดีตจนถึงปัจจุบัน ส่วนค่า Pro-Forma เป็นการจำลองผลลัพธ์ล่วงหน้า (Forward-Looking Scenario) หากผู้บริหารอนุมัติมาตรการทางบัญชีและการตั้งราคา
+2. **แบบจำลอง Pro-Forma แบบไดนามิก (Dynamic Pro-Forma Simulation):**
+   - ในแท็บ **"💡 จำลอง Pro-Forma GP (รออนุมัติ)"** (`updateSimulation()`) และการ์ดเปรียบเทียบ As-Is vs Proposed Model ได้รับการปรับปรุงเป็น **การคำนวณแบบ Dynamic 100%** จากชุดข้อมูล `DATA.summary` และรายการจริง MTD:
+     - `baseGpPct`: ดึงอัตโนมัติจาก `DATA.summary.gp_pct` (ปัจจุบันคือ `24.18%` หรือปัดเศษ `24.20%`)
+     - `m1` (แยก Category 22 เป็นงบการตลาด): คำนวณจากผลขาดทุนสุทธิของ Category 22 หารด้วย Total Sales MTD: `+5.89 pp` (เพิ่มกำไร `+฿875,179`)
+     - `m2` (ปรับราคากลุ่ม Minimart 02 ให้ GP เพิ่มขึ้น +2.5%): คำนวณจาก `miniSales * 0.025`: `+0.58 pp` (เพิ่มกำไร `+฿86,054`)
+     - `m3` (ปิดจุดรั่วไหลบิลขายต่ำกว่าทุน/แจกฟรี 0 บาท): คำนวณจากผลขาดทุนสะสมใน `DATA.anomalies`: `+1.20 pp` (เพิ่มกำไร `+฿178,393`)
+   - **เหตุผล:** ขจัดปัญหา Hardcoded Number จากช่วงวิเคราะห์ 2 วันแรก (`22.79%`, `7.09 pp`, `฿736,271`) ทำให้แบบจำลองปรับเปลี่ยนตัวเลขสะท้อนผลลัพธ์ตามวัน MTD จริงแบบเรียลไทม์
 
 ---
 
@@ -133,6 +133,15 @@
 | `qty` | `fact_sales.soqty` | `SUM(soqty)` | จำนวนชิ้นสินค้าที่ขายได้ |
 | `gp` | - | `sales - cost` | กำไรขั้นต้น (Gross Profit) |
 | `gp_pct` | - | `(sales - cost) / sales * 100` (ถ้า sales = 0 ให้เป็น 0) | อัตรากำไรขั้นต้นคิดเป็นเปอร์เซ็นต์ |
+| `summary.store_count` | `fact_sales.sotowhs` | `len(curr_stores)` | จำนวนสาขาหน้าร้านที่มีรายการขายจริงใน MTD (ปัจจุบัน 202 สาขา) |
+| `summary.product_count` | `fact_sales.iprod` | `len(curr_prods)` | **จำนวนสินค้า (Active Selling SKUs) ที่ขายได้จริงใน MTD (11,135 SKUs)**<br>*(ผ่านการ Resolve Barcode Alias และกรอง `EXCLUDED_ITY` แล้ว ไม่ใช่จำนวน SKU ทั้งหมดใน `dim_product`)* |
+
+> [!NOTE]
+> 📌 **นิยามทางเทคนิคของ `summary.product_count` (11,135 SKUs) สำหรับทีม IT:**
+> 1. **ไม่ใช่** จำนวนแถวทั้งหมดในตาราง `data-lake.dim_product` (ตาราง Master มีสินค้าหลายหมื่นรายการ รวมทั้งสินค้า Inactive, สินค้าเลิกขาย และสินค้าหมวดบริการ)
+> 2. เป็นการนับแบบ **Distinct Master Product (`master_iprod`)** ที่มีรายการขายจริงในเดือนปัจจุบัน (`sodate >= '2026-09-01'`)
+> 3. ผ่านขั้นตอนการค้นหาบาร์โค้ด Fallback: หาก `iprod` หน้าร้านไม่พบใน `dim_product` จะดึงรหัส Parent จาก `MYPOS2018_CENTER.item_barcode.parcode`
+> 4. ผ่านเงื่อนไขคัดกรองสินค้าที่ไม่อยู่ในการค้าปลีกทั่วไป (`EXCLUDED_ITY`: รหัสประเภท 2 หลักแรก `igrcode` ต้องไม่อยู่ใน `('03', '12', '15', '20', '26')`)
 
 ---
 
@@ -141,6 +150,8 @@
 ### 2.1 SQL จริงที่ใช้ดึงข้อมูล
 
 #### 1) Query สรุปยอดขายระดับสาขาและสินค้า (`query_gp_data`):
+สคริปต์ `build_gp_analysis.py` รัน SQL ดึงข้อมูลดิบระดับ `(sotowhs, iprod, mo)` จาก `fact_sales` เข้ามาประมวลผลต่อใน RAM:
+
 ```sql
 SELECT sotowhs, iprod,
        CONCAT(YEAR(sodate), '-', LPAD(MONTH(sodate),2,'0')) as mo,
@@ -155,6 +166,80 @@ WHERE sodate >= %s
   AND soretflag = 'N'
   AND sotowhs >= '001' AND sotowhs <= '500'
 GROUP BY sotowhs, iprod, mo;
+```
+
+> [!WARNING]
+> ⚠️ **คำเตือนสำคัญสำหรับทีม IT (เหตุผลที่ห้ามนำ SQL ดิบด้านบนไปเทียบตัวเลขกับหน้าเว็บโดยตรง):**
+> 1. **ความคลาดเคลื่อนของต้นทุน (Cost Discrepancy ฿60,000 - ฿183,000):**
+>    - ใน SQL ด้านบน ยัง**ไม่ได้กรองประเภทสินค้าที่ต้องตัดออก (`EXCLUDED_ITY`: `03`, `12`, `15`, `20`, `26`)** เช่น ค่าบริการ ซ่อมบำรุง หรือสินค้าที่ไม่ได้อยู่ในการขายปลีกทั่วไป
+>    - ในระบบจริง สคริปต์ Python จะนำผลลัพธ์มาแมปกับ `dim_product` ใน RAM และตัดรายการที่ `ty in EXCLUDED_ITY` ทิ้ง หากรันเฉพาะ SQL ด้านบน ต้นทุนรวม MTD จะสูงกว่าหน้า Dashboard ประมาณ ฿60,000 - ฿183,000
+> 2. **การจับคู่บาร์โค้ด (Barcode Alias Resolution):**
+>    - สินค้าบางรายการใน `fact_sales` บันทึกด้วยรหัสบาร์โค้ดย่อย ไม่ตรงกับ `dim_product.iprod` ระบบต้องทำ Lookup จาก `MYPOS2018_CENTER.item_barcode` เพื่อแปลงกลับเป็น Parent Master Code
+> 3. **ปัญหา Collation Mismatch Error 1267:**
+>    - หากทีม IT พยายามเขียน SQL รวม `JOIN` ข้าม Database ระหว่าง `fact_sales` (`utf8mb4`) และ `item_barcode` (`utf8mb3`) ตรงๆ ใน MySQL จะติด `ERROR 1267: Illegal mix of collations` ต้องแปลง Collation ด้วย `CAST(ib.barcode AS BINARY) = CAST(fs.iprod AS BINARY)` หรือ `COLLATE utf8mb4_general_ci`
+
+#### ทางเลือกสำหรับทีม IT: Standalone Executable SQL Query (รันจบในคำสั่งเดียวได้ตัวเลขตรง Dashboard 100%)
+หากทีม IT ต้องการคำสั่ง SQL เดี่ยวสำหรับใช้ใน DBeaver / MySQL Workbench เพื่อตรวจสอบตัวเลขรวม MTD โดยไม่ต้องผ่าน Python ให้ใช้คำสั่งนี้:
+
+```sql
+WITH raw_sales AS (
+    SELECT 
+        fs.sotowhs,
+        fs.iprod,
+        CONCAT(YEAR(fs.sodate), '-', LPAD(MONTH(fs.sodate), 2, '0')) AS mo,
+        fs.net_sales_amt,
+        fs.total_cost,
+        (fs.soqty * fs.sopricdisc) AS sku_disc,
+        (fs.solineamt - fs.net_sales_amt) AS bill_disc,
+        fs.soqty
+    FROM `data-lake`.fact_sales fs FORCE INDEX (idx_optimize_sales_report)
+    WHERE fs.sodate >= '2026-09-01'
+      AND fs.solinetype NOT IN ('C', 'R')
+      AND fs.soretflag = 'N'
+      AND fs.sotowhs >= '001' AND fs.sotowhs <= '500'
+),
+resolved_sales AS (
+    SELECT 
+        rs.sotowhs,
+        rs.mo,
+        COALESCE(
+            CASE 
+                WHEN dp.iprod IS NOT NULL THEN rs.iprod
+                WHEN ib.parcode IS NOT NULL THEN CAST(ib.parcode AS CHAR)
+                ELSE rs.iprod
+            END, 
+            rs.iprod
+        ) AS master_iprod,
+        rs.net_sales_amt,
+        rs.total_cost,
+        rs.sku_disc,
+        rs.bill_disc,
+        rs.soqty,
+        COALESCE(dp.igrcode, dp_fallback.igrcode, '') AS final_igrcode
+    FROM raw_sales rs
+    LEFT JOIN `data-lake`.dim_product dp 
+        ON dp.iprod = rs.iprod
+    -- ป้องกัน Collation Mismatch Error 1267 ด้วย CAST AS BINARY
+    LEFT JOIN `MYPOS2018_CENTER`.item_barcode ib 
+        ON dp.iprod IS NULL 
+       AND CAST(ib.barcode AS BINARY) = CAST(rs.iprod AS BINARY) 
+       AND ib.baractive = 'Y'
+    LEFT JOIN `data-lake`.dim_product dp_fallback 
+        ON dp.iprod IS NULL 
+       AND dp_fallback.iprod = CAST(ib.parcode AS CHAR)
+)
+SELECT 
+    mo,
+    COUNT(DISTINCT sotowhs) AS store_count,
+    COUNT(DISTINCT master_iprod) AS product_count,
+    ROUND(SUM(net_sales_amt), 2) AS sales,
+    ROUND(SUM(total_cost), 2) AS cost,
+    ROUND(SUM(sku_disc + bill_disc), 2) AS disc,
+    ROUND(SUM(net_sales_amt) - SUM(total_cost), 2) AS gp,
+    ROUND((SUM(net_sales_amt) - SUM(total_cost)) / SUM(net_sales_amt) * 100, 2) AS gp_pct
+FROM resolved_sales
+WHERE LEFT(final_igrcode, 2) NOT IN ('03', '12', '15', '20', '26')
+GROUP BY mo;
 ```
 
 #### 2) Query ตรวจสอบบิลขายผิดปกติ 250 รายการ (`query_anomalies`):
@@ -203,8 +288,8 @@ WHERE sodate >= %s AND sodate < %s
 | :--- | :--- |
 | **📈 GP Analysis Dashboard** | หัวข้อหลักของระบบ (Title) |
 | **ข้อความ Subtitle (`#hdr-sub`)** | `"ข้อมูล ณ " + _meta.current_month + " (MTD ผ่านไป " + _meta.days_elapsed + " วัน) \| รวม " + summary.store_count + " สาขา \| " + summary.product_count + " สินค้า"` |
-| **ปุ่ม AI: 🎪 วิกฤตเทศกาล (-7.09 pp)** | ข้อความระบุผลกระทบ Category 22: `addPp = 7.09` (คำนวณจากสัดส่วนผลขาดทุนของ Category 22 ต่อ Net Sales รวม) |
-| **ปุ่ม AI: 🛒 โครงสร้าง Minimart (-3.69 pp)** | ข้อความระบุผลกระทบ Category 02: `addPp = 0.55 - 3.69` (คำนวณจากส่วนต่าง GP ปัจจุบันเทียบกับเกณฑ์ 25%) |
+| **ปุ่ม AI: 🎪 วิกฤตเทศกาล (-5.89 pp)** | ข้อความ Dynamic: `fPp = (festLoss / totalSales * 100)` ปัจจุบันฉุด GP รวม `-5.89 pp` |
+| **ปุ่ม AI: 🛒 โครงสร้าง Minimart (-3.50 pp)** | ข้อความ Dynamic: `mPp = (mDeficit / totalSales * 100)` ปัจจุบันฉุด GP รวม `-3.50 pp` (เทียบเกณฑ์ 31.48%) |
 | **ปุ่ม AI: 💡 จำลอง Pro-Forma GP (รออนุมัติ)** | ปุ่มสลับแท็บไปที่ `switchTab('simulation')` |
 | **ปุ่ม AI: 🎯 แผนยุทธศาสตร์ GP & ยอดขาย** | ปุ่มสลับแท็บไปที่ `switchTab('strategy')` |
 | **ปุ่ม AI: ⚠️ ตรวจสอบต้นทุน & ขายผิดปกติ** | ปุ่มสลับแท็บไปที่ `switchTab('audit')` |
@@ -225,16 +310,17 @@ WHERE sodate >= %s AND sodate < %s
 | **แท็บ 2: 📦 Product - คอลัมน์ส่วนลดรวม** | `p.disc = p.sku_disc + p.bill_disc` |
 | **แท็บ 2: 📦 Product - คอลัมน์ GP %** | `p.gp_pct = (p.sales > 0) ? ((p.sales - p.cost) / p.sales * 100) : 0` |
 | **แท็บ 3: 📈 Trend - กราฟแท่ง & เส้น** | แท่งสีน้ำเงิน = `m.sales`, แท่งสีส้ม = `m.cost`, เส้นสีเขียว = `m.gp_pct` |
-| **แท็บ 4: 🎪 วิกฤตเทศกาล - ยอดขาย Category 22** | `kSales = SUM(festStores.sales)` (เฉพาะสินค้า `type_code == '22'`) |
-| **แท็บ 4: 🎪 วิกฤตเทศกาล - ต้นทุน Category 22** | `kCost = SUM(festStores.cost)` |
-| **แท็บ 4: 🎪 วิกฤตเทศกาล - ส่วนลดที่แจก** | `kDisc = SUM(festStores.disc)` |
-| **แท็บ 4: 🎪 วิกฤตเทศกาล - GP ขาดทุนสุทธิ** | `kGp = SUM(festStores.gp)` (ค่าติดลบเสมอ) |
+| **แท็บ 4: 🎪 วิกฤตเทศกาล - ยอดขาย Category 22** | `kSales = SUM(festStores.sales)` (เฉพาะสินค้า `type_code == '22'`) = ฿23,355 |
+| **แท็บ 4: 🎪 วิกฤตเทศกาล - ต้นทุน Category 22** | `kCost = SUM(festStores.cost)` = ฿898,534 |
+| **แท็บ 4: 🎪 วิกฤตเทศกาล - ส่วนลดที่แจก** | `kDisc = SUM(festStores.disc)` = ฿1,633,341 |
+| **แท็บ 4: 🎪 วิกฤตเทศกาล - GP ขาดทุนสุทธิ** | `kGp = SUM(festStores.gp)` = -฿875,179 (ค่าติดลบเสมอ) |
+| **แท็บ 4: 🎪 วิกฤตเทศกาล - ผลกระทบต่อบริษัท** | `fPp = (festLoss / totalSales * 100)` = `-5.89 pp` (Dynamic Badge) |
 | **แท็บ 5: 🛒 Minimart - Sales MTD Minimart** | `totMiniSales = SUM(miniProds.sales)` (เฉพาะสินค้า `type_code == '02'`) |
 | **แท็บ 5: 🛒 Minimart - Cost MTD Minimart** | `totMiniCost = SUM(miniProds.cost)` |
 | **แท็บ 5: 🛒 Minimart - GP MTD Minimart** | `totMiniGp = totMiniSales - totMiniCost` พร้อมป้ายเปอร์เซ็นต์ `totMiniGp / totMiniSales * 100` |
-| **แท็บ 6: 💡 จำลอง Pro-Forma - GP หลังปรับปรุง (`#sim-res-gp`)** | `finalGpPct = 22.79 + (m1 ? 7.09 : 0) + (m2 ? 0.55 : 0) + (m3 ? 1.20 : 0)` |
-| **แท็บ 6: 💡 จำลอง Pro-Forma - เพิ่มขึ้นทันที (`#sim-res-diff`)** | `addPp = (m1 ? 7.09 : 0) + (m2 ? 0.55 : 0) + (m3 ? 1.20 : 0)` |
-| **แท็บ 6: 💡 จำลอง Pro-Forma - กำไรขั้นต้นเพิ่มขึ้น (`#sim-res-amt`)** | `addAmt = (m1 ? 736271 : 0) + (m2 ? 57450 : 0) + (m3 ? 125000 : 0)` |
+| **แท็บ 6: 💡 จำลอง Pro-Forma - GP หลังปรับปรุง (`#sim-res-gp`)** | `finalGpPct = baseGpPct + (m1 ? m1Pp : 0) + (m2 ? m2Pp : 0) + (m3 ? m3Pp : 0)` (Dynamic) |
+| **แท็บ 6: 💡 จำลอง Pro-Forma - เพิ่มขึ้นทันที (`#sim-res-diff`)** | `addPp = (m1 ? m1Pp : 0) + (m2 ? m2Pp : 0) + (m3 ? m3Pp : 0)` (Dynamic) |
+| **แท็บ 6: 💡 จำลอง Pro-Forma - กำไรขั้นต้นเพิ่มขึ้น (`#sim-res-amt`)** | `addAmt = (m1 ? festLoss : 0) + (m2 ? m2Amt : 0) + (m3 ? m3Amt : 0)` (Dynamic) |
 | **แท็บ 8: ⚠️ ตรวจสอบต้นทุน - รายการบิลขาดทุน (`#audit-kpi-tx-count`)** | `txList.length` (จำนวนบิลที่มี `total_cost > solineamt`) = 250 รายการ |
 | **แท็บ 8: ⚠️ ตรวจสอบต้นทุน - คอลัมน์ส่วนลด (`#tbl-audit-tx`)** | `r.disc = (r.disc != null) ? r.disc : Math.max(0, (r.qty * r.u_price) - r.sales)` |
 | **แท็บ 8: ⚠️ ตรวจสอบต้นทุน - คอลัมน์ขาดทุน (`#tbl-audit-tx`)** | `r.loss = r.cost - r.sales` (แสดงค่า `-฿...`) |
@@ -320,6 +406,6 @@ WHERE sodate >= %s AND sodate < %s
 | GitHub Remote Repo | `https://github.com/tumsbux/lost-Product` | Repository Contents | Read / Write (ผ่าน Personal Access Token) | อัปเดตไฟล์ HTML, JSON และ Python ผ่าน REST API เพื่อให้หน้าเว็บบน GitHub Pages อัปเดต |
 
 ### หมายเหตุและข้อสังเกตเพิ่มเติมสำหรับทีม IT (Audit Notice):
-1. **จุดน่าสงสัย 1: ค่า `baseGpPct = 22.79` ในแท็บจำลอง:** ในฟังก์ชัน `updateSimulation()` มีการฮาร์ดโค้ดตัวเลข `22.79` เอาไว้ ซึ่งเป็นค่า GP% ของรอบการคำนวณก่อนหน้า หากในอนาคตต้องการให้สะท้อนค่าจริง ควรผูกเป็น `DATA.summary.gp_pct`
-2. **จุดน่าสงสัย 2: อัตราส่วนลดของ Category 22 ในระดับสาขา:** ใน `build_gp_analysis.py` บรรทัด 560 มีการใช้ค่าคงที่ `1.82` เป็น Fallback (`disc_ratio = (p_disc / p_cost) if p_cost > 0 else 1.82`) ซึ่งเป็นค่า Factor ที่ได้จากการคำนวณเฉลี่ยของสินค้าเทศกาล หากหมวดหมู่นี้มีการเปลี่ยนประเภทของแถม ค่านี้อาจต้องได้รับการทบทวน
-3. **การทดสอบความถูกต้อง:** ทุก Query ในเอกสารนี้ได้รับการตรวจสอบจากโค้ดจริงที่กำลังรันใน Production ปัจจุบัน และสามารถนำ SQL ในข้อ 2 ไป Execute ตรงบน Database Client (เช่น DBeaver หรือ MySQL Workbench) เพื่อสอบทานตัวเลขได้ทันที
+1. **การแก้ไขค่า Base GP และ Simulation ในแท็บจำลอง (Fixed):** เดิมในฟังก์ชัน `updateSimulation()` มีการใช้ตัวเลขช่วง 2 วันแรก (`22.79%`, `7.09 pp`, `฿736,271`) ปัจจุบันได้รับการอัปเกรดเป็น **Dynamic Calculation 100%** โดยดึง `baseGpPct = DATA.summary.gp_pct` (24.18%) และคำนวณผลกระทบจากยอดขาย/ต้นทุนจริงของ Category 22 และ Category 02 ใน MTD อัตโนมัติ
+2. **จุดน่าสังเกตเรื่องอัตราส่วนลดของ Category 22 ในระดับสาขา:** ใน `build_gp_analysis.py` บรรทัด 560 มีการใช้ค่าคงที่ `1.82` เป็น Fallback (`disc_ratio = (p_disc / p_cost) if p_cost > 0 else 1.82`) ซึ่งเป็นค่า Factor ที่ได้จากการคำนวณเฉลี่ยของสินค้าเทศกาล หากหมวดหมู่นี้มีการเปลี่ยนประเภทของแถม ค่านี้อาจต้องได้รับการทบทวน
+3. **การทดสอบความถูกต้อง:** ทุก Query ในเอกสารนี้ได้รับการตรวจสอบจากโค้ดจริงที่กำลังรันใน Production ปัจจุบัน และสามารถนำ Standalone SQL ในข้อ 2 ไป Execute ตรงบน Database Client (เช่น DBeaver หรือ MySQL Workbench) เพื่อสอบทานตัวเลขได้ทันที
